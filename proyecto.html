@@ -205,13 +205,20 @@
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
                             <span class="text-[10px] text-gray-400 font-bold block mb-1">Proteína</span>
                             <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
                                 <div id="bar-prot" class="h-full bg-green-500 w-0 rounded-full"></div>
                             </div>
                             <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-prot">0</span>/<span id="goal-prot">0</span>g</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-bold block mb-1">Carbos</span>
+                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
+                                <div id="bar-carbs" class="h-full bg-red-400 w-0 rounded-full"></div>
+                            </div>
+                            <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-carbs">0</span>/<span id="goal-carbs">0</span>g</span>
                         </div>
                         <div>
                             <span class="text-[10px] text-gray-400 font-bold block mb-1">Grasas</span>
@@ -221,11 +228,11 @@
                             <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-fat">0</span>/<span id="goal-fat">0</span>g</span>
                         </div>
                         <div>
-                            <span class="text-[10px] text-gray-400 font-bold block mb-1">Carbos</span>
+                            <span class="text-[10px] text-gray-400 font-bold block mb-1">G. Saturadas</span>
                             <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
-                                <div id="bar-carbs" class="h-full bg-red-400 w-0 rounded-full"></div>
+                                <div id="bar-sat" class="h-full bg-yellow-600 w-0 rounded-full"></div>
                             </div>
-                            <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-carbs">0</span>/<span id="goal-carbs">0</span>g</span>
+                            <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-sat">0</span>/<span id="goal-sat">0</span>g</span>
                         </div>
                     </div>
                 </div>
@@ -274,14 +281,25 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-4 w-full px-2">
-                    <button onclick="addWater(250)" class="bg-white py-6 rounded-3xl shadow-lg shadow-blue-50 border border-blue-50 hover:border-blue-300 active:scale-95 transition flex flex-col items-center justify-center gap-2 group">
-                        <div class="bg-blue-50 w-14 h-14 rounded-full flex items-center justify-center group-hover:bg-blue-500 transition-colors"><i class="fas fa-glass-water text-blue-500 group-hover:text-white transition-colors text-xl"></i></div>
-                        <span class="font-bold text-slate-600 text-sm">Vaso<br><span class="text-xs text-gray-400 font-normal">250 ml</span></span>
-                    </button>
-                    <button onclick="addWater(1000)" class="bg-white py-6 rounded-3xl shadow-lg shadow-blue-50 border border-blue-50 hover:border-blue-300 active:scale-95 transition flex flex-col items-center justify-center gap-2 group">
-                         <div class="bg-blue-50 w-14 h-14 rounded-full flex items-center justify-center group-hover:bg-blue-500 transition-colors"><i class="fas fa-bottle-water text-blue-600 group-hover:text-white transition-colors text-xl"></i></div>
-                        <span class="font-bold text-slate-600 text-sm">Garrafa<br><span class="text-xs text-gray-400 font-normal">1000 ml</span></span>
-                    </button>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="addWater(250)" class="bg-white py-6 rounded-3xl shadow-lg shadow-blue-50 border border-blue-50 hover:border-blue-300 active:scale-95 transition flex flex-col items-center justify-center gap-2 group w-full">
+                            <div class="bg-blue-50 w-14 h-14 rounded-full flex items-center justify-center group-hover:bg-blue-500 transition-colors"><i class="fas fa-glass-water text-blue-500 group-hover:text-white transition-colors text-xl"></i></div>
+                            <span class="font-bold text-slate-600 text-sm">Vaso<br><span class="text-xs text-gray-400 font-normal">250 ml</span></span>
+                        </button>
+                        <button onclick="removeWater(250)" class="text-[10px] text-red-400 font-bold bg-red-50 py-2 rounded-xl hover:bg-red-100 transition">
+                            <i class="fas fa-minus mr-1"></i> Quitar (-250ml)
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <button onclick="addWater(1000)" class="bg-white py-6 rounded-3xl shadow-lg shadow-blue-50 border border-blue-50 hover:border-blue-300 active:scale-95 transition flex flex-col items-center justify-center gap-2 group w-full">
+                            <div class="bg-blue-50 w-14 h-14 rounded-full flex items-center justify-center group-hover:bg-blue-500 transition-colors"><i class="fas fa-bottle-water text-blue-600 group-hover:text-white transition-colors text-xl"></i></div>
+                            <span class="font-bold text-slate-600 text-sm">Garrafa<br><span class="text-xs text-gray-400 font-normal">1000 ml</span></span>
+                        </button>
+                        <button onclick="removeWater(1000)" class="text-[10px] text-red-400 font-bold bg-red-50 py-2 rounded-xl hover:bg-red-100 transition">
+                            <i class="fas fa-minus mr-1"></i> Quitar (-1000ml)
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -388,7 +406,7 @@
                 </div>
             </div>
 
-            <div class="card p-6 border-l-4 border-indigo-500 mb-24">
+            <div class="card p-6 mb-6 border-l-4 border-indigo-500">
                 <div class="flex items-center gap-4 mb-6">
                     <div class="bg-indigo-100 p-3 rounded-xl text-indigo-600 shadow-sm"><i class="fas fa-bicycle text-2xl"></i></div>
                     <div>
@@ -404,8 +422,39 @@
                         </div>
                         <input type="range" min="0" max="100" step="1" value="0" id="range-bike-km" oninput="updateSport()">
                     </div>
+                    <div class="p-3 bg-gray-50 rounded-xl text-center">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-2">Intensidad</label>
+                        <input type="range" min="1" max="3" step="1" value="2" id="range-bike-int" oninput="updateSport()">
+                        <div class="text-sm font-black text-slate-700 mt-1" id="val-bike-int-text">Normal</div>
+                    </div>
                 </div>
             </div>
+
+            <div class="card p-6 mb-24 border-l-4 border-slate-800">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="bg-slate-100 p-3 rounded-xl text-slate-700 shadow-sm"><i class="fas fa-dumbbell text-2xl"></i></div>
+                    <div>
+                        <h3 class="font-bold text-slate-700 text-lg">Jim</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase">Pesas / Hipertrofia</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Kcal (Apple Watch)</label>
+                        <input type="number" id="gym-cals" placeholder="ej: 350" oninput="updateSport()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 font-bold text-slate-700 outline-none focus:border-slate-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Tiempo (min)</label>
+                        <input type="number" id="gym-time" placeholder="ej: 60" oninput="updateSport()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 font-bold text-slate-700 outline-none focus:border-slate-500">
+                    </div>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-xl text-center">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-2">Intensidad</label>
+                    <input type="range" min="1" max="3" step="1" value="2" id="range-gym-int" oninput="updateSport()">
+                    <div class="text-sm font-black text-slate-700 mt-1" id="val-gym-int-text">Media</div>
+                </div>
+            </div>
+
         </div>
 
         <div id="registro" class="page-section">
@@ -666,7 +715,8 @@
             steps: 0, 
             standingHours: 0, 
             runKm: 0, runPace: 5.5, runInt: 2,
-            bikeKm: 0, bikeInt: 2,
+            bikeKm: 0, bikeInt: 2, // Añadido bikeInt
+            gymCals: 0, gymTime: 0, gymInt: 2, // Añadidos datos Gym
             foodLog: []
         };
 
@@ -738,7 +788,19 @@
                  waterDetails.push({ txt: `De pie (${todayData.standingHours}h)`, val: `+${Math.round(todayData.standingHours * 50)}ml` });
             }
 
-            let sportLoad = todayData.runKm + (todayData.bikeKm * 0.4);
+            // Calculo de carga deportiva incluyendo Gym
+            let gymLoad = 0;
+            if(todayData.gymCals > 0) {
+                g.cals += parseFloat(todayData.gymCals);
+                // Agua extra por gym
+                const gymWater = todayData.gymTime * 10; // ej: 60min -> 600ml
+                g.water += gymWater;
+                waterDetails.push({ txt: `Gym (${todayData.gymTime}min)`, val: `+${gymWater}ml` });
+                gymLoad = todayData.gymTime / 10; 
+            }
+
+            let sportLoad = todayData.runKm + (todayData.bikeKm * 0.4) + gymLoad;
+            
             if (sportLoad > 10 || todayData.steps > 15000) {
                 nutritionAdvice += "<li>🏃‍♂️ <b>Carga Alta:</b> Depósitos de glucógeno vacíos. Cena carbohidratos (arroz/pasta) para recuperar.</li>";
                 g.cals += 400; g.carbs += 60;
@@ -832,6 +894,18 @@
                 physLoad += todayData.runKm * runFactor;
                 stressDetails.push({ text: `Running ${todayData.runKm}km`, val: `+${Math.round(todayData.runKm * runFactor)}%`, type: 'neutral' });
             }
+
+            // Calculo Gym para estrés
+            if (todayData.gymTime > 0) {
+                let gymFactor = 0.5; // base por minuto
+                if (todayData.gymInt == 2) gymFactor = 0.8;
+                if (todayData.gymInt == 3) gymFactor = 1.2;
+                
+                let gymStress = todayData.gymTime * gymFactor;
+                physLoad += gymStress;
+                stressDetails.push({ text: `Gym (${todayData.gymTime}min)`, val: `+${Math.round(gymStress)}%`, type: 'neutral' });
+            }
+
             stress += physLoad;
 
             const waterP = (todayData.water / currentGoals.water);
@@ -937,22 +1011,30 @@
             document.getElementById('val-standing').innerText = todayData.standingHours;
 
 
-            let sum = { cal:0, prot:0, fat:0, carb:0 };
+            let sum = { cal:0, prot:0, fat:0, sat:0, carb:0 };
             todayData.foodLog.forEach(f => {
                 sum.cal+=f.cal; sum.prot+=f.prot; sum.fat+=f.fat; sum.carb+=f.carb;
+                if(f.sat) sum.sat+=f.sat;
             });
 
-            const setBar = (id, val, max) => {
+            const setBar = (id, val, max, color) => {
                 const p = Math.min((val/max)*100, 100);
                 const el = document.getElementById(`bar-${id}`);
                 if(el) el.style.width = p+'%';
-                document.getElementById(`val-${id}`).innerText = Math.round(val);
+                
+                // Formateo de números para mostrar decimales si son pequeños
+                const displayVal = (val % 1 !== 0 && val < 10) ? val.toFixed(1) : Math.round(val);
+                
+                document.getElementById(`val-${id}`).innerText = displayVal;
                 document.getElementById(`goal-${id}`).innerText = Math.round(max);
             };
+
             setBar('cals', sum.cal, currentGoals.cals);
             setBar('prot', sum.prot, currentGoals.prot);
             setBar('fat', sum.fat, currentGoals.fat);
             setBar('carbs', sum.carb, currentGoals.carbs);
+            setBar('sat', sum.sat, currentGoals.sat); // Nueva barra Sat
+
             document.getElementById('total-consumed-kcal').innerText = Math.round(sum.cal) + ' kcal';
 
             document.getElementById('home-water').innerText = todayData.water;
@@ -972,7 +1054,7 @@
                 <div class="flex justify-between items-center text-sm py-3 border-b border-gray-100 last:border-0 bg-white p-3 rounded-xl mb-2 shadow-sm">
                     <div>
                         <div class="text-slate-700 font-bold">${f.name} <span class="text-xs text-gray-400 font-normal">(${f.weight}g)</span></div>
-                        <div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g</div>
+                        <div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g | S: ${f.sat ? f.sat.toFixed(1) : 0}g</div>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="font-bold text-xs text-slate-500 bg-gray-100 px-2 py-1 rounded">${Math.round(f.cal)} kcal</span>
@@ -987,9 +1069,15 @@
             todayData.runPace = parseFloat(document.getElementById('range-run-pace').value);
             todayData.runInt = parseFloat(document.getElementById('range-run-int').value);
             todayData.bikeKm = parseFloat(document.getElementById('range-bike-km').value);
+            todayData.bikeInt = parseFloat(document.getElementById('range-bike-int').value); // Nuevo
             todayData.steps = parseInt(document.getElementById('range-steps').value);
             todayData.standingHours = parseFloat(document.getElementById('range-standing').value);
             
+            // GYM DATA
+            todayData.gymCals = document.getElementById('gym-cals').value;
+            todayData.gymTime = document.getElementById('gym-time').value;
+            todayData.gymInt = document.getElementById('range-gym-int').value;
+
             document.getElementById('val-run-km').innerText = todayData.runKm;
             let min = Math.floor(todayData.runPace);
             let sec = Math.round((todayData.runPace - min) * 60);
@@ -998,6 +1086,10 @@
             const ints = ['--', 'Suave', 'Normal', 'Alta'];
             document.getElementById('val-run-int-text').innerText = ints[todayData.runInt] || '--';
             document.getElementById('val-bike-km').innerText = todayData.bikeKm;
+            
+            // Textos intensidad nuevos
+            document.getElementById('val-bike-int-text').innerText = ints[todayData.bikeInt] || '--';
+            document.getElementById('val-gym-int-text').innerText = ints[todayData.gymInt] || '--';
 
             updateDay();
         }
@@ -1267,7 +1359,8 @@
                 cal: base.cal * ratio,
                 prot: base.prot * ratio,
                 fat: base.fat * ratio,
-                carb: base.carb * ratio
+                carb: base.carb * ratio,
+                sat: (base.sat || 0) * ratio // Agregar cálculo Sat
             };
         }
 
@@ -1308,11 +1401,16 @@
                         const w = parseFloat(input.value) || 0;
                         const ratio = w / base.weight;
                         
+                        // Modificado para mostrar decimales en sat
+                        const satVal = (base.sat || 0) * ratio;
+                        const displaySat = (satVal % 1 !== 0 && satVal < 10) ? satVal.toFixed(1) : Math.round(satVal);
+
                         stats.innerHTML = `
                             <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-gray-400">Energía</span><span class="font-bold text-slate-700">${Math.round(base.cal * ratio)} kcal</span></div>
                             <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-green-500">Proteína</span><span class="font-bold text-green-600">${Math.round(base.prot * ratio)}g</span></div>
                             <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-yellow-500">Grasas</span><span class="font-bold text-yellow-600">${Math.round(base.fat * ratio)}g</span></div>
                             <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-red-500">Carbos</span><span class="font-bold text-red-600">${Math.round(base.carb * ratio)}g</span></div>
+                            <div class="bg-gray-50 p-2 rounded-lg col-span-2"><span class="block text-xs text-yellow-700">G. Saturadas</span><span class="font-bold text-yellow-800">${displaySat}g</span></div>
                         `;
                     };
 
@@ -1330,7 +1428,8 @@
                         cal: base.cal * ratio,
                         prot: base.prot * ratio,
                         fat: base.fat * ratio,
-                        carb: base.carb * ratio
+                        carb: base.carb * ratio,
+                        sat: (base.sat || 0) * ratio
                     };
                 }
             }).then((result) => {
@@ -1351,11 +1450,12 @@
 
         function removeFood(i) { todayData.foodLog.splice(i, 1); updateDay(); }
         function addWater(ml) { todayData.water += ml; updateDay(); }
+        function removeWater(ml) { if(todayData.water >= ml) { todayData.water -= ml; updateDay(); } } // Nueva función quitar agua
         
         function openCustomFoodModal() {
             Swal.fire({
                 title: 'Crear Alimento',
-                html: `<input id="swal-n" class="swal2-input" placeholder="Nombre"><div class="grid grid-cols-2 gap-2"><input id="swal-k" type="number" class="swal2-input" placeholder="Kcal"><input id="swal-p" type="number" class="swal2-input" placeholder="Prot"><input id="swal-c" type="number" class="swal2-input" placeholder="Carb"><input id="swal-f" type="number" class="swal2-input" placeholder="Fat"><input id="swal-w" type="number" class="swal2-input" placeholder="Gramos (ref)"></div>`,
+                html: `<input id="swal-n" class="swal2-input" placeholder="Nombre"><div class="grid grid-cols-2 gap-2"><input id="swal-k" type="number" class="swal2-input" placeholder="Kcal"><input id="swal-p" type="number" class="swal2-input" placeholder="Prot"><input id="swal-c" type="number" class="swal2-input" placeholder="Carb"><input id="swal-f" type="number" class="swal2-input" placeholder="Fat"><input id="swal-s" type="number" class="swal2-input" placeholder="Sat. Fat"><input id="swal-w" type="number" class="swal2-input" placeholder="Gramos (ref)"></div>`,
                 confirmButtonColor: '#1e293b', confirmButtonText: 'Guardar',
                 preConfirm: () => ({ 
                     name: document.getElementById('swal-n').value, 
@@ -1363,6 +1463,7 @@
                     prot: Number(document.getElementById('swal-p').value), 
                     fat: Number(document.getElementById('swal-f').value), 
                     carb: Number(document.getElementById('swal-c').value), 
+                    sat: Number(document.getElementById('swal-s').value), 
                     weight: Number(document.getElementById('swal-w').value) || 100 
                 })
             }).then(r => { if(r.value) { todayData.foodLog.push(r.value); updateDay(); } });
@@ -1385,6 +1486,13 @@
                 document.getElementById('range-run-pace').value = todayData.runPace || 5.5;
                 document.getElementById('range-run-int').value = todayData.runInt || 2;
                 document.getElementById('range-bike-km').value = todayData.bikeKm || 0;
+                document.getElementById('range-bike-int').value = todayData.bikeInt || 2; // load bikeInt
+                
+                // Load Gym Data
+                document.getElementById('gym-cals').value = todayData.gymCals || '';
+                document.getElementById('gym-time').value = todayData.gymTime || '';
+                document.getElementById('range-gym-int').value = todayData.gymInt || 2;
+
                 document.getElementById('range-mobile').value = todayData.mobileHours || 0;
                 document.getElementById('range-steps').value = todayData.steps || 0;
                 document.getElementById('range-standing').value = todayData.standingHours || 0;
@@ -1495,7 +1603,8 @@
             const metricData = [
                 ['Sueño', `${rec.data.sleepHours}h (${rec.data.sleepQuality}%)`, 'Uso Móvil', `${rec.data.mobileHours}h`],
                 ['Agua', `${rec.data.water} ml`, 'Pasos', `${rec.data.steps}`],
-                ['Deporte', `${rec.data.runKm + rec.data.bikeKm} km`, 'Horas de Pie', `${rec.data.standingHours}h`]
+                ['Deporte', `${rec.data.runKm + rec.data.bikeKm} km`, 'Horas de Pie', `${rec.data.standingHours}h`],
+                ['Gym (Jim)', `${rec.data.gymTime || 0} min`, 'Kcal Gym', `${rec.data.gymCals || 0}`] // Añadido al PDF
             ];
 
             doc.autoTable({
@@ -1520,13 +1629,21 @@
             doc.setFontSize(12);
             doc.text("Registro Nutricional", 14, y);
             y += 6;
-            const foodBody = rec.data.foodLog.map(f => [f.name, Math.round(f.cal), Math.round(f.prot), Math.round(f.fat), Math.round(f.carb)]);
+            // Modificado PDF para incluir columna Sat
+            const foodBody = rec.data.foodLog.map(f => [
+                f.name, 
+                Math.round(f.cal), 
+                Math.round(f.prot), 
+                Math.round(f.fat), 
+                Math.round(f.carb),
+                (f.sat ? f.sat.toFixed(1) : '0') // Nueva columna sat
+            ]);
             const totalCal = rec.data.foodLog.reduce((a,b)=>a+b.cal,0);
-            foodBody.push(['TOTAL', Math.round(totalCal), '-', '-', '-']);
+            foodBody.push(['TOTAL', Math.round(totalCal), '-', '-', '-', '-']);
 
             doc.autoTable({
                 startY: y,
-                head: [['Alimento', 'Kcal', 'Prot (g)', 'Grasa (g)', 'Carb (g)']],
+                head: [['Alimento', 'Kcal', 'Prot (g)', 'Grasa (g)', 'Carb (g)', 'Sat (g)']], // Header actualizado
                 body: foodBody,
                 theme: 'grid',
                 headStyles: { fillColor: dark }
@@ -1538,5 +1655,3 @@
     </script>
 </body>
 </html>
-
-
