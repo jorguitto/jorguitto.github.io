@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FitTracker Medical - Pro</title>
+    <title>FitTracker Medical - Pro V2</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -62,7 +61,14 @@
             -webkit-appearance: none;
             appearance: none;
             background-color: #f9fafb;
-            min-width: 95px; /* Evita colapso en flex */
+            min-width: 95px;
+        }
+        
+        /* Input numérico limpio para la comida */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
         }
 
         .nav-item.active { color: #3b82f6; transform: translateY(-2px); }
@@ -135,7 +141,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-2 gap-4 mb-5">
                 <div class="card p-5 border-b-4 border-blue-400 card-clickable cursor-pointer" onclick="showDetails('water')">
                     <div class="flex justify-between mb-2">
                         <p class="text-[10px] text-gray-400 font-bold uppercase">Hidratación</p>
@@ -168,6 +174,23 @@
                     <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                          <div id="mini-bar-study" class="bg-study h-full w-0 transition-all duration-500 rounded-full"></div>
                     </div>
+                </div>
+            </div>
+
+            <div class="card p-5 mb-5 border-l-4 border-orange-500 card-clickable cursor-pointer" onclick="showDetails('sport')">
+                <div class="flex justify-between mb-2">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase">Deporte & Movimiento</p>
+                    <i class="fas fa-dumbbell text-orange-400 text-xs"></i>
+                </div>
+                <div class="flex items-end justify-between mb-3">
+                    <div class="leading-none">
+                        <span class="text-2xl font-bold text-slate-700 block"><span id="home-sport-km">0</span> <span class="text-base font-normal text-gray-400">km</span></span>
+                        <span class="text-[10px] text-gray-400 font-medium">Running + Bici</span>
+                    </div>
+                    <i class="fas fa-running text-orange-500 text-xl"></i>
+                </div>
+                <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                    <div id="bar-sport-home" class="bg-orange-500 h-full w-0 transition-all duration-500 rounded-full"></div>
                 </div>
             </div>
             
@@ -433,7 +456,7 @@
         const INITIAL_STATE = {
             wakeTime: '', sleepHours: 0, sleepQuality: 0,
             water: 0,
-            studySessions: [], // CAMBIO: Array de sesiones
+            studySessions: [],
             runKm: 0, runPace: 5.5, runInt: 2,
             bikeKm: 0, bikeInt: 2,
             foodLog: []
@@ -447,6 +470,7 @@
         let stressDetails = []; 
         let waterDetails = [];
         let nutritionAdvice = "";
+        let studyAdvice = "";
 
         window.onload = function() {
             detectSeason();
@@ -467,7 +491,6 @@
 
         // --- LÓGICA MÉDICA PRINCIPAL ---
         function updateDay() {
-            // Inputs biométricos
             const wakeEl = document.getElementById('wakeTime');
             if(wakeEl) todayData.wakeTime = wakeEl.value;
             const sleepHEl = document.getElementById('sleepHours');
@@ -485,6 +508,8 @@
             let g = { ...BASE_GOALS };
             waterDetails = [];
             nutritionAdvice = "";
+            studyAdvice = "";
+            
             waterDetails.push({ txt: "Base (60kg peso)", val: "+2200ml" });
 
             if (currentSeason === 'Summer') {
@@ -492,33 +517,46 @@
                 waterDetails.push({ txt: "Calor (Verano)", val: "+400ml" });
             }
 
+            // Consejos Médicos de Nutrición basados en deporte
+            let sportLoad = todayData.runKm + (todayData.bikeKm * 0.4);
+            if (sportLoad > 10) {
+                nutritionAdvice += "<li>🏃‍♂️ <b>Carga Alta:</b> Depósitos de glucógeno vacíos. Cena carbohidratos (arroz/pasta) para recuperar.</li>";
+                g.cals += 400; g.carbs += 60;
+            } else if (sportLoad > 0) {
+                nutritionAdvice += "<li>👌 <b>Actividad Moderada:</b> Mantén el equilibrio proteico.</li>";
+            } else {
+                nutritionAdvice += "<li>💤 <b>Día Sedentario:</b> Controla los carbohidratos, prioriza verduras y proteínas.</li>";
+            }
+
             if (todayData.runKm > 0) {
                 let intensityFactor = 1;
                 if(todayData.runPace < 5) intensityFactor = 1.3;
-                const runCals = todayData.runKm * 63 * intensityFactor;
-                g.cals += runCals;
-                g.carbs += todayData.runKm * 12 * intensityFactor; 
                 const runWater = todayData.runKm * (currentSeason === 'Summer' ? 200 : 150);
                 g.water += runWater;
                 waterDetails.push({ txt: `Running (${todayData.runKm}km)`, val: `+${Math.round(runWater)}ml` });
             }
 
-            // Estudio (Cerebro consume glucosa y agua)
+            // Consejos Médicos de Estudio
             let totalStudy = todayData.studySessions.reduce((a,b)=>a+b.hours,0);
-            if (totalStudy > 3) {
+            if (totalStudy > 6) {
+                studyAdvice = "⚠️ <b>Alerta Cortisol:</b> Llevas mucha carga mental. El cerebro necesita glucosa y descanso. <br>👉 Recomendación: Come nueces (Omega 3) o un plátano ahora. Duerme 8h hoy sí o sí.";
                 const studyWater = totalStudy * 80;
                 g.water += studyWater;
-                waterDetails.push({ txt: `Estudio (${totalStudy}h)`, val: `+${Math.round(studyWater)}ml` });
+                waterDetails.push({ txt: `Estudio Intenso`, val: `+${Math.round(studyWater)}ml` });
+            } else if (totalStudy > 2) {
+                studyAdvice = "✅ <b>Buen ritmo:</b> Recuerda hidratarte cada hora. El agua mejora la concentración un 20%.";
+                g.water += totalStudy * 50;
+            } else {
+                studyAdvice = "💡 Sin fatiga mental aparente.";
             }
+
             currentGoals = g;
         }
 
-        // --- CORAZÓN DEL CÁLCULO DE ESTRÉS (Modificado) ---
         function calculateStressBar() {
             let stress = 0;
             stressDetails = [];
 
-            // 1. SUEÑO (Base de recuperación)
             if (todayData.sleepHours > 0) {
                 let sleepScore = 0;
                 if (todayData.sleepQuality < 60) {
@@ -529,57 +567,48 @@
                     stressDetails.push({ text: "Sueño Reparador", val: "-10%", type: 'good' });
                 }
                 if (todayData.sleepHours < 7) {
-                    const debt = (7 - todayData.sleepHours) * 15; // Penaliza duro
+                    const debt = (7 - todayData.sleepHours) * 15;
                     sleepScore += debt;
                     stressDetails.push({ text: "Deuda Sueño", val: `+${Math.round(debt)}%`, type: 'bad' });
                 }
                 stress += sleepScore;
             }
 
-            // 2. CARGA COGNITIVA (Estudio) - Ahora suma por sesiones y detecta sobrecarga
             let totalStudy = 0;
             let studyStress = 0;
-            
             todayData.studySessions.forEach(s => {
                 totalStudy += s.hours;
-                // Fórmula: Horas * (Factor Focus 4, 6, 8)
                 let factor = s.focus === 1 ? 4 : (s.focus === 2 ? 6 : 9); 
                 studyStress += s.hours * factor;
             });
 
-            // Penalización por maratón de estudio (>10h)
             if (totalStudy > 10) {
-                studyStress *= 1.2; // 20% extra por agotamiento extremo
+                studyStress *= 1.2;
                 stressDetails.push({ text: "Sobrecarga Mental (>10h)", val: "CRÍTICO", type: 'bad' });
             } else if (totalStudy > 0) {
                 stressDetails.push({ text: `Estudio (${totalStudy}h)`, val: `+${Math.round(studyStress)}%`, type: 'neutral' });
             }
             stress += studyStress;
 
-            // 3. CARGA FÍSICA (Running 21km duele)
             let physLoad = 0;
             if (todayData.runKm > 0) {
-                // 21km * 4 = 84% (Casi llena la barra solo corriendo)
                 let runFactor = 4; 
-                if (todayData.runInt === 3) runFactor = 5; // Alta intensidad
+                if (todayData.runInt === 3) runFactor = 5;
                 physLoad += todayData.runKm * runFactor;
                 stressDetails.push({ text: `Running ${todayData.runKm}km`, val: `+${Math.round(physLoad)}%`, type: 'neutral' });
             }
             stress += physLoad;
 
-            // 4. MITIGADORES
             const waterP = (todayData.water / currentGoals.water);
             if (waterP >= 0.9) {
                 stress -= 5;
                 stressDetails.push({ text: "Hidratación", val: "-5%", type: 'good' });
             }
 
-            // Limites
             stress = Math.round(stress);
             if (stress < 0) stress = 0;
             if (stress > 100) stress = 100;
 
-            // UI Bar
             const bar = document.getElementById('stress-bar');
             const txt = document.getElementById('stress-score-num');
             const miniMsg = document.getElementById('stress-msg-mini');
@@ -606,36 +635,25 @@
             }
         }
 
-        // --- GESTIÓN DE SESIONES DE ESTUDIO ---
+        // --- GESTIÓN DE SESIONES ---
         function addStudySession() {
             const hInput = document.getElementById('session-hours');
             const fInput = document.getElementById('session-focus');
             const hours = parseFloat(hInput.value);
             const focus = parseInt(fInput.value);
 
-            if (!hours || hours <= 0) {
-                Swal.fire('Error', 'Indica las horas de la sesión', 'error');
-                return;
-            }
-
+            if (!hours || hours <= 0) { Swal.fire('Error', 'Indica las horas', 'error'); return; }
             todayData.studySessions.push({ hours, focus, id: Date.now() });
             hInput.value = '';
             updateDay();
-            Swal.fire({
-                toast: true, position: 'top-end', showConfirmButton: false, timer: 1500,
-                icon: 'success', title: 'Sesión añadida'
-            });
+            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }).fire({ icon: 'success', title: 'Añadido' });
         }
 
-        function removeStudySession(index) {
-            todayData.studySessions.splice(index, 1);
-            updateDay();
-        }
+        function removeStudySession(index) { todayData.studySessions.splice(index, 1); updateDay(); }
 
         function renderStudySessions() {
             const list = document.getElementById('studySessionsList');
             const totalDisplay = document.getElementById('total-study-hours-display');
-            
             let total = 0;
             const focusLabels = {1: 'Bajo', 2: 'Medio', 3: 'Deep Work'};
             const focusColors = {1: 'text-gray-400', 2: 'text-blue-500', 3: 'text-purple-600 font-black'};
@@ -661,18 +679,15 @@
 
             todayData.studySessions.forEach(s => total += s.hours);
             totalDisplay.innerText = total + " horas";
-            
-            // Update Home Screen Cards
             document.getElementById('home-study').innerText = total;
             document.getElementById('home-sessions-count').innerText = `${todayData.studySessions.length} sesion(es)`;
             document.getElementById('mini-bar-study').style.width = Math.min((total/10)*100, 100) + '%';
         }
 
-        // --- UI UPDATES GENERALES ---
+        // --- UI UPDATES ---
         function updateUI() {
-            renderStudySessions(); // Actualizar lista y totales estudio
+            renderStudySessions();
 
-            // Nutrición
             let sum = { cal:0, prot:0, fat:0, carb:0 };
             todayData.foodLog.forEach(f => {
                 sum.cal+=f.cal; sum.prot+=f.prot; sum.fat+=f.fat; sum.carb+=f.carb;
@@ -691,7 +706,6 @@
             setBar('carbs', sum.carb, currentGoals.carbs);
             document.getElementById('total-consumed-kcal').innerText = Math.round(sum.cal) + ' kcal';
 
-            // Agua
             document.getElementById('home-water').innerText = todayData.water;
             document.getElementById('home-water-goal').innerText = Math.round(currentGoals.water);
             document.getElementById('mini-bar-water').style.width = Math.min((todayData.water/currentGoals.water)*100, 100) + '%';
@@ -701,11 +715,15 @@
             document.getElementById('water-display-lg').innerText = todayData.water;
             document.getElementById('water-goal-text').innerText = `Meta dinámica: ${Math.round(currentGoals.water)} ml`;
 
-            // Lista Comida
+            // Actualizar barra deporte en Home
+            document.getElementById('home-sport-km').innerText = todayData.runKm + todayData.bikeKm;
+            const sportProgress = Math.min(((todayData.runKm + (todayData.bikeKm*0.4)) / 10) * 100, 100);
+            document.getElementById('bar-sport-home').style.width = sportProgress + '%';
+
             document.getElementById('addedFoodsList').innerHTML = todayData.foodLog.map((f, i) => `
                 <div class="flex justify-between items-center text-sm py-3 border-b border-gray-100 last:border-0 bg-white p-3 rounded-xl mb-2 shadow-sm">
                     <div>
-                        <div class="text-slate-700 font-bold">${f.name}</div>
+                        <div class="text-slate-700 font-bold">${f.name} <span class="text-xs text-gray-400 font-normal">(${f.weight}g)</span></div>
                         <div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g</div>
                     </div>
                     <div class="flex items-center gap-3">
@@ -734,21 +752,18 @@
             updateDay();
         }
 
-        // Modales y Utilidades
+        // --- 4. MODALS & ADVICE (Lógica de Consejos) ---
         function showDetails(type) {
             const modal = document.getElementById('info-modal');
             const title = document.getElementById('modal-title');
             const body = document.getElementById('modal-body');
             
             if(type === 'stress') {
-                title.innerText = "Diagnóstico Carga Fisiológica";
+                title.innerText = "Diagnóstico Carga";
                 if(stressDetails.length === 0) {
-                    body.innerHTML = '<p class="text-gray-400 text-center italic">Introduce datos de sueño y deporte para ver el cálculo médico.</p>';
+                    body.innerHTML = '<p class="text-gray-400 text-center italic">Sin datos suficientes.</p>';
                 } else {
                     body.innerHTML = `
-                        <div class="bg-slate-50 p-4 rounded-2xl mb-4 text-xs text-gray-500">
-                             Cálculo integral: Deuda de sueño + Intensidad Running + Horas de Estudio (x foco).
-                        </div>
                         <div class="space-y-3">
                             ${stressDetails.map(d => `
                                 <div class="flex justify-between items-center border-b border-gray-100 pb-2">
@@ -760,24 +775,62 @@
                     `;
                 }
             } else if (type === 'water') {
-                title.innerText = "Hidratación (60kg)";
+                title.innerText = "Hidratación";
                 body.innerHTML = waterDetails.map(d => `
                     <div class="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl mb-2">
                         <span class="text-sm text-slate-600">${d.txt}</span>
                         <span class="text-sm font-bold text-blue-500">${d.val}</span>
                     </div>`).join('');
             } else if (type === 'study') {
-                title.innerText = "Detalle Sesiones";
+                // Consejos Productividad
+                title.innerText = "Detalle Estudio";
                 const focusLabels = {1: 'Bajo', 2: 'Medio', 3: 'Deep Work'};
-                body.innerHTML = todayData.studySessions.length ? todayData.studySessions.map(s => `
-                    <div class="bg-purple-50 p-3 rounded-xl mb-2 flex justify-between">
-                        <span class="font-bold text-study">${s.hours} horas</span>
-                        <span class="text-xs text-purple-400">${focusLabels[s.focus]}</span>
+                let content = `<div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-sm text-slate-700 mb-4">${studyAdvice}</div>`;
+                
+                content += todayData.studySessions.length ? todayData.studySessions.map(s => `
+                    <div class="bg-gray-50 p-3 rounded-xl mb-2 flex justify-between">
+                        <span class="font-bold text-slate-700">${s.hours} horas</span>
+                        <span class="text-xs text-purple-500 font-bold uppercase">${focusLabels[s.focus]}</span>
                     </div>
-                `).join('') : 'Sin sesiones';
+                `).join('') : '<p class="text-gray-400 text-center italic">Sin sesiones.</p>';
+                body.innerHTML = content;
+
             } else if (type === 'nutrition') {
+                // Consejos Nutrición
                 title.innerText = "Control de Dieta";
-                body.innerHTML = `<div class="bg-yellow-50 p-4 rounded-2xl border border-yellow-100 text-sm text-slate-600">${nutritionAdvice || "Mantén la proteína alta para compensar el cardio."}</div>`;
+                body.innerHTML = `
+                    <p class="text-xs font-bold text-gray-400 uppercase mb-2">Consejo Recuperación</p>
+                    <div class="bg-orange-50 p-4 rounded-2xl border border-orange-100 text-sm text-slate-600 mb-4">
+                        <ul class="list-disc pl-4 space-y-1">
+                            ${nutritionAdvice || "<li>Mantén la proteína alta.</li>"}
+                        </ul>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                        <div class="bg-green-50 p-2 rounded text-green-700"><b>Proteína</b><br>Músculo</div>
+                        <div class="bg-red-50 p-2 rounded text-red-700"><b>Carbos</b><br>Energía</div>
+                    </div>
+                `;
+            } else if (type === 'sport') {
+                // Detalle Deporte (Nueva sección)
+                title.innerText = "Detalle Actividad";
+                body.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-orange-50 p-3 rounded-2xl text-center">
+                            <i class="fas fa-running text-orange-500 text-2xl mb-1"></i>
+                            <div class="font-bold text-slate-700">${todayData.runKm} km</div>
+                            <div class="text-[10px] text-gray-400">Running</div>
+                        </div>
+                        <div class="bg-indigo-50 p-3 rounded-2xl text-center">
+                            <i class="fas fa-bicycle text-indigo-500 text-2xl mb-1"></i>
+                            <div class="font-bold text-slate-700">${todayData.bikeKm} km</div>
+                            <div class="text-[10px] text-gray-400">Ciclismo</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl text-sm text-slate-600">
+                        <p>Ritmo Running: <b>${Math.floor(todayData.runPace)}:${Math.round((todayData.runPace-Math.floor(todayData.runPace))*60)}</b> min/km</p>
+                        <p>Intensidad: <b>${todayData.runInt === 3 ? 'Alta 🔥' : (todayData.runInt === 2 ? 'Media' : 'Baja')}</b></p>
+                    </div>
+                `;
             }
             modal.classList.add('open');
         }
@@ -787,7 +840,7 @@
             document.getElementById('info-modal').classList.remove('open');
         }
 
-        // Comida Utils
+        // --- COMIDA: CALCULADORA Y LUPA ---
         function renderFoodCategories() {
             const c = document.getElementById('foodCategoriesContainer');
             c.innerHTML = Object.keys(foodDatabase).map(cat => `
@@ -798,13 +851,20 @@
                     </div>
                     <div class="meal-content bg-slate-50">
                         ${foodDatabase[cat].map((f, i) => `
-                            <div class="p-3 border-t border-gray-100 flex justify-between items-center hover:bg-blue-50/30 transition px-4">
-                                <div>
+                            <div class="p-3 border-t border-gray-100 flex items-center justify-between hover:bg-blue-50/30 transition px-4 gap-2">
+                                <div class="flex-1">
                                     <div class="font-bold text-sm text-slate-700">${f.name}</div>
-                                    <div class="text-[10px] text-gray-400 font-mono mt-0.5">${f.cal} kcal <span class="text-green-500 ml-1">P:${f.prot}</span></div>
+                                    <div class="text-[10px] text-gray-400 font-mono mt-0.5">Base: ${f.cal} kcal / ${f.weight}g</div>
                                 </div>
-                                <div class="flex gap-2">
-                                     <button onclick="addFood('${cat}', ${i})" class="w-8 h-8 rounded-full bg-primary text-white shadow-sm active:scale-90 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button>
+                                
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="weight-${cat}-${i}" value="${f.weight}" class="w-14 bg-white border border-gray-200 rounded-lg text-xs font-bold text-center py-2 focus:border-blue-500 outline-none shadow-sm" placeholder="g">
+                                    <span class="text-[10px] text-gray-400">g</span>
+                                </div>
+
+                                <div class="flex gap-2 ml-1">
+                                     <button onclick="viewCalculatedDetails('${cat}', ${i})" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-blue-500 shadow-sm flex items-center justify-center"><i class="fas fa-search text-xs"></i></button>
+                                     <button onclick="addCalculatedFood('${cat}', ${i})" class="w-8 h-8 rounded-full bg-primary text-white shadow-sm active:scale-90 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button>
                                 </div>
                             </div>
                         `).join('')}
@@ -813,16 +873,72 @@
             `).join('');
         }
 
-        function addFood(cat, idx) { todayData.foodLog.push({ ...foodDatabase[cat][idx] }); updateDay(); Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 }).fire({ icon: 'success', title: 'Añadido' }); }
+        // Función para calcular valores basados en el input de peso
+        function getCalculatedFood(cat, idx) {
+            const base = foodDatabase[cat][idx];
+            const inputVal = document.getElementById(`weight-${cat}-${idx}`).value;
+            const newWeight = parseFloat(inputVal) || base.weight; // Si está vacío usa base
+            const ratio = newWeight / base.weight;
+
+            return {
+                name: base.name,
+                weight: newWeight,
+                cal: base.cal * ratio,
+                prot: base.prot * ratio,
+                fat: base.fat * ratio,
+                carb: base.carb * ratio
+            };
+        }
+
+        function viewCalculatedDetails(cat, idx) {
+            const f = getCalculatedFood(cat, idx);
+            Swal.fire({
+                title: `${f.name}`,
+                html: `
+                    <p class="text-sm text-gray-500 mb-4">Calculado para <b>${f.weight}g</b></p>
+                    <div class="grid grid-cols-2 gap-3 text-center mb-2">
+                        <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-gray-400">Energía</span><span class="font-bold text-slate-700">${Math.round(f.cal)} kcal</span></div>
+                        <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-green-500">Proteína</span><span class="font-bold text-green-600">${Math.round(f.prot)}g</span></div>
+                        <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-yellow-500">Grasas</span><span class="font-bold text-yellow-600">${Math.round(f.fat)}g</span></div>
+                        <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-red-500">Carbos</span><span class="font-bold text-red-600">${Math.round(f.carb)}g</span></div>
+                    </div>
+                `,
+                confirmButtonText: 'Añadir',
+                confirmButtonColor: '#3b82f6',
+                showCancelButton: true,
+                cancelButtonText: 'Cerrar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    todayData.foodLog.push(f);
+                    updateDay();
+                    Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 }).fire({ icon: 'success', title: 'Añadido' });
+                }
+            });
+        }
+
+        function addCalculatedFood(cat, idx) {
+            const f = getCalculatedFood(cat, idx);
+            todayData.foodLog.push(f);
+            updateDay();
+            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 }).fire({ icon: 'success', title: 'Añadido' });
+        }
+
         function removeFood(i) { todayData.foodLog.splice(i, 1); updateDay(); }
         function addWater(ml) { todayData.water += ml; updateDay(); }
         
         function openCustomFoodModal() {
             Swal.fire({
                 title: 'Crear Alimento',
-                html: `<input id="swal-n" class="swal2-input" placeholder="Nombre"><div class="grid grid-cols-2 gap-2"><input id="swal-k" type="number" class="swal2-input" placeholder="Kcal"><input id="swal-p" type="number" class="swal2-input" placeholder="Prot"><input id="swal-c" type="number" class="swal2-input" placeholder="Carb"><input id="swal-f" type="number" class="swal2-input" placeholder="Fat"></div>`,
+                html: `<input id="swal-n" class="swal2-input" placeholder="Nombre"><div class="grid grid-cols-2 gap-2"><input id="swal-k" type="number" class="swal2-input" placeholder="Kcal"><input id="swal-p" type="number" class="swal2-input" placeholder="Prot"><input id="swal-c" type="number" class="swal2-input" placeholder="Carb"><input id="swal-f" type="number" class="swal2-input" placeholder="Fat"><input id="swal-w" type="number" class="swal2-input" placeholder="Gramos (ref)"></div>`,
                 confirmButtonColor: '#1e293b', confirmButtonText: 'Guardar',
-                preConfirm: () => ({ name: document.getElementById('swal-n').value, cal: Number(document.getElementById('swal-k').value), prot: Number(document.getElementById('swal-p').value), fat: Number(document.getElementById('swal-f').value), carb: Number(document.getElementById('swal-c').value), weight: 100 })
+                preConfirm: () => ({ 
+                    name: document.getElementById('swal-n').value, 
+                    cal: Number(document.getElementById('swal-k').value), 
+                    prot: Number(document.getElementById('swal-p').value), 
+                    fat: Number(document.getElementById('swal-f').value), 
+                    carb: Number(document.getElementById('swal-c').value), 
+                    weight: Number(document.getElementById('swal-w').value) || 100 
+                })
             }).then(r => { if(r.value) { todayData.foodLog.push(r.value); updateDay(); } });
         }
 
@@ -839,8 +955,6 @@
                 if(document.getElementById('range-run-pace')) document.getElementById('range-run-pace').value = todayData.runPace;
                 if(document.getElementById('range-run-int')) document.getElementById('range-run-int').value = todayData.runInt;
                 if(document.getElementById('range-bike-km')) document.getElementById('range-bike-km').value = todayData.bikeKm;
-                
-                // Asegurar compatibilidad con versión anterior
                 if (!Array.isArray(todayData.studySessions)) todayData.studySessions = [];
             }
         }
@@ -875,23 +989,19 @@
                 <div class="card p-5 flex justify-between items-center shadow-sm hover:shadow-md transition">
                     <div>
                         <div class="font-bold text-slate-800 capitalize text-sm">${h.date}</div>
-                        <div class="text-[10px] text-gray-400 mt-1">Carga Fisiológica calculada: <b>${Math.round(h.data.water/h.goals.water*100)}%</b></div> </div>
+                        <div class="text-[10px] text-gray-400 mt-1">Carga Fisiológica calculada: <b>${Math.round(h.data.water/h.goals.water*100)}%</b></div>
+                    </div>
                     <button onclick="generateBeautifulPDF(${i})" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-file-pdf text-sm"></i></button>
                 </div>
             `).join('');
         }
 
-        // --- 8. PDF GENERATOR COMPLETO ---
         function generateBeautifulPDF(index) {
             const rec = history[index];
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Colores
             const dark = [30, 41, 59];
-            const blue = [59, 130, 246];
-
-            // 1. Header
             doc.setFillColor(...dark);
             doc.rect(0, 0, 210, 35, 'F');
             doc.setTextColor(255, 255, 255);
@@ -903,17 +1013,15 @@
             doc.text(rec.date.toUpperCase(), 105, 26, null, null, "center");
 
             let y = 45;
-
-            // 2. Resumen Métricas Clave (Despertar, Sueño, Carga)
             doc.setTextColor(0, 0, 0);
             doc.setFontSize(12);
             doc.setFont("helvetica", "bold");
-            doc.text("Resumen Biométrico & Carga", 14, y);
+            doc.text("Resumen Biométrico", 14, y);
             y += 8;
 
             const metricData = [
                 ['Hora Despertar', rec.data.wakeTime || '--:--', 'Sueño', `${rec.data.sleepHours}h (${rec.data.sleepQuality}%)`],
-                ['Agua Ingerida', `${rec.data.water} ml`, 'Carga Fisiológica', 'CALCULADA'] // Se puede recalcular el valor exacto si se guardara el stress score
+                ['Agua Ingerida', `${rec.data.water} ml`, 'Deporte', `${rec.data.runKm + rec.data.bikeKm} km`]
             ];
 
             doc.autoTable({
@@ -926,73 +1034,30 @@
             });
             y = doc.lastAutoTable.finalY + 10;
 
-            // 3. Detalle Estudio
-            doc.text("Productividad (Sesiones)", 14, y);
+            doc.text("Productividad", 14, y);
             y += 6;
             let studyRows = rec.data.studySessions ? rec.data.studySessions.map(s => [s.hours + 'h', s.focus === 1 ? 'Bajo' : (s.focus === 2 ? 'Medio' : 'Alto (Deep Work)')]) : [];
             if(studyRows.length > 0) {
-                 doc.autoTable({
-                    startY: y,
-                    head: [['Duración', 'Nivel de Foco']],
-                    body: studyRows,
-                    theme: 'striped',
-                    headStyles: { fillColor: [139, 92, 246] } // Purple
-                });
+                 doc.autoTable({ startY: y, head: [['Duración', 'Foco']], body: studyRows, theme: 'striped', headStyles: { fillColor: [139, 92, 246] } });
                 y = doc.lastAutoTable.finalY + 10;
-            } else {
-                doc.setFont("helvetica", "italic");
-                doc.setFontSize(9);
-                doc.text("No hubo sesiones de estudio.", 14, y+5);
-                y += 15;
-            }
+            } else { doc.text("Sin sesiones.", 14, y+5); y += 15; }
 
-            // 4. Detalle Deporte
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("Actividad Física", 14, y);
-            y += 6;
-            const sportRows = [];
-            if(rec.data.runKm > 0) sportRows.push(['Running', `${rec.data.runKm} km`, `Ritmo: ${Math.floor(rec.data.runPace)}:${Math.round((rec.data.runPace-Math.floor(rec.data.runPace))*60)}`, rec.data.runInt === 3 ? 'Alta' : 'Normal']);
-            if(rec.data.bikeKm > 0) sportRows.push(['Ciclismo', `${rec.data.bikeKm} km`, '-', '-']);
-            
-            if(sportRows.length > 0) {
-                doc.autoTable({
-                    startY: y,
-                    head: [['Deporte', 'Distancia', 'Detalle', 'Intensidad']],
-                    body: sportRows,
-                    theme: 'striped',
-                    headStyles: { fillColor: [249, 115, 22] } // Orange
-                });
-                y = doc.lastAutoTable.finalY + 10;
-            } else {
-                doc.setFont("helvetica", "italic");
-                doc.setFontSize(9);
-                doc.text("Día de descanso activo.", 14, y+5);
-                y += 15;
-            }
-
-            // 5. Dieta Detallada
             doc.setFont("helvetica", "bold");
             doc.setFontSize(12);
             doc.text("Registro Nutricional", 14, y);
             y += 6;
-            
             const foodBody = rec.data.foodLog.map(f => [f.name, f.cal, f.prot, f.fat, f.carb]);
-            // Totales row
             const totalCal = rec.data.foodLog.reduce((a,b)=>a+b.cal,0);
-            const totalProt = rec.data.foodLog.reduce((a,b)=>a+b.prot,0);
-            foodBody.push(['TOTAL', totalCal, totalProt, '-', '-']);
+            foodBody.push(['TOTAL', totalCal, '-', '-', '-']);
 
             doc.autoTable({
                 startY: y,
                 head: [['Alimento', 'Kcal', 'Prot (g)', 'Grasa (g)', 'Carb (g)']],
                 body: foodBody,
                 theme: 'grid',
-                headStyles: { fillColor: dark },
-                footStyles: { fillColor: [200, 200, 200], textColor: [0,0,0], fontStyle: 'bold' }
+                headStyles: { fillColor: dark }
             });
 
-            // Abrir PDF
             const blob = doc.output('bloburl');
             window.open(blob, '_blank');
         }
