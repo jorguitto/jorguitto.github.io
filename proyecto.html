@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FitTracker Medical - Pro V3</title>
+    <title>FitTracker Medical - Pro Organized</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -33,25 +33,21 @@
     </script>
 
     <style>
-        /* Ajuste para que no sobre tanto espacio blanco al final, pero respete la barra */
         body { 
             font-family: 'Inter', sans-serif; 
             background-color: #f1f5f9; 
             -webkit-tap-highlight-color: transparent; 
-            padding-bottom: 140px; /* Espacio justo para la barra subida */
+            padding-bottom: 140px;
         }
         
-        /* UI Cards */
         .card { background: white; border-radius: 24px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.08); transition: transform 0.2s; border: 1px solid #f1f5f9; }
         .card-clickable:active { transform: scale(0.98); background-color: #f8fafc; }
         
-        /* Modal Animation */
         .modal-overlay { display: none; opacity: 0; transition: opacity 0.3s ease; }
         .modal-overlay.open { display: flex; opacity: 1; }
         .modal-content { transform: scale(0.9); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .modal-overlay.open .modal-content { transform: scale(1); opacity: 1; }
 
-        /* Sliders Custom */
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; height: 28px; width: 28px; border-radius: 50%;
@@ -62,20 +58,8 @@
             width: 100%; height: 6px; cursor: pointer; background: #e2e8f0; border-radius: 99px;
         }
 
-        /* Fix iPhone Time Input */
-        input[type="time"] {
-            -webkit-appearance: none;
-            appearance: none;
-            background-color: #f9fafb;
-            min-width: 95px;
-        }
-        
-        /* Input numérico limpio */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
+        input[type="time"] { -webkit-appearance: none; appearance: none; background-color: #f9fafb; min-width: 95px; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
         .nav-item.active { color: #3b82f6; transform: translateY(-2px); }
         .nav-item.active i { transform: scale(1.1); }
@@ -86,15 +70,15 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         .meal-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; }
-        .meal-content.open { max-height: 2000px; }
+        .meal-content.open { max-height: 4000px; }
 
-        .stress-bar-container { background: #e2e8f0; border-radius: 99px; overflow: hidden; height: 12px; }
-        .stress-bar { height: 100%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; border-radius: 99px; }
+        /* Estilos para los Grupos Organizados */
+        .group-header { cursor: pointer; transition: background 0.2s; }
+        .group-header:active { background-color: #f1f5f9; }
+        .group-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
+        .group-content.open { max-height: 5000px; } /* Altura grande para contener todo */
 
-        /* CLASE CLAVE: Safe Area para iOS */
-        .pb-safe-area {
-            padding-bottom: env(safe-area-inset-bottom);
-        }
+        .pb-safe-area { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body>
@@ -178,7 +162,7 @@
                     <div class="flex items-end justify-between mb-3">
                         <div class="leading-none">
                             <span class="text-2xl font-bold text-slate-700 block"><span id="home-study">0</span>h</span>
-                            <span class="text-[10px] text-gray-400 font-medium" id="home-sessions-count">0 sesiones</span>
+                            <span class="text-[10px] text-gray-400 font-medium" id="home-mobile">0h Móvil</span>
                         </div>
                         <i class="fas fa-brain text-study text-xl"></i>
                     </div>
@@ -190,13 +174,13 @@
 
             <div class="card p-5 mb-5 border-l-4 border-orange-500 card-clickable cursor-pointer" onclick="showDetails('sport')">
                 <div class="flex justify-between mb-2">
-                    <p class="text-[10px] text-gray-400 font-bold uppercase">Deporte & Movimiento</p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase">Deporte & Actividad</p>
                     <i class="fas fa-dumbbell text-orange-400 text-xs"></i>
                 </div>
                 <div class="flex items-end justify-between mb-3">
                     <div class="leading-none">
                         <span class="text-2xl font-bold text-slate-700 block"><span id="home-sport-km">0</span> <span class="text-base font-normal text-gray-400">km</span></span>
-                        <span class="text-[10px] text-gray-400 font-medium">Running + Bici</span>
+                        <span class="text-[10px] text-gray-400 font-medium"><span id="home-steps">0</span> pasos</span>
                     </div>
                     <i class="fas fa-running text-orange-500 text-xl"></i>
                 </div>
@@ -258,11 +242,11 @@
             </div>
             
             <div class="relative mb-6">
-                <input type="text" id="globalSearch" onkeyup="searchGlobal(this.value)" placeholder="🔍 Buscar pollo, arroz, avena..." class="w-full bg-white p-4 pl-12 rounded-2xl border border-gray-100 shadow-sm text-sm focus:ring-2 focus:ring-primary/20 outline-none transition">
+                <input type="text" id="globalSearch" onkeyup="searchGlobal(this.value)" placeholder="🔍 Buscar alimento..." class="w-full bg-white p-4 pl-12 rounded-2xl border border-gray-100 shadow-sm text-sm focus:ring-2 focus:ring-primary/20 outline-none transition">
                 <div id="searchResults" class="absolute z-20 w-full bg-white shadow-xl rounded-xl mt-2 hidden max-h-60 overflow-y-auto border border-gray-100 px-2 py-2"></div>
             </div>
 
-            <div id="foodCategoriesContainer" class="space-y-3 pb-8"></div>
+            <div id="foodCategoriesContainer" class="space-y-4 pb-8"></div>
 
             <div class="mt-6 pt-6 border-t border-gray-200">
                 <div class="flex justify-between items-center mb-4">
@@ -304,11 +288,22 @@
         </div>
 
         <div id="estudio" class="page-section">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">Sesiones de Estudio</h2>
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">Carga Cognitiva</h2>
             
             <div class="card p-6 mb-6">
-                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-clock text-study"></i> Nueva Sesión</h3>
-                
+                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-mobile-alt text-slate-500"></i> Uso del Móvil</h3>
+                <div class="mb-2">
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-2">
+                        <span>Horas de pantalla hoy</span>
+                        <span class="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded"><span id="val-mobile">0</span> horas</span>
+                    </div>
+                    <input type="range" min="0" max="12" step="0.5" value="0" id="range-mobile" oninput="updateStudy()">
+                    <p class="text-[10px] text-gray-400 mt-2 italic">*El uso excesivo afecta a la carga fisiológica.</p>
+                </div>
+            </div>
+
+            <div class="card p-6 mb-6">
+                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-clock text-study"></i> Nueva Sesión Estudio</h3>
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Duración (Horas)</label>
@@ -340,7 +335,27 @@
         </div>
 
         <div id="deporte" class="page-section">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">Entrenamiento</h2>
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">Actividad & Gym</h2>
+
+            <div class="card p-6 mb-6 border-l-4 border-green-500">
+                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-shoe-prints text-green-500"></i> Actividad de Hoy</h3>
+                <div class="space-y-5">
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-gray-500 mb-2">
+                            <span>Pasos Totales</span>
+                            <span class="text-green-600 bg-green-50 px-2 py-0.5 rounded"><span id="val-steps">0</span></span>
+                        </div>
+                        <input type="range" min="0" max="30000" step="100" value="0" id="range-steps" oninput="updateSport()">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-gray-500 mb-2">
+                            <span>Horas de pie</span>
+                            <span class="text-slate-600 bg-slate-50 px-2 py-0.5 rounded"><span id="val-standing">0</span> h</span>
+                        </div>
+                        <input type="range" min="0" max="16" step="0.5" value="0" id="range-standing" oninput="updateSport()">
+                    </div>
+                </div>
+            </div>
             
             <div class="card p-6 mb-6 border-l-4 border-orange-500">
                 <div class="flex items-center gap-4 mb-6">
@@ -434,33 +449,213 @@
     </nav>
 
     <script>
-        // --- 1. BASE DE DATOS & ESTADO ---
-        
+        // --- BASE DE DATOS COMPLETA ---
         const foodDatabase = {
             'Desayuno': [
+                { name: 'Cafe con leche', cal: 68.8, prot: 8, fat: 0.8, sat: 0.48, carb: 12, weight: 200 },
+                { name: 'Cafe con leche + proteina', cal: 127.8, prot: 19.5, fat: 1.7, sat: 1.03, carb: 15, weight: 200 },
+                { name: '1 panecillo', cal: 27.03, prot: 3.75, fat: 0.89, sat: 0.21, carb: 5, weight: 50 },
                 { name: 'Tortilla (3 claras + 1 yema)', cal: 145, prot: 16, fat: 5, sat: 1.5, carb: 1, weight: 150 },
-                { name: 'Avena con Leche', cal: 220, prot: 10, fat: 4, sat: 1, carb: 35, weight: 250 },
-                { name: 'Tostada Aguacate', cal: 280, prot: 6, fat: 15, sat: 2, carb: 20, weight: 120 },
-                { name: 'Café solo', cal: 2, prot: 0, fat: 0, sat: 0, carb: 0.5, weight: 100 }
+                { name: 'Avena con Leche', cal: 220, prot: 10, fat: 4, sat: 1, carb: 35, weight: 250 }
             ],
             'Almuerzo': [
-                 { name: 'Bocadillo Pavo', cal: 350, prot: 20, fat: 8, sat: 2, carb: 45, weight: 150 },
-                 { name: 'Batido Proteína', cal: 120, prot: 24, fat: 1, sat: 0, carb: 3, weight: 300 },
-                 { name: 'Plátano', cal: 89, prot: 1.1, fat: 0.3, sat: 0.1, carb: 23, weight: 100 },
-                 { name: 'Nueces (puñado)', cal: 180, prot: 4, fat: 18, sat: 1.5, carb: 4, weight: 30 }
+                { name: 'Bocadillo de jamón', cal: 400, prot: 25, fat: 15, sat: 5, carb: 45, weight: 150 },
+                { name: 'Fruta genérica', cal: 200, prot: 10, fat: 8, sat: 3, carb: 25, weight: 100 }
             ],
             'Comida': [
-                { name: 'Pechuga Pollo', cal: 165, prot: 31, fat: 3.6, sat: 1, carb: 0, weight: 150 },
-                { name: 'Ternera Magra', cal: 250, prot: 26, fat: 15, sat: 6, carb: 0, weight: 150 },
-                { name: 'Arroz Blanco', cal: 200, prot: 4, fat: 0.5, sat: 0, carb: 44, weight: 150 },
-                { name: 'Pasta Integral', cal: 350, prot: 12, fat: 2, sat: 0, carb: 70, weight: 100 },
-                { name: 'Brócoli', cal: 55, prot: 3.7, fat: 0.6, sat: 0, carb: 11, weight: 150 }
+                { name: 'Cafe con leche', cal: 68.8, prot: 8, fat: 0.8, sat: 0.48, carb: 12, weight: 200 },
+                { name: 'Cafe con leche + proteina', cal: 127.8, prot: 19.5, fat: 1.7, sat: 1.03, carb: 15, weight: 200 }
+            ],
+            'Merienda': [
+                { name: 'Frutos secos', cal: 200, prot: 10, fat: 5, sat: 2, carb: 20, weight: 50 },
+                { name: 'Yogur natural', cal: 150, prot: 8, fat: 3, sat: 1, carb: 18, weight: 125 }
             ],
             'Cena': [
-                 { name: 'Merluza', cal: 94, prot: 20, fat: 1, sat: 0.2, carb: 0, weight: 300 },
-                 { name: 'Salmón', cal: 400, prot: 40, fat: 26, sat: 6, carb: 0, weight: 200 },
-                 { name: 'Ensalada Completa', cal: 200, prot: 8, fat: 12, sat: 2, carb: 15, weight: 300 },
-                 { name: 'Yogur Griego', cal: 120, prot: 10, fat: 0, sat: 0, carb: 6, weight: 125 }
+                { name: '1 panecillo', cal: 27.03, prot: 3.75, fat: 0.89, sat: 0.21, carb: 5, weight: 50 }
+            ],
+            'Frutas': [
+                { name: 'Manzana', cal: 52, prot: 0.3, fat: 0.2, sat: 0.03, carb: 13.8, weight: 150 },
+                { name: 'Plátano', cal: 89, prot: 1.1, fat: 0.3, sat: 0.11, carb: 22.8, weight: 120 },
+                { name: 'Fresa', cal: 32, prot: 0.7, fat: 0.3, sat: 0.02, carb: 7.7, weight: 50 },
+                { name: 'Sandía', cal: 30, prot: 0.6, fat: 0.2, sat: 0.02, carb: 7.6, weight: 200 },
+                { name: 'Melón', cal: 34, prot: 0.8, fat: 0.2, sat: 0.05, carb: 8.2, weight: 150 },
+                { name: 'Uvas', cal: 69, prot: 0.7, fat: 0.2, sat: 0.07, carb: 18.1, weight: 100 },
+                { name: 'Pera', cal: 57, prot: 0.4, fat: 0.1, sat: 0.02, carb: 15.2, weight: 170 },
+                { name: 'Piña', cal: 50, prot: 0.5, fat: 0.1, sat: 0.01, carb: 13.1, weight: 200 },
+                { name: 'Kiwi', cal: 61, prot: 1.1, fat: 0.5, sat: 0.03, carb: 14.7, weight: 75 },
+                { name: 'Mango', cal: 60, prot: 0.8, fat: 0.4, sat: 0.09, carb: 15, weight: 200 },
+                { name: 'Naranja', cal: 47, prot: 0.9, fat: 0.1, sat: 0.02, carb: 11.8, weight: 150 },
+                { name: 'Limón', cal: 29, prot: 1.1, fat: 0.3, sat: 0.04, carb: 9.3, weight: 100 },
+                { name: 'Cereza', cal: 63, prot: 1.1, fat: 0.2, sat: 0.04, carb: 16, weight: 50 },
+                { name: 'Melocotón', cal: 39, prot: 0.9, fat: 0.3, sat: 0.02, carb: 9.5, weight: 150 },
+                { name: 'Albaricoque', cal: 48, prot: 1.4, fat: 0.4, sat: 0.03, carb: 11.1, weight: 60 },
+                { name: 'Granada', cal: 83, prot: 1.7, fat: 1.2, sat: 0.12, carb: 18.7, weight: 200 },
+                { name: 'Papaya', cal: 43, prot: 0.5, fat: 0.3, sat: 0.08, carb: 11, weight: 200 },
+                { name: 'Higo', cal: 74, prot: 0.8, fat: 0.3, sat: 0.06, carb: 19.2, weight: 50 },
+                { name: 'Ciruela', cal: 46, prot: 0.7, fat: 0.3, sat: 0.02, carb: 11.4, weight: 60 }
+            ],
+            'Verduras': [
+                { name: 'Tomate', cal: 18, prot: 0.9, fat: 0.2, sat: 0.03, carb: 3.9, weight: 120 },
+                { name: 'Lechuga', cal: 15, prot: 1.4, fat: 0.2, sat: 0.03, carb: 2.9, weight: 50 },
+                { name: 'Espinaca', cal: 23, prot: 2.9, fat: 0.4, sat: 0.06, carb: 3.6, weight: 30 },
+                { name: 'Brócoli', cal: 34, prot: 2.8, fat: 0.4, sat: 0.04, carb: 6.6, weight: 150 },
+                { name: 'Calabacín', cal: 17, prot: 1.2, fat: 0.3, sat: 0.05, carb: 3.1, weight: 200 },
+                { name: 'Zanahoria', cal: 41, prot: 0.9, fat: 0.2, sat: 0.03, carb: 9.6, weight: 75 },
+                { name: 'Pepino', cal: 16, prot: 0.7, fat: 0.1, sat: 0.02, carb: 3.6, weight: 200 },
+                { name: 'Cebolla', cal: 40, prot: 1.1, fat: 0.1, sat: 0.02, carb: 9.3, weight: 100 },
+                { name: 'Ajo', cal: 149, prot: 6.4, fat: 0.5, sat: 0.09, carb: 33.1, weight: 5 },
+                { name: 'Pimiento rojo', cal: 31, prot: 1, fat: 0.3, sat: 0.03, carb: 6, weight: 120 },
+                { name: 'Pimiento verde', cal: 20, prot: 0.9, fat: 0.2, sat: 0.03, carb: 4.6, weight: 100 },
+                { name: 'Berenjena', cal: 25, prot: 1, fat: 0.2, sat: 0.03, carb: 5.9, weight: 200 },
+                { name: 'Alcachofa', cal: 47, prot: 3.3, fat: 0.2, sat: 0.04, carb: 10.5, weight: 120 },
+                { name: 'Coliflor', cal: 25, prot: 1.9, fat: 0.3, sat: 0.05, carb: 5, weight: 100 },
+                { name: 'Apio', cal: 16, prot: 0.7, fat: 0.2, sat: 0.04, carb: 3, weight: 40 },
+                { name: 'Remolacha', cal: 43, prot: 1.6, fat: 0.2, sat: 0.03, carb: 9.6, weight: 100 },
+                { name: 'Espárrago', cal: 20, prot: 2.2, fat: 0.1, sat: 0.03, carb: 3.9, weight: 50 },
+                { name: 'Col de Bruselas', cal: 43, prot: 3.4, fat: 0.3, sat: 0.06, carb: 8.9, weight: 20 }
+            ],
+            'Frutos Secos': [
+                { name: 'Almendras', cal: 579, prot: 21.2, fat: 49.9, sat: 3.8, carb: 21.6, weight: 30 },
+                { name: 'Nueces', cal: 654, prot: 15.2, fat: 65.2, sat: 6.1, carb: 13.7, weight: 30 },
+                { name: 'Avellanas', cal: 628, prot: 15, fat: 60.8, sat: 4.5, carb: 16.7, weight: 30 },
+                { name: 'Pistachos', cal: 562, prot: 20.6, fat: 45.4, sat: 5.6, carb: 27.2, weight: 30 },
+                { name: 'Anacardos', cal: 553, prot: 18.2, fat: 43.9, sat: 7.8, carb: 30.2, weight: 30 },
+                { name: 'Cacahuetes', cal: 567, prot: 25.8, fat: 49.2, sat: 6.8, carb: 16.1, weight: 30 },
+                { name: 'Nueces de Macadamia', cal: 718, prot: 7.9, fat: 75.8, sat: 12.1, carb: 13.8, weight: 30 },
+                { name: 'Nueces de Brasil', cal: 659, prot: 14.3, fat: 67.1, sat: 16.1, carb: 11.7, weight: 30 },
+                { name: 'Piñones', cal: 673, prot: 13.7, fat: 68.4, sat: 4.9, carb: 13.1, weight: 30 }
+            ],
+            'Carnes': [
+                { name: 'Pechuga de pollo', cal: 165, prot: 31, fat: 3.6, sat: 1, carb: 0, weight: 150 },
+                { name: 'Muslo de pollo', cal: 209, prot: 26, fat: 10.9, sat: 3, carb: 0, weight: 150 },
+                { name: 'Pollo entero', cal: 190, prot: 28, fat: 8, sat: 2.3, carb: 0, weight: 1000 },
+                { name: 'Carne de ternera', cal: 250, prot: 26, fat: 17, sat: 7, carb: 0, weight: 150 },
+                { name: 'Carne de ternera magra', cal: 220, prot: 26, fat: 12, sat: 5, carb: 0, weight: 150 },
+                { name: 'Carne de cerdo', cal: 242, prot: 21, fat: 17, sat: 7, carb: 0, weight: 150 },
+                { name: 'Lomo de cerdo', cal: 211, prot: 23, fat: 12, sat: 4.5, carb: 0, weight: 150 },
+                { name: 'Entrecot lomo iberico marinado', cal: 137, prot: 18, fat: 7, sat: 2.5, carb: 0.5, weight: 70 },
+                { name: 'Flamenquines', cal: 167, prot: 11.1, fat: 5.3, sat: 1.9, carb: 18.5, weight: 45 },
+                { name: 'Costillas de cerdo', cal: 291, prot: 25, fat: 21, sat: 8, carb: 0, weight: 150 },
+                { name: 'Cordero', cal: 294, prot: 25, fat: 21, sat: 9, carb: 0, weight: 150 },
+                { name: 'Cordero magro', cal: 236, prot: 26, fat: 14, sat: 6, carb: 0, weight: 150 },
+                { name: 'Pavo chuletas', cal: 85, prot: 16.4, fat: 1.8, sat: 0.6, carb: 0.8, weight: 120 },
+                { name: 'Pavo molido', cal: 150, prot: 26, fat: 5, sat: 1, carb: 0, weight: 150 },
+                { name: 'Conejo', cal: 173, prot: 32, fat: 4, sat: 1, carb: 0, weight: 150 },
+                { name: 'Salchichón', cal: 460, prot: 27, fat: 38, sat: 14, carb: 1, weight: 50 },
+                { name: 'Jamón serrano', cal: 247.8, prot: 33.5, fat: 12.2, sat: 4.6, carb: 1, weight: 100 },
+                { name: 'Jamón cocido extra', cal: 98, prot: 19, fat: 2.5, sat: 1, carb: 0.5, weight: 15 },
+                { name: 'Salchichas', cal: 222, prot: 14, fat: 18, sat: 6, carb: 1, weight: 31 },
+                { name: 'Pelota', cal: 225, prot: 20, fat: 16, sat: 6, carb: 4, weight: 100 },
+                { name: 'Longaniza', cal: 245, prot: 15.9, fat: 19.4, sat: 7.8, carb: 1.7, weight: 30 }
+            ],
+            'Pescados': [
+                { name: 'Merluza', cal: 94, prot: 20, fat: 1, sat: 0.2, carb: 0, weight: 300 },
+                { name: 'Dorada', cal: 96, prot: 18, fat: 2.5, sat: 0.6, carb: 0, weight: 500 },
+                { name: 'Lubina', cal: 98, prot: 19, fat: 2, sat: 0.4, carb: 0, weight: 300 },
+                { name: 'Salmón (salvaje)', cal: 180, prot: 20, fat: 10, sat: 2, carb: 0, weight: 200 },
+                { name: 'Sardinas', cal: 118, prot: 20, fat: 5, sat: 1.2, carb: 0, weight: 100 },
+                { name: 'Gallineta nórdica', cal: 79, prot: 20, fat: 1, sat: 0.2, carb: 0, weight: 380 },
+                { name: 'Trucha', cal: 103, prot: 20, fat: 3, sat: 0.6, carb: 0, weight: 250 },
+                { name: 'Pez espada', cal: 117, prot: 20, fat: 4, sat: 1, carb: 0, weight: 200 },
+                { name: 'Pulpo', cal: 81, prot: 15, fat: 1, sat: 0.2, carb: 2, weight: 100 },
+                { name: 'Mejillones', cal: 171, prot: 24, fat: 4, sat: 0.8, carb: 7, weight: 100 }
+            ],
+            'Bebidas': [
+                { name: 'Agua mineral', cal: 0, prot: 0, fat: 0, sat: 0, carb: 0, weight: 250 },
+                { name: 'Agua con gas', cal: 0, prot: 0, fat: 0, sat: 0, carb: 0, weight: 250 },
+                { name: 'Batido de chocolate', cal: 110, prot: 3, fat: 3.5, sat: 2, carb: 17, weight: 250 },
+                { name: 'Limonada casera', cal: 50, prot: 0, fat: 0, sat: 0, carb: 12, weight: 250 },
+                { name: 'Té helado', cal: 40, prot: 0, fat: 0, sat: 0, carb: 10, weight: 250 },
+                { name: 'Bebida de soja', cal: 33, prot: 3, fat: 1.8, sat: 0.2, carb: 1, weight: 250 },
+                { name: 'Cerveza rubia', cal: 43, prot: 0.5, fat: 0, sat: 0, carb: 3.6, weight: 330 },
+                { name: 'Cerveza sin alcohol', cal: 20, prot: 0.2, fat: 0, sat: 0, carb: 4.5, weight: 330 },
+                { name: 'Vino tinto', cal: 85, prot: 0.1, fat: 0, sat: 0, carb: 2.6, weight: 125 },
+                { name: 'Vino blanco', cal: 82, prot: 0.1, fat: 0, sat: 0, carb: 2.3, weight: 125 }
+            ],
+            'Burger King': [
+                { name: 'Whopper', cal: 657, prot: 28, fat: 37, sat: 10, carb: 49, weight: 300 },
+                { name: 'Chicken Royale', cal: 500, prot: 22, fat: 24, sat: 3, carb: 48, weight: 200 },
+                { name: 'Patatas fritas pequeñas', cal: 230, prot: 3, fat: 11, sat: 1, carb: 32, weight: 90 },
+                { name: 'Aros de cebolla', cal: 270, prot: 2, fat: 18, sat: 2, carb: 25, weight: 100 },
+                { name: 'McFlurry Oreo', cal: 400, prot: 5, fat: 22, sat: 13, carb: 42, weight: 200 }
+            ],
+            'Panes': [
+                { name: 'Pan blanco', cal: 265, prot: 8.5, fat: 1.2, sat: 0.2, carb: 55, weight: 125 },
+                { name: 'Pan integral carrefour', cal: 221, prot: 9.1, fat: 1.7, sat: 0.9, carb: 45, weight: 125 },
+                { name: 'Pan de centeno', cal: 259, prot: 8.5, fat: 3.3, sat: 0.4, carb: 48.3, weight: 30 },
+                { name: 'Pan de molde', cal: 265, prot: 8, fat: 3.5, sat: 0.8, carb: 49, weight: 25 },
+                { name: 'Pan tostado', cal: 350, prot: 10, fat: 5, sat: 1, carb: 60, weight: 20 }
+            ],
+            'Cereales Grano': [
+                { name: 'Arroz blanco (cocido)', cal: 365, prot: 7.1, fat: 0.7, sat: 0.2, carb: 80, weight: 180 },
+                { name: 'Arroz integral (cocido)', cal: 370, prot: 7.9, fat: 2.7, sat: 0.5, carb: 77, weight: 180 },
+                { name: 'Quinoa (cocida)', cal: 368, prot: 14, fat: 6, sat: 0.7, carb: 64, weight: 185 },
+                { name: 'Avena (cruda)', cal: 389, prot: 17, fat: 7, sat: 1.2, carb: 66, weight: 40 }
+            ],
+            'Pastas': [
+                { name: 'Espaguetis (cocidos)', cal: 371, prot: 13, fat: 1.5, sat: 0.3, carb: 75, weight: 140 },
+                { name: 'Macarrones (cocidos)', cal: 371, prot: 13, fat: 1.5, sat: 0.3, carb: 75, weight: 140 },
+                { name: 'Fideos de arroz (cocidos)', cal: 109, prot: 0.9, fat: 0.2, sat: 0.02, carb: 24.9, weight: 180 }
+            ],
+            'Leches': [
+                { name: 'Leche entera', cal: 61, prot: 3.1, fat: 3.3, sat: 2.1, carb: 4.7, weight: 200 },
+                { name: 'Leche semidesnatada (Central Lechera Asturiana)', cal: 45, prot: 3.15, fat: 1.55, sat: 1, carb: 4.65, weight: 200 },
+                { name: 'Leche desnatada Puleva proteina', cal: 43, prot: 5, fat: 0.5, sat: 0.3, carb: 4.8, weight: 200 }
+            ],
+            'Quesos': [
+                { name: 'Queso fresco', cal: 145, prot: 11, fat: 10, sat: 6.5, carb: 2, weight: 100 },
+                { name: 'Queso semicurado', cal: 421, prot: 25, fat: 35, sat: 25, carb: 1.6, weight: 20 },
+                { name: 'Queso curado', cal: 452, prot: 30, fat: 37, sat: 24, carb: 1, weight: 30 },
+                { name: 'Queso cauda viejo', cal: 325, prot: 29.4, fat: 23, sat: 16, carb: 0, weight: 4 },
+                { name: 'Queso havarti', cal: 418, prot: 18.9, fat: 38, sat: 24.2, carb: 0.1, weight: 32 }
+            ],
+            'Yogures': [
+                { name: 'Yogur natural entero', cal: 61, prot: 3.5, fat: 3, sat: 2, carb: 4.7, weight: 125 },
+                { name: 'Yogur natural desnatado', cal: 36, prot: 4.3, fat: 0.1, sat: 0.1, carb: 5, weight: 125 },
+                { name: 'Yogur griego', cal: 115, prot: 9, fat: 5, sat: 3.5, carb: 3.5, weight: 125 }
+            ],
+            'Legumbres Secas': [
+                { name: 'Lentejas (crudas)', cal: 353, prot: 25, fat: 1.1, sat: 0.2, carb: 60, weight: 10 },
+                { name: 'Garbanzos (crudos)', cal: 364, prot: 19, fat: 6, sat: 0.6, carb: 61, weight: 12 },
+                { name: 'Judías blancas (crudas)', cal: 335, prot: 21, fat: 1.6, sat: 0.3, carb: 60, weight: 10 }
+            ],
+            'Legumbres Cocidas': [
+                { name: 'Lentejas cocidas', cal: 116, prot: 9, fat: 0.4, sat: 0.1, carb: 20, weight: 200 },
+                { name: 'Tortitas de arroz', cal: 389, prot: 8, fat: 2.1, sat: 0.4, carb: 83, weight: 7 },
+                { name: 'Garbanzos cocidos', cal: 164, prot: 9, fat: 2.6, sat: 0.3, carb: 27, weight: 200 }
+            ],
+            'Huevos': [
+                { name: 'Huevo de gallina (entero)', cal: 143, prot: 12.6, fat: 10, sat: 3.1, carb: 0.7, weight: 60 },
+                { name: 'Clara de huevo', cal: 52, prot: 11, fat: 0.2, sat: 0, carb: 0.7, weight: 33 },
+                { name: 'Yema de huevo', cal: 322, prot: 16, fat: 27, sat: 9.6, carb: 3.6, weight: 17 },
+                { name: 'Huevo cocido', cal: 155, prot: 12.6, fat: 10.6, sat: 3.3, carb: 1.1, weight: 50 },
+                { name: 'Huevo frito', cal: 196, prot: 13, fat: 15, sat: 4.2, carb: 1.1, weight: 60 }
+            ],
+            'Bolleria': [
+                { name: 'Croissant', cal: 406, prot: 8.2, fat: 21, sat: 12, carb: 46, weight: 60 },
+                { name: 'Donut', cal: 452, prot: 5.3, fat: 25, sat: 12, carb: 51, weight: 70 }
+            ],
+            'Dulces': [
+                { name: 'Chocolate negro', cal: 546, prot: 4.9, fat: 31, sat: 19, carb: 61, weight: 30 },
+                { name: 'Galletas tipo María', cal: 409, prot: 6.8, fat: 8.1, sat: 2.5, carb: 82.3, weight: 6 }
+            ],
+            'Hamburguesas': [
+                { name: 'Big Mac', cal: 550, prot: 25, fat: 30, sat: 10, carb: 45, weight: 200 },
+                { name: 'McChicken', cal: 420, prot: 23, fat: 20, sat: 3, carb: 35, weight: 180 }
+            ],
+            'Acompañamientos': [
+                { name: 'Patatas fritas medianas', cal: 340, prot: 3, fat: 17, sat: 1, carb: 44, weight: 115 }
+            ],
+            'Salsas': [
+                { name: 'Ketchup', cal: 60, prot: 1.3, fat: 0.5, sat: 0.1, carb: 13, weight: 100 },
+                { name: 'Salsa de Yogur', cal: 120, prot: 3, fat: 10, sat: 2, carb: 5, weight: 100 },
+                { name: 'Salsa de Curry', cal: 150, prot: 2, fat: 12, sat: 3, carb: 10, weight: 100 },
+                { name: 'Salsa de Mostaza', cal: 133, prot: 7, fat: 9, sat: 0.5, carb: 5, weight: 100 },
+                { name: 'Salsa de Queso', cal: 250, prot: 10, fat: 22, sat: 14, carb: 5, weight: 100 },
+                { name: 'Salsa de Ajo', cal: 180, prot: 2, fat: 16, sat: 2.5, carb: 6, weight: 100 },
+                { name: 'Salsa de Chile', cal: 40, prot: 1, fat: 0.5, sat: 0.1, carb: 10, weight: 100 },
+                { name: 'Salsa de Miel y Mostaza', cal: 200, prot: 2, fat: 12, sat: 1.5, carb: 20, weight: 100 },
+                { name: 'Salsa de Soja Dulce', cal: 100, prot: 5, fat: 0.5, sat: 0.1, carb: 20, weight: 100 }
             ]
         };
 
@@ -468,6 +663,9 @@
             wakeTime: '', sleepHours: 0, sleepQuality: 0,
             water: 0,
             studySessions: [],
+            mobileHours: 0, 
+            steps: 0, 
+            standingHours: 0, 
             runKm: 0, runPace: 5.5, runInt: 2,
             bikeKm: 0, bikeInt: 2,
             foodLog: []
@@ -500,7 +698,6 @@
             else { currentSeason = 'Winter'; el.innerText = 'Modo Invierno ❄️'; }
         }
 
-        // --- LÓGICA MÉDICA PRINCIPAL ---
         function updateDay() {
             const wakeEl = document.getElementById('wakeTime');
             if(wakeEl) todayData.wakeTime = wakeEl.value;
@@ -521,18 +718,32 @@
             nutritionAdvice = "";
             studyAdvice = "";
             
-            waterDetails.push({ txt: "Base (60kg peso)", val: "+2200ml" });
+            waterDetails.push({ txt: "Base (18 años)", val: "+2200ml" });
 
             if (currentSeason === 'Summer') {
                 g.water += 400;
                 waterDetails.push({ txt: "Calor (Verano)", val: "+400ml" });
             }
 
+            if (todayData.steps > 0) {
+                const stepCals = Math.round(todayData.steps * 0.04); 
+                g.cals += stepCals;
+                const stepWater = Math.round(todayData.steps * 0.05);
+                g.water += stepWater;
+                waterDetails.push({ txt: `Pasos (${todayData.steps})`, val: `+${stepWater}ml` });
+            }
+
+            if (todayData.standingHours > 4) {
+                 g.cals += (todayData.standingHours * 10);
+                 g.water += (todayData.standingHours * 50);
+                 waterDetails.push({ txt: `De pie (${todayData.standingHours}h)`, val: `+${Math.round(todayData.standingHours * 50)}ml` });
+            }
+
             let sportLoad = todayData.runKm + (todayData.bikeKm * 0.4);
-            if (sportLoad > 10) {
+            if (sportLoad > 10 || todayData.steps > 15000) {
                 nutritionAdvice += "<li>🏃‍♂️ <b>Carga Alta:</b> Depósitos de glucógeno vacíos. Cena carbohidratos (arroz/pasta) para recuperar.</li>";
                 g.cals += 400; g.carbs += 60;
-            } else if (sportLoad > 0) {
+            } else if (sportLoad > 0 || todayData.steps > 8000) {
                 nutritionAdvice += "<li>👌 <b>Actividad Moderada:</b> Mantén el equilibrio proteico.</li>";
             } else {
                 nutritionAdvice += "<li>💤 <b>Día Sedentario:</b> Controla los carbohidratos, prioriza verduras y proteínas.</li>";
@@ -583,28 +794,44 @@
                 stress += sleepScore;
             }
 
-            let totalStudy = 0;
-            let studyStress = 0;
-            todayData.studySessions.forEach(s => {
-                totalStudy += s.hours;
-                let factor = s.focus === 1 ? 4 : (s.focus === 2 ? 6 : 9); 
-                studyStress += s.hours * factor;
-            });
-
-            if (totalStudy > 10) {
-                studyStress *= 1.2;
-                stressDetails.push({ text: "Sobrecarga Mental (>10h)", val: "CRÍTICO", type: 'bad' });
-            } else if (totalStudy > 0) {
-                stressDetails.push({ text: `Estudio (${totalStudy}h)`, val: `+${Math.round(studyStress)}%`, type: 'neutral' });
+            let totalStudy = todayData.studySessions.reduce((a,b) => a + (b.hours * (b.focus === 1 ? 4 : (b.focus === 2 ? 6 : 9))), 0);
+            
+            if (todayData.mobileHours > 2) {
+                const mobileStress = (todayData.mobileHours - 2) * 5; 
+                stress += mobileStress;
+                stressDetails.push({ text: `Uso Móvil (${todayData.mobileHours}h)`, val: `+${Math.round(mobileStress)}%`, type: 'bad' });
             }
-            stress += studyStress;
+
+            if (totalStudy > 50) { 
+                stressDetails.push({ text: "Sobrecarga Cognitiva", val: "ALTO", type: 'bad' });
+                stress += 20;
+            } else if (totalStudy > 0) {
+                stressDetails.push({ text: `Carga Estudio`, val: `+${Math.round(totalStudy/2)}%`, type: 'neutral' });
+                stress += (totalStudy/3);
+            }
 
             let physLoad = 0;
+            if (todayData.steps < 4000) {
+                stress += 10;
+                stressDetails.push({ text: "Sedentarismo", val: "+10%", type: 'bad' });
+            } else if (todayData.steps > 15000) {
+                physLoad += 15;
+                stressDetails.push({ text: "Carga Pasos Alta", val: "+15%", type: 'neutral' });
+            } else if (todayData.steps >= 8000 && todayData.steps <= 12000) {
+                stress -= 5;
+                stressDetails.push({ text: "Actividad Óptima", val: "-5%", type: 'good' });
+            }
+
+            if (todayData.standingHours > 6) {
+                physLoad += (todayData.standingHours - 6) * 3;
+                stressDetails.push({ text: "Fatiga Postural", val: `+${Math.round((todayData.standingHours - 6) * 3)}%`, type: 'bad' });
+            }
+
             if (todayData.runKm > 0) {
                 let runFactor = 4; 
                 if (todayData.runInt === 3) runFactor = 5;
                 physLoad += todayData.runKm * runFactor;
-                stressDetails.push({ text: `Running ${todayData.runKm}km`, val: `+${Math.round(physLoad)}%`, type: 'neutral' });
+                stressDetails.push({ text: `Running ${todayData.runKm}km`, val: `+${Math.round(todayData.runKm * runFactor)}%`, type: 'neutral' });
             }
             stress += physLoad;
 
@@ -644,7 +871,12 @@
             }
         }
 
-        // --- GESTIÓN DE SESIONES ---
+        function updateStudy() {
+            todayData.mobileHours = parseFloat(document.getElementById('range-mobile').value);
+            document.getElementById('val-mobile').innerText = todayData.mobileHours;
+            updateDay();
+        }
+
         function addStudySession() {
             const hInput = document.getElementById('session-hours');
             const fInput = document.getElementById('session-focus');
@@ -671,7 +903,6 @@
                 list.innerHTML = '<p class="text-center text-gray-300 text-xs italic py-4">No hay sesiones registradas hoy.</p>';
                 totalDisplay.innerText = "0 horas";
                 document.getElementById('home-study').innerText = "0";
-                document.getElementById('home-sessions-count').innerText = "0 sesiones";
                 document.getElementById('mini-bar-study').style.width = "0%";
                 return;
             }
@@ -689,13 +920,23 @@
             todayData.studySessions.forEach(s => total += s.hours);
             totalDisplay.innerText = total + " horas";
             document.getElementById('home-study').innerText = total;
-            document.getElementById('home-sessions-count').innerText = `${todayData.studySessions.length} sesion(es)`;
             document.getElementById('mini-bar-study').style.width = Math.min((total/10)*100, 100) + '%';
         }
 
-        // --- UI UPDATES ---
         function updateUI() {
             renderStudySessions();
+
+            document.getElementById('range-mobile').value = todayData.mobileHours;
+            document.getElementById('val-mobile').innerText = todayData.mobileHours;
+            document.getElementById('home-mobile').innerText = `${todayData.mobileHours}h Móvil`;
+
+            document.getElementById('range-steps').value = todayData.steps;
+            document.getElementById('val-steps').innerText = todayData.steps;
+            document.getElementById('home-steps').innerText = todayData.steps;
+
+            document.getElementById('range-standing').value = todayData.standingHours;
+            document.getElementById('val-standing').innerText = todayData.standingHours;
+
 
             let sum = { cal:0, prot:0, fat:0, carb:0 };
             todayData.foodLog.forEach(f => {
@@ -747,6 +988,8 @@
             todayData.runPace = parseFloat(document.getElementById('range-run-pace').value);
             todayData.runInt = parseFloat(document.getElementById('range-run-int').value);
             todayData.bikeKm = parseFloat(document.getElementById('range-bike-km').value);
+            todayData.steps = parseInt(document.getElementById('range-steps').value);
+            todayData.standingHours = parseFloat(document.getElementById('range-standing').value);
             
             document.getElementById('val-run-km').innerText = todayData.runKm;
             let min = Math.floor(todayData.runPace);
@@ -760,14 +1003,14 @@
             updateDay();
         }
 
-        // --- MODALS & ADVICE ---
+        // --- FUNCIONES INTERFAZ ---
         function showDetails(type) {
             const modal = document.getElementById('info-modal');
             const title = document.getElementById('modal-title');
             const body = document.getElementById('modal-body');
             
             if(type === 'stress') {
-                title.innerText = "Diagnóstico Carga";
+                title.innerText = "Diagnóstico Carga (18 años)";
                 if(stressDetails.length === 0) {
                     body.innerHTML = '<p class="text-gray-400 text-center italic">Sin datos suficientes.</p>';
                 } else {
@@ -790,7 +1033,7 @@
                         <span class="text-sm font-bold text-blue-500">${d.val}</span>
                     </div>`).join('');
             } else if (type === 'study') {
-                title.innerText = "Detalle Estudio";
+                title.innerText = "Detalle Cognitivo";
                 const focusLabels = {1: 'Bajo', 2: 'Medio', 3: 'Deep Work'};
                 let content = `<div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-sm text-slate-700 mb-4">${studyAdvice}</div>`;
                 content += todayData.studySessions.length ? todayData.studySessions.map(s => `
@@ -810,29 +1053,21 @@
                             ${nutritionAdvice || "<li>Mantén la proteína alta.</li>"}
                         </ul>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 text-center text-xs">
-                        <div class="bg-green-50 p-2 rounded text-green-700"><b>Proteína</b><br>Músculo</div>
-                        <div class="bg-red-50 p-2 rounded text-red-700"><b>Carbos</b><br>Energía</div>
-                    </div>
                 `;
             } else if (type === 'sport') {
                 title.innerText = "Detalle Actividad";
                 body.innerHTML = `
                     <div class="grid grid-cols-2 gap-3 mb-4">
-                        <div class="bg-orange-50 p-3 rounded-2xl text-center">
+                        <div class="bg-green-50 p-3 rounded-2xl text-center">
+                            <i class="fas fa-shoe-prints text-green-500 text-2xl mb-1"></i>
+                            <div class="font-bold text-slate-700">${todayData.steps}</div>
+                            <div class="text-[10px] text-gray-400">Pasos</div>
+                        </div>
+                         <div class="bg-orange-50 p-3 rounded-2xl text-center">
                             <i class="fas fa-running text-orange-500 text-2xl mb-1"></i>
                             <div class="font-bold text-slate-700">${todayData.runKm} km</div>
                             <div class="text-[10px] text-gray-400">Running</div>
                         </div>
-                        <div class="bg-indigo-50 p-3 rounded-2xl text-center">
-                            <i class="fas fa-bicycle text-indigo-500 text-2xl mb-1"></i>
-                            <div class="font-bold text-slate-700">${todayData.bikeKm} km</div>
-                            <div class="text-[10px] text-gray-400">Ciclismo</div>
-                        </div>
-                    </div>
-                    <div class="bg-slate-50 p-4 rounded-2xl text-sm text-slate-600">
-                        <p>Ritmo Running: <b>${Math.floor(todayData.runPace)}:${Math.round((todayData.runPace-Math.floor(todayData.runPace))*60)}</b> min/km</p>
-                        <p>Intensidad: <b>${todayData.runInt === 3 ? 'Alta 🔥' : (todayData.runInt === 2 ? 'Media' : 'Baja')}</b></p>
                     </div>
                 `;
             }
@@ -844,40 +1079,139 @@
             document.getElementById('info-modal').classList.remove('open');
         }
 
-        // --- COMIDA: CALCULADORA Y LUPA ---
+        // --- SISTEMA DE RENDERIZADO DE ALIMENTOS (NUEVO DISEÑO) ---
         function renderFoodCategories() {
-            const c = document.getElementById('foodCategoriesContainer');
-            c.innerHTML = Object.keys(foodDatabase).map(cat => `
-                <div class="border border-gray-100 rounded-2xl bg-white overflow-hidden mb-2 shadow-sm transition hover:shadow-md">
-                    <div class="p-4 bg-white font-bold text-slate-700 cursor-pointer flex justify-between items-center" onclick="this.nextElementSibling.classList.toggle('open')">
-                        <span class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-primary"></div> ${cat}</span> 
-                        <i class="fas fa-chevron-down text-xs text-gray-300"></i>
+            const container = document.getElementById('foodCategoriesContainer');
+            container.innerHTML = '';
+
+            // 1. Tiempos de Comida Principales (VISIBLES DIRECTAMENTE)
+            const mainMeals = ['Desayuno', 'Almuerzo', 'Comida', 'Merienda', 'Cena'];
+            const mealContainer = document.createElement('div');
+            mealContainer.className = "mb-6 space-y-2";
+            mealContainer.innerHTML = '<h3 class="font-bold text-slate-700 text-sm uppercase tracking-wider mb-2">🍽️ Tiempos de Comida</h3>';
+
+            mainMeals.forEach(cat => {
+                if(foodDatabase[cat]) {
+                    mealContainer.appendChild(createAccordion(cat, 'bg-white', 'text-slate-700', 'border-gray-100'));
+                }
+            });
+            container.appendChild(mealContainer);
+
+            // 2. OTROS / DESPENSA (Frutas, Carnes, etc.)
+            const pantryKeys = ['Frutas', 'Verduras', 'Carnes', 'Pescados', 'Huevos', 'Frutos Secos', 'Legumbres Secas', 'Legumbres Cocidas', 'Cereales Grano', 'Pastas', 'Panes', 'Leches', 'Quesos', 'Yogures', 'Bebidas'];
+            container.appendChild(createSuperGroup('🍎 Despensa / Otros', 'bg-green-50', 'text-green-800', 'border-green-100', pantryKeys));
+
+            // 3. COMIDA RÁPIDA (BK, Hamburguesas)
+            const fastFoodKeys = ['Burger King', 'Hamburguesas', 'Acompañamientos'];
+            container.appendChild(createSuperGroup('🍔 Comida Rápida', 'bg-orange-50', 'text-orange-800', 'border-orange-100', fastFoodKeys));
+
+            // 4. BOLLERÍA Y DULCES
+            const sweetKeys = ['Bolleria', 'Dulces'];
+            container.appendChild(createSuperGroup('🍩 Bollería y Dulces', 'bg-purple-50', 'text-purple-800', 'border-purple-100', sweetKeys));
+
+            // 5. SALSAS
+            const sauceKeys = ['Salsas'];
+            container.appendChild(createSuperGroup('🥫 Salsas', 'bg-red-50', 'text-red-800', 'border-red-100', sauceKeys));
+        }
+
+        // Helper para crear acordeones simples (usado en tiempos de comida)
+        function createAccordion(cat, bgClass, textClass, borderClass) {
+            const div = document.createElement('div');
+            div.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm transition hover:shadow-md`;
+            div.innerHTML = `
+                <div class="p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header" onclick="this.nextElementSibling.classList.toggle('open')">
+                    <span class="flex items-center gap-2">${cat}</span> 
+                    <i class="fas fa-chevron-down text-xs opacity-50"></i>
+                </div>
+                <div class="meal-content bg-slate-50">
+                    ${renderFoodList(cat)}
+                </div>
+            `;
+            return div;
+        }
+
+        // Helper para crear "Super Grupos" desplegables (Otros, Fast Food...)
+        function createSuperGroup(title, bgClass, textClass, borderClass, keys) {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm mb-3`;
+            
+            // Header del Grupo Principal
+            const header = document.createElement('div');
+            header.className = `p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header`;
+            header.innerHTML = `<span>${title}</span> <i class="fas fa-layer-group opacity-50"></i>`;
+            header.onclick = function() { this.nextElementSibling.classList.toggle('open'); };
+            
+            // Contenido del Grupo (Lista de categorías dentro)
+            const contentDiv = document.createElement('div');
+            contentDiv.className = "group-content bg-white px-2 py-2 space-y-2";
+
+            keys.forEach(key => {
+                if(foodDatabase[key]) {
+                    const subCat = createAccordion(key, 'bg-gray-50', 'text-gray-600', 'border-gray-200');
+                    contentDiv.appendChild(subCat);
+                }
+            });
+
+            groupDiv.appendChild(header);
+            groupDiv.appendChild(contentDiv);
+            return groupDiv;
+        }
+
+        function renderFoodList(cat) {
+            if(!foodDatabase[cat]) return '';
+            return foodDatabase[cat].map((f, i) => `
+                <div class="p-3 border-t border-gray-100 flex items-center justify-between hover:bg-blue-50/30 transition px-4 gap-2 search-item bg-white">
+                    <div class="flex-1">
+                        <div class="font-bold text-sm text-slate-700 item-name">${f.name}</div>
+                        <div class="text-[10px] text-gray-400 font-mono mt-0.5">Base: ${f.cal} kcal / ${f.weight}g</div>
                     </div>
-                    <div class="meal-content bg-slate-50">
-                        ${foodDatabase[cat].map((f, i) => `
-                            <div class="p-3 border-t border-gray-100 flex items-center justify-between hover:bg-blue-50/30 transition px-4 gap-2">
-                                <div class="flex-1">
-                                    <div class="font-bold text-sm text-slate-700">${f.name}</div>
-                                    <div class="text-[10px] text-gray-400 font-mono mt-0.5">Base: ${f.cal} kcal / ${f.weight}g</div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <input type="number" id="weight-${cat}-${i}" value="${f.weight}" class="w-14 bg-white border border-gray-200 rounded-lg text-xs font-bold text-center py-2 focus:border-blue-500 outline-none shadow-sm" placeholder="g">
-                                    <span class="text-[10px] text-gray-400">g</span>
-                                </div>
-                                <div class="flex gap-2 ml-1">
-                                     <button onclick="viewCalculatedDetails('${cat}', ${i})" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-blue-500 shadow-sm flex items-center justify-center"><i class="fas fa-search text-xs"></i></button>
-                                     <button onclick="addCalculatedFood('${cat}', ${i})" class="w-8 h-8 rounded-full bg-primary text-white shadow-sm active:scale-90 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button>
-                                </div>
-                            </div>
-                        `).join('')}
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="weight-${cat.replace(/\s+/g, '')}-${i}" value="${f.weight}" class="w-14 bg-white border border-gray-200 rounded-lg text-xs font-bold text-center py-2 focus:border-blue-500 outline-none shadow-sm" placeholder="g">
+                        <span class="text-[10px] text-gray-400">g</span>
+                    </div>
+                    <div class="flex gap-2 ml-1">
+                            <button onclick="viewCalculatedDetails('${cat}', ${i})" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-blue-500 shadow-sm flex items-center justify-center"><i class="fas fa-search text-xs"></i></button>
+                            <button onclick="addCalculatedFood('${cat}', ${i})" class="w-8 h-8 rounded-full bg-primary text-white shadow-sm active:scale-90 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button>
                     </div>
                 </div>
             `).join('');
         }
 
+        // Búsqueda global
+        function searchGlobal(query) {
+            const results = document.getElementById('searchResults');
+            if (query.length < 2) { results.classList.add('hidden'); return; }
+            
+            results.classList.remove('hidden');
+            results.innerHTML = '';
+            
+            let count = 0;
+            for (const cat in foodDatabase) {
+                foodDatabase[cat].forEach((f, i) => {
+                    if (f.name.toLowerCase().includes(query.toLowerCase()) && count < 10) {
+                        count++;
+                        const div = document.createElement('div');
+                        div.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 flex justify-between items-center';
+                        div.innerHTML = `<span class="text-sm font-bold text-slate-700">${f.name}</span> <span class="text-xs text-gray-400">${f.cal} kcal</span>`;
+                        div.onclick = () => { 
+                             viewCalculatedDetails(cat, i);
+                             results.classList.add('hidden');
+                             document.getElementById('globalSearch').value = '';
+                        };
+                        results.appendChild(div);
+                    }
+                });
+            }
+            if(count === 0) results.innerHTML = '<div class="p-3 text-xs text-gray-400">No encontrado</div>';
+        }
+
         function getCalculatedFood(cat, idx) {
             const base = foodDatabase[cat][idx];
-            const inputVal = document.getElementById(`weight-${cat}-${idx}`).value;
+            const catId = cat.replace(/\s+/g, '');
+            // Intenta buscar el input, si no existe (busqueda global), usa el peso base
+            const inputEl = document.getElementById(`weight-${catId}-${idx}`);
+            const inputVal = inputEl ? inputEl.value : base.weight;
+            
             const newWeight = parseFloat(inputVal) || base.weight;
             const ratio = newWeight / base.weight;
 
@@ -948,15 +1282,21 @@
         function loadDay() {
             const s = localStorage.getItem('fitTrackerToday_MD');
             if(s) {
-                todayData = JSON.parse(s);
+                const loaded = JSON.parse(s);
+                todayData = { ...INITIAL_STATE, ...loaded };
+                if (!Array.isArray(todayData.studySessions)) todayData.studySessions = [];
+                
                 if(document.getElementById('wakeTime')) document.getElementById('wakeTime').value = todayData.wakeTime;
                 if(document.getElementById('sleepHours')) document.getElementById('sleepHours').value = todayData.sleepHours || '';
                 if(document.getElementById('sleepQuality')) document.getElementById('sleepQuality').value = todayData.sleepQuality || '';
-                if(document.getElementById('range-run-km')) document.getElementById('range-run-km').value = todayData.runKm;
-                if(document.getElementById('range-run-pace')) document.getElementById('range-run-pace').value = todayData.runPace;
-                if(document.getElementById('range-run-int')) document.getElementById('range-run-int').value = todayData.runInt;
-                if(document.getElementById('range-bike-km')) document.getElementById('range-bike-km').value = todayData.bikeKm;
-                if (!Array.isArray(todayData.studySessions)) todayData.studySessions = [];
+                
+                document.getElementById('range-run-km').value = todayData.runKm || 0;
+                document.getElementById('range-run-pace').value = todayData.runPace || 5.5;
+                document.getElementById('range-run-int').value = todayData.runInt || 2;
+                document.getElementById('range-bike-km').value = todayData.bikeKm || 0;
+                document.getElementById('range-mobile').value = todayData.mobileHours || 0;
+                document.getElementById('range-steps').value = todayData.steps || 0;
+                document.getElementById('range-standing').value = todayData.standingHours || 0;
             }
         }
 
@@ -983,7 +1323,6 @@
             window.scrollTo(0,0);
         }
 
-        // --- GESTIÓN DE HISTORIAL (Eliminar / Restaurar) ---
         function updateHistoryUI() {
             const list = document.getElementById('historyList');
             if(history.length === 0) { list.innerHTML = '<div class="text-center text-gray-400 mt-10"><i class="fas fa-history text-4xl mb-3 opacity-30"></i><p>Sin historial</p></div>'; return; }
@@ -991,7 +1330,7 @@
                 <div class="card p-5 flex justify-between items-center shadow-sm hover:shadow-md transition">
                     <div>
                         <div class="font-bold text-slate-800 capitalize text-sm">${h.date}</div>
-                        <div class="text-[10px] text-gray-400 mt-1">Carga Fisiológica calculada: <b>${Math.round(h.data.water/h.goals.water*100)}%</b></div>
+                        <div class="text-[10px] text-gray-400 mt-1">Carga Fisiológica: <b>${Math.round(h.data.water/h.goals.water*100)}%</b></div>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="restoreDay(${i})" class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center hover:bg-orange-200 transition"><i class="fas fa-undo-alt text-sm"></i></button>
@@ -1013,9 +1352,9 @@
             }).then((result) => {
                 if(result.isConfirmed) {
                     todayData = history[index].data;
-                    history.splice(index, 1); // Lo quitamos del historial
+                    history.splice(index, 1); 
                     localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
-                    saveDay(); // Lo guardamos como "hoy"
+                    saveDay(); 
                     window.location.reload();
                 }
             });
@@ -1063,8 +1402,9 @@
             y += 8;
 
             const metricData = [
-                ['Hora Despertar', rec.data.wakeTime || '--:--', 'Sueño', `${rec.data.sleepHours}h (${rec.data.sleepQuality}%)`],
-                ['Agua Ingerida', `${rec.data.water} ml`, 'Deporte', `${rec.data.runKm + rec.data.bikeKm} km`]
+                ['Sueño', `${rec.data.sleepHours}h (${rec.data.sleepQuality}%)`, 'Uso Móvil', `${rec.data.mobileHours}h`],
+                ['Agua', `${rec.data.water} ml`, 'Pasos', `${rec.data.steps}`],
+                ['Deporte', `${rec.data.runKm + rec.data.bikeKm} km`, 'Horas de Pie', `${rec.data.standingHours}h`]
             ];
 
             doc.autoTable({
@@ -1077,7 +1417,7 @@
             });
             y = doc.lastAutoTable.finalY + 10;
 
-            doc.text("Productividad", 14, y);
+            doc.text("Carga Cognitiva (Estudio)", 14, y);
             y += 6;
             let studyRows = rec.data.studySessions ? rec.data.studySessions.map(s => [s.hours + 'h', s.focus === 1 ? 'Bajo' : (s.focus === 2 ? 'Medio' : 'Alto (Deep Work)')]) : [];
             if(studyRows.length > 0) {
@@ -1089,9 +1429,9 @@
             doc.setFontSize(12);
             doc.text("Registro Nutricional", 14, y);
             y += 6;
-            const foodBody = rec.data.foodLog.map(f => [f.name, f.cal, f.prot, f.fat, f.carb]);
+            const foodBody = rec.data.foodLog.map(f => [f.name, Math.round(f.cal), Math.round(f.prot), Math.round(f.fat), Math.round(f.carb)]);
             const totalCal = rec.data.foodLog.reduce((a,b)=>a+b.cal,0);
-            foodBody.push(['TOTAL', totalCal, '-', '-', '-']);
+            foodBody.push(['TOTAL', Math.round(totalCal), '-', '-', '-']);
 
             doc.autoTable({
                 startY: y,
@@ -1107,5 +1447,6 @@
     </script>
 </body>
 </html>
+
 
 
