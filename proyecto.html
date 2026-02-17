@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FitTracker Medical - Pro Organized</title>
+    <title>FitTracker Medical - Final Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -72,11 +72,10 @@
         .meal-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; }
         .meal-content.open { max-height: 4000px; }
 
-        /* Estilos para los Grupos Organizados */
         .group-header { cursor: pointer; transition: background 0.2s; }
         .group-header:active { background-color: #f1f5f9; }
         .group-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
-        .group-content.open { max-height: 5000px; } /* Altura grande para contener todo */
+        .group-content.open { max-height: 5000px; }
 
         .pb-safe-area { padding-bottom: env(safe-area-inset-bottom); }
     </style>
@@ -1079,29 +1078,44 @@
             document.getElementById('info-modal').classList.remove('open');
         }
 
-        // --- SISTEMA DE RENDERIZADO DE ALIMENTOS (NUEVO DISEÑO) ---
+        // --- SISTEMA DE RENDERIZADO DE ALIMENTOS (DISEÑO MEJORADO) ---
         function renderFoodCategories() {
             const container = document.getElementById('foodCategoriesContainer');
             container.innerHTML = '';
 
-            // 1. Tiempos de Comida Principales (VISIBLES DIRECTAMENTE)
-            const mainMeals = ['Desayuno', 'Almuerzo', 'Comida', 'Merienda', 'Cena'];
-            const mealContainer = document.createElement('div');
-            mealContainer.className = "mb-6 space-y-2";
-            mealContainer.innerHTML = '<h3 class="font-bold text-slate-700 text-sm uppercase tracking-wider mb-2">🍽️ Tiempos de Comida</h3>';
+            // 1. Tiempos de Comida Principales (ESTILIZADOS)
+            const mainMealsConfig = [
+                { id: 'Desayuno', icon: 'fa-sun', color: 'yellow' },
+                { id: 'Almuerzo', icon: 'fa-bread-slice', color: 'orange' },
+                { id: 'Comida', icon: 'fa-utensils', color: 'red' },
+                { id: 'Merienda', icon: 'fa-cookie-bite', color: 'pink' },
+                { id: 'Cena', icon: 'fa-moon', color: 'indigo' }
+            ];
 
-            mainMeals.forEach(cat => {
-                if(foodDatabase[cat]) {
-                    mealContainer.appendChild(createAccordion(cat, 'bg-white', 'text-slate-700', 'border-gray-100'));
+            const mealContainer = document.createElement('div');
+            mealContainer.className = "mb-6 space-y-3"; // Aumentado espacio
+            mealContainer.innerHTML = '<h3 class="font-bold text-slate-700 text-sm uppercase tracking-wider mb-3 ml-1">🍽️ Tiempos de Comida</h3>';
+
+            mainMealsConfig.forEach(cfg => {
+                if(foodDatabase[cfg.id]) {
+                    // Creamos grupos con estilo "Super Group" pero para comidas individuales
+                    mealContainer.appendChild(createSuperGroupStyle(
+                        cfg.id, 
+                        cfg.icon, 
+                        `bg-${cfg.color}-50`, 
+                        `text-${cfg.color}-600`, 
+                        `border-${cfg.color}-200`, 
+                        [cfg.id] // Pasamos el ID como array para que renderice esa categoría
+                    ));
                 }
             });
             container.appendChild(mealContainer);
 
-            // 2. OTROS / DESPENSA (Frutas, Carnes, etc.)
+            // 2. OTROS / DESPENSA
             const pantryKeys = ['Frutas', 'Verduras', 'Carnes', 'Pescados', 'Huevos', 'Frutos Secos', 'Legumbres Secas', 'Legumbres Cocidas', 'Cereales Grano', 'Pastas', 'Panes', 'Leches', 'Quesos', 'Yogures', 'Bebidas'];
             container.appendChild(createSuperGroup('🍎 Despensa / Otros', 'bg-green-50', 'text-green-800', 'border-green-100', pantryKeys));
 
-            // 3. COMIDA RÁPIDA (BK, Hamburguesas)
+            // 3. COMIDA RÁPIDA
             const fastFoodKeys = ['Burger King', 'Hamburguesas', 'Acompañamientos'];
             container.appendChild(createSuperGroup('🍔 Comida Rápida', 'bg-orange-50', 'text-orange-800', 'border-orange-100', fastFoodKeys));
 
@@ -1114,34 +1128,52 @@
             container.appendChild(createSuperGroup('🥫 Salsas', 'bg-red-50', 'text-red-800', 'border-red-100', sauceKeys));
         }
 
-        // Helper para crear acordeones simples (usado en tiempos de comida)
-        function createAccordion(cat, bgClass, textClass, borderClass) {
-            const div = document.createElement('div');
-            div.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm transition hover:shadow-md`;
-            div.innerHTML = `
-                <div class="p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header" onclick="this.nextElementSibling.classList.toggle('open')">
-                    <span class="flex items-center gap-2">${cat}</span> 
-                    <i class="fas fa-chevron-down text-xs opacity-50"></i>
-                </div>
-                <div class="meal-content bg-slate-50">
-                    ${renderFoodList(cat)}
-                </div>
-            `;
-            return div;
+        // Nueva función para el estilo "chulo" de comidas principales
+        function createSuperGroupStyle(title, iconClass, bgClass, textClass, borderClass, keys) {
+             const groupDiv = document.createElement('div');
+            groupDiv.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm transition hover:shadow-md`;
+            
+            const header = document.createElement('div');
+            header.className = `p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header`;
+            header.innerHTML = `<span class="flex items-center gap-3"><i class="fas ${iconClass} text-lg"></i> ${title}</span> <i class="fas fa-chevron-down opacity-50 transition-transform duration-300"></i>`;
+            
+            // Toggle Logic visual
+            header.onclick = function() { 
+                this.nextElementSibling.classList.toggle('open'); 
+                this.querySelector('.fa-chevron-down').classList.toggle('rotate-180');
+            };
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = "group-content bg-white"; 
+
+            // Renderizamos directamente los items sin sub-acordeón para las comidas principales
+            // Ojo: keys[0] es la categoría (ej: 'Desayuno')
+            if(keys.length === 1 && foodDatabase[keys[0]]) {
+                 contentDiv.innerHTML = renderFoodList(keys[0]);
+            } else {
+                 // Fallback para grupos complejos
+                 keys.forEach(key => {
+                    if(foodDatabase[key]) {
+                        contentDiv.innerHTML += renderFoodList(key); // Concatenamos listas
+                    }
+                });
+            }
+
+            groupDiv.appendChild(header);
+            groupDiv.appendChild(contentDiv);
+            return groupDiv;
         }
 
-        // Helper para crear "Super Grupos" desplegables (Otros, Fast Food...)
+        // Helper para los grupos grandes (Despensa, etc) - Mantiene acordeones internos
         function createSuperGroup(title, bgClass, textClass, borderClass, keys) {
             const groupDiv = document.createElement('div');
             groupDiv.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm mb-3`;
             
-            // Header del Grupo Principal
             const header = document.createElement('div');
             header.className = `p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header`;
             header.innerHTML = `<span>${title}</span> <i class="fas fa-layer-group opacity-50"></i>`;
             header.onclick = function() { this.nextElementSibling.classList.toggle('open'); };
             
-            // Contenido del Grupo (Lista de categorías dentro)
             const contentDiv = document.createElement('div');
             contentDiv.className = "group-content bg-white px-2 py-2 space-y-2";
 
@@ -1155,6 +1187,21 @@
             groupDiv.appendChild(header);
             groupDiv.appendChild(contentDiv);
             return groupDiv;
+        }
+
+        function createAccordion(cat, bgClass, textClass, borderClass) {
+            const div = document.createElement('div');
+            div.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm transition hover:shadow-md`;
+            div.innerHTML = `
+                <div class="p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header" onclick="this.nextElementSibling.classList.toggle('open')">
+                    <span class="flex items-center gap-2">${cat}</span> 
+                    <i class="fas fa-chevron-down text-xs opacity-50"></i>
+                </div>
+                <div class="meal-content bg-slate-50">
+                    ${renderFoodList(cat)}
+                </div>
+            `;
+            return div;
         }
 
         function renderFoodList(cat) {
@@ -1177,7 +1224,6 @@
             `).join('');
         }
 
-        // Búsqueda global
         function searchGlobal(query) {
             const results = document.getElementById('searchResults');
             if (query.length < 2) { results.classList.add('hidden'); return; }
@@ -1193,8 +1239,9 @@
                         const div = document.createElement('div');
                         div.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 flex justify-between items-center';
                         div.innerHTML = `<span class="text-sm font-bold text-slate-700">${f.name}</span> <span class="text-xs text-gray-400">${f.cal} kcal</span>`;
+                        // AQUÍ ESTÁ LA CLAVE: Llamamos al detalle pasando TRUE para indicar que viene de búsqueda
                         div.onclick = () => { 
-                             viewCalculatedDetails(cat, i);
+                             viewCalculatedDetails(cat, i, true); 
                              results.classList.add('hidden');
                              document.getElementById('globalSearch').value = '';
                         };
@@ -1208,7 +1255,6 @@
         function getCalculatedFood(cat, idx) {
             const base = foodDatabase[cat][idx];
             const catId = cat.replace(/\s+/g, '');
-            // Intenta buscar el input, si no existe (busqueda global), usa el peso base
             const inputEl = document.getElementById(`weight-${catId}-${idx}`);
             const inputVal = inputEl ? inputEl.value : base.weight;
             
@@ -1225,26 +1271,71 @@
             };
         }
 
-        function viewCalculatedDetails(cat, idx) {
-            const f = getCalculatedFood(cat, idx);
+        // --- LÓGICA MODIFICADA PARA DETALLES / BÚSQUEDA ---
+        function viewCalculatedDetails(cat, idx, fromSearch = false) {
+            const base = foodDatabase[cat][idx];
+            
+            // Determinar peso inicial
+            let initialWeight = base.weight;
+            // Si NO viene de búsqueda, intentamos coger el valor del input de la lista
+            if (!fromSearch) {
+                 const catId = cat.replace(/\s+/g, '');
+                 const listInput = document.getElementById(`weight-${catId}-${idx}`);
+                 if (listInput) initialWeight = parseFloat(listInput.value) || base.weight;
+            }
+
             Swal.fire({
-                title: `${f.name}`,
+                title: base.name,
                 html: `
-                    <p class="text-sm text-gray-500 mb-4">Calculado para <b>${f.weight}g</b></p>
-                    <div class="grid grid-cols-2 gap-3 text-center mb-2">
-                        <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-gray-400">Energía</span><span class="font-bold text-slate-700">${Math.round(f.cal)} kcal</span></div>
-                        <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-green-500">Proteína</span><span class="font-bold text-green-600">${Math.round(f.prot)}g</span></div>
-                        <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-yellow-500">Grasas</span><span class="font-bold text-yellow-600">${Math.round(f.fat)}g</span></div>
-                        <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-red-500">Carbos</span><span class="font-bold text-red-600">${Math.round(f.carb)}g</span></div>
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Cantidad (Gramos)</label>
+                        <input id="swal-grams" type="number" value="${initialWeight}" class="w-full bg-gray-100 border border-gray-200 rounded-xl p-3 text-center text-xl font-bold text-slate-700 focus:border-blue-500 outline-none">
                     </div>
+                    
+                    <div id="swal-stats" class="grid grid-cols-2 gap-3 text-center mb-2 transition-all">
+                        </div>
                 `,
-                confirmButtonText: 'Añadir',
+                confirmButtonText: 'Añadir a Dieta',
                 confirmButtonColor: '#3b82f6',
                 showCancelButton: true,
-                cancelButtonText: 'Cerrar'
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    const input = document.getElementById('swal-grams');
+                    const stats = document.getElementById('swal-stats');
+                    
+                    // Función interna para recalcular en tiempo real
+                    const updateStats = () => {
+                        const w = parseFloat(input.value) || 0;
+                        const ratio = w / base.weight;
+                        
+                        stats.innerHTML = `
+                            <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-gray-400">Energía</span><span class="font-bold text-slate-700">${Math.round(base.cal * ratio)} kcal</span></div>
+                            <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-green-500">Proteína</span><span class="font-bold text-green-600">${Math.round(base.prot * ratio)}g</span></div>
+                            <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-yellow-500">Grasas</span><span class="font-bold text-yellow-600">${Math.round(base.fat * ratio)}g</span></div>
+                            <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-red-500">Carbos</span><span class="font-bold text-red-600">${Math.round(base.carb * ratio)}g</span></div>
+                        `;
+                    };
+
+                    // Event listener para cuando escribes
+                    input.addEventListener('input', updateStats);
+                    // Ejecutar una vez al abrir
+                    updateStats();
+                },
+                preConfirm: () => {
+                    const finalWeight = parseFloat(document.getElementById('swal-grams').value) || base.weight;
+                    const ratio = finalWeight / base.weight;
+                    return {
+                        name: base.name,
+                        weight: finalWeight,
+                        cal: base.cal * ratio,
+                        prot: base.prot * ratio,
+                        fat: base.fat * ratio,
+                        carb: base.carb * ratio
+                    };
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    todayData.foodLog.push(f);
+                    todayData.foodLog.push(result.value);
                     updateDay();
                     Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 }).fire({ icon: 'success', title: 'Añadido' });
                 }
@@ -1447,6 +1538,5 @@
     </script>
 </body>
 </html>
-
 
 
