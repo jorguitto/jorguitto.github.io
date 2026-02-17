@@ -119,19 +119,39 @@
             </div>
 
             <div class="card p-5 mb-5 border-b-4 border-slate-400 card-clickable cursor-pointer" onclick="showDetails('stress')">
-                <div class="flex justify-between mb-2">
-                    <p class="text-[10px] text-gray-400 font-bold uppercase">Carga Fisiológica</p>
-                    <i class="fas fa-heart-pulse text-red-400 text-xs"></i>
+                <div class="flex justify-between mb-4">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase">Estado Fisiológico</p>
+                    <i class="fas fa-heart-pulse text-slate-400 text-xs"></i>
                 </div>
-                <div class="flex items-end justify-between mb-3">
-                    <div class="leading-none">
-                        <span id="stress-score-num" class="text-2xl font-black text-slate-700 block">0%</span>
-                        <span id="stress-msg-mini" class="text-[10px] text-gray-400 font-medium">Reposo</span>
+
+                <div class="mb-3">
+                    <div class="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
+                        <span>🧠 Carga Mental</span>
+                        <span id="mental-val">0%</span>
                     </div>
-                    <i class="fas fa-bolt text-slate-300 text-xl" id="stress-icon"></i>
+                    <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div id="bar-mental" class="bg-indigo-500 h-full w-0 transition-all duration-700 rounded-full"></div>
+                    </div>
                 </div>
-                <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                    <div id="stress-bar" class="bg-slate-400 h-full w-0 transition-all duration-700 rounded-full"></div>
+
+                <div class="mb-3">
+                    <div class="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
+                        <span>💪 Carga Física</span>
+                        <span id="phys-val">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div id="bar-physical" class="bg-orange-500 h-full w-0 transition-all duration-700 rounded-full"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
+                        <span>📅 Fatiga (7 días)</span>
+                        <span id="fatigue-val">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div id="bar-fatigue" class="bg-teal-500 h-full w-0 transition-all duration-700 rounded-full"></div>
+                    </div>
                 </div>
             </div>
 
@@ -497,7 +517,7 @@
     </nav>
 
     <script>
-        // --- BASE DE DATOS COMPLETA ---
+        // --- BASE DE DATOS COMPLETA (Sin cambios) ---
         const foodDatabase = {
             'Desayuno': [
                 { name: 'Cafe con leche', cal: 68.8, prot: 8, fat: 0.8, sat: 0.48, carb: 12, weight: 200 },
@@ -715,8 +735,8 @@
             steps: 0, 
             standingHours: 0, 
             runKm: 0, runPace: 5.5, runInt: 2,
-            bikeKm: 0, bikeInt: 2, // Añadido bikeInt
-            gymCals: 0, gymTime: 0, gymInt: 2, // Añadidos datos Gym
+            bikeKm: 0, bikeInt: 2, 
+            gymCals: 0, gymTime: 0, gymInt: 2,
             foodLog: []
         };
 
@@ -725,7 +745,13 @@
         let currentGoals = { ...BASE_GOALS };
         let currentSeason = 'Winter';
         let history = JSON.parse(localStorage.getItem('fitTrackerHistory_MD')) || [];
-        let stressDetails = []; 
+        
+        // Variables para las 3 barras
+        let mentalLoad = 0;
+        let physicalLoad = 0;
+        let fatigue7d = 0;
+        
+        let stressDetails = []; // Array para guardar mensajes del modal
         let waterDetails = [];
         let nutritionAdvice = "";
         let studyAdvice = "";
@@ -734,6 +760,7 @@
             detectSeason();
             loadDay();
             renderFoodCategories();
+            calculateStressBar(); // Calcular al inicio
             updateDay();
             updateHistoryUI();
         };
@@ -756,7 +783,7 @@
             if(sleepQEl) todayData.sleepQuality = Number(sleepQEl.value);
 
             calculateDynamicGoals();
-            calculateStressBar();
+            calculateStressBar(); // Recalcula las 3 barras
             saveDay();
             updateUI();
         }
@@ -788,12 +815,10 @@
                  waterDetails.push({ txt: `De pie (${todayData.standingHours}h)`, val: `+${Math.round(todayData.standingHours * 50)}ml` });
             }
 
-            // Calculo de carga deportiva incluyendo Gym
             let gymLoad = 0;
             if(todayData.gymCals > 0) {
                 g.cals += parseFloat(todayData.gymCals);
-                // Agua extra por gym
-                const gymWater = todayData.gymTime * 10; // ej: 60min -> 600ml
+                const gymWater = todayData.gymTime * 10; 
                 g.water += gymWater;
                 waterDetails.push({ txt: `Gym (${todayData.gymTime}min)`, val: `+${gymWater}ml` });
                 gymLoad = todayData.gymTime / 10; 
@@ -835,113 +860,139 @@
         }
 
         function calculateStressBar() {
-            let stress = 0;
-            stressDetails = [];
+            // ----------------------------------------------------
+            // 1. CALCULO CARGA MENTAL (Barra 1)
+            // ----------------------------------------------------
+            let mLoad = 0;
+            stressDetails = []; // Limpiamos detalles para regenerarlos en el modal
 
+            // Sueño
             if (todayData.sleepHours > 0) {
-                let sleepScore = 0;
                 if (todayData.sleepQuality < 60) {
-                    sleepScore += 30; 
-                    stressDetails.push({ text: "Mala Calidad Sueño", val: "+30%", type: 'bad' });
-                } else if (todayData.sleepQuality > 80) {
-                    sleepScore -= 10;
-                    stressDetails.push({ text: "Sueño Reparador", val: "-10%", type: 'good' });
+                    mLoad += 20;
+                    stressDetails.push({ cat: 'mental', text: "Mala Calidad Sueño", type: 'bad' });
                 }
                 if (todayData.sleepHours < 7) {
-                    const debt = (7 - todayData.sleepHours) * 15;
-                    sleepScore += debt;
-                    stressDetails.push({ text: "Deuda Sueño", val: `+${Math.round(debt)}%`, type: 'bad' });
+                    mLoad += (7 - todayData.sleepHours) * 10;
+                    stressDetails.push({ cat: 'mental', text: "Deuda Sueño", type: 'bad' });
                 }
-                stress += sleepScore;
             }
 
-            let totalStudy = todayData.studySessions.reduce((a,b) => a + (b.hours * (b.focus === 1 ? 4 : (b.focus === 2 ? 6 : 9))), 0);
-            
+            // Estudio ponderado
+            let totalStudyWeighted = todayData.studySessions.reduce((a,b) => a + (b.hours * (b.focus === 1 ? 4 : (b.focus === 2 ? 6 : 9))), 0);
+            if(totalStudyWeighted > 0) {
+                mLoad += (totalStudyWeighted / 2); // Escalar un poco
+                stressDetails.push({ cat: 'mental', text: "Sesiones Estudio", type: 'neutral' });
+            }
+
+            // Móvil
             if (todayData.mobileHours > 2) {
-                const mobileStress = (todayData.mobileHours - 2) * 5; 
-                stress += mobileStress;
-                stressDetails.push({ text: `Uso Móvil (${todayData.mobileHours}h)`, val: `+${Math.round(mobileStress)}%`, type: 'bad' });
+                mLoad += (todayData.mobileHours - 2) * 5;
+                stressDetails.push({ cat: 'mental', text: "Exceso Pantallas", type: 'bad' });
             }
 
-            if (totalStudy > 50) { 
-                stressDetails.push({ text: "Sobrecarga Cognitiva", val: "ALTO", type: 'bad' });
-                stress += 20;
-            } else if (totalStudy > 0) {
-                stressDetails.push({ text: `Carga Estudio`, val: `+${Math.round(totalStudy/2)}%`, type: 'neutral' });
-                stress += (totalStudy/3);
+            // Comida (Penaliza falta de carbs si hay carga mental alta)
+            let currentCarbs = todayData.foodLog.reduce((a,b)=>a+b.carb, 0);
+            if(totalStudyWeighted > 40 && currentCarbs < 150) {
+                mLoad += 15;
+                stressDetails.push({ cat: 'mental', text: "Cerebro sin Glucosa (Faltan Carbs)", type: 'bad' });
             }
 
-            let physLoad = 0;
-            if (todayData.steps < 4000) {
-                stress += 10;
-                stressDetails.push({ text: "Sedentarismo", val: "+10%", type: 'bad' });
-            } else if (todayData.steps > 15000) {
-                physLoad += 15;
-                stressDetails.push({ text: "Carga Pasos Alta", val: "+15%", type: 'neutral' });
-            } else if (todayData.steps >= 8000 && todayData.steps <= 12000) {
-                stress -= 5;
-                stressDetails.push({ text: "Actividad Óptima", val: "-5%", type: 'good' });
+            mentalLoad = Math.min(Math.round(mLoad), 100);
+
+
+            // ----------------------------------------------------
+            // 2. CALCULO CARGA FÍSICA (Barra 2)
+            // ----------------------------------------------------
+            let pLoad = 0;
+
+            // Pasos (Carga alta, no sedentarismo)
+            if (todayData.steps > 15000) {
+                pLoad += 20;
+                stressDetails.push({ cat: 'physical', text: "Volumen Pasos Alto", type: 'neutral' });
             }
-
-            if (todayData.standingHours > 6) {
-                physLoad += (todayData.standingHours - 6) * 3;
-                stressDetails.push({ text: "Fatiga Postural", val: `+${Math.round((todayData.standingHours - 6) * 3)}%`, type: 'bad' });
-            }
-
-            if (todayData.runKm > 0) {
-                let runFactor = 4; 
-                if (todayData.runInt === 3) runFactor = 5;
-                physLoad += todayData.runKm * runFactor;
-                stressDetails.push({ text: `Running ${todayData.runKm}km`, val: `+${Math.round(todayData.runKm * runFactor)}%`, type: 'neutral' });
-            }
-
-            // Calculo Gym para estrés
-            if (todayData.gymTime > 0) {
-                let gymFactor = 0.5; // base por minuto
-                if (todayData.gymInt == 2) gymFactor = 0.8;
-                if (todayData.gymInt == 3) gymFactor = 1.2;
-                
-                let gymStress = todayData.gymTime * gymFactor;
-                physLoad += gymStress;
-                stressDetails.push({ text: `Gym (${todayData.gymTime}min)`, val: `+${Math.round(gymStress)}%`, type: 'neutral' });
-            }
-
-            stress += physLoad;
-
-            const waterP = (todayData.water / currentGoals.water);
-            if (waterP >= 0.9) {
-                stress -= 5;
-                stressDetails.push({ text: "Hidratación", val: "-5%", type: 'good' });
-            }
-
-            stress = Math.round(stress);
-            if (stress < 0) stress = 0;
-            if (stress > 100) stress = 100;
-
-            const bar = document.getElementById('stress-bar');
-            const txt = document.getElementById('stress-score-num');
-            const miniMsg = document.getElementById('stress-msg-mini');
-            const icon = document.getElementById('stress-icon');
-
-            bar.style.width = stress + '%';
-            txt.innerText = stress + '%';
             
-            if (stress < 40) {
-                bar.className = 'bg-green-500 h-full rounded-full transition-all duration-700';
-                txt.className = 'text-2xl font-black text-green-500 block';
-                miniMsg.innerText = "Óptimo";
-                icon.className = "fas fa-battery-full text-green-300 text-xl";
-            } else if (stress < 85) {
-                bar.className = 'bg-yellow-400 h-full rounded-full transition-all duration-700';
-                txt.className = 'text-2xl font-black text-yellow-500 block';
-                miniMsg.innerText = "Cargado";
-                icon.className = "fas fa-battery-half text-yellow-300 text-xl";
-            } else {
-                bar.className = 'bg-red-500 h-full rounded-full transition-all duration-700';
-                txt.className = 'text-2xl font-black text-red-500 block';
-                miniMsg.innerText = "SOBRECARGA";
-                icon.className = "fas fa-battery-empty text-red-400 text-xl animate-pulse";
+            // Running
+            if (todayData.runKm > 0) {
+                let runFactor = 5; 
+                if (todayData.runInt === 3) runFactor = 7;
+                pLoad += todayData.runKm * runFactor;
+                stressDetails.push({ cat: 'physical', text: "Running", type: 'neutral' });
             }
+
+            // Bici
+            if (todayData.bikeKm > 0) {
+                let bikeFactor = 2;
+                if(todayData.bikeInt === 3) bikeFactor = 3;
+                pLoad += todayData.bikeKm * bikeFactor;
+                stressDetails.push({ cat: 'physical', text: "Ciclismo", type: 'neutral' });
+            }
+
+            // Gym
+            if (todayData.gymTime > 0) {
+                let gymFactor = 0.6; 
+                if (todayData.gymInt == 3) gymFactor = 1.0;
+                pLoad += todayData.gymTime * gymFactor;
+                stressDetails.push({ cat: 'physical', text: "Gimnasio", type: 'neutral' });
+            }
+
+            // De pie
+            if (todayData.standingHours > 6) {
+                pLoad += (todayData.standingHours - 6) * 5;
+                stressDetails.push({ cat: 'physical', text: "Fatiga Postural", type: 'bad' });
+            }
+
+            // Hidratación (Si falta mucha agua, aumenta el estrés físico)
+            if (currentGoals.water > 0 && todayData.water < (currentGoals.water * 0.7)) {
+                pLoad += 15;
+                stressDetails.push({ cat: 'physical', text: "Deshidratación", type: 'bad' });
+            }
+
+            physicalLoad = Math.min(Math.round(pLoad), 100);
+
+
+            // ----------------------------------------------------
+            // 3. CALCULO FATIGA 7 DÍAS (Barra 3)
+            // ----------------------------------------------------
+            fatigue7d = getFatigue7Days();
+
+            // ----------------------------------------------------
+            // ACTUALIZAR UI
+            // ----------------------------------------------------
+            updateBar('mental', mentalLoad);
+            updateBar('physical', physicalLoad);
+            updateBar('fatigue', fatigue7d);
+        }
+
+        function updateBar(type, val) {
+            const bar = document.getElementById(`bar-${type}`);
+            const txt = document.getElementById(type === 'fatigue' ? 'fatigue-val' : (type === 'mental' ? 'mental-val' : 'phys-val'));
+            
+            if(bar && txt) {
+                bar.style.width = val + '%';
+                txt.innerText = val + '%';
+
+                // Colores específicos para fatiga 7 días
+                if(type === 'fatigue') {
+                    bar.className = `h-full rounded-full transition-all duration-700 ${val < 40 ? 'bg-green-500' : (val < 70 ? 'bg-yellow-400' : 'bg-red-500')}`;
+                }
+            }
+        }
+
+        // --- LÓGICA DE 7 DÍAS ---
+        function getFatigue7Days() {
+            if (history.length === 0) return 0;
+            
+            // Tomamos los últimos 7 días
+            const last7 = history.slice(0, 7);
+            
+            // Calculamos media de 'stress' guardado en history
+            let total = 0;
+            last7.forEach(h => {
+                total += (h.stress || 0);
+            });
+            
+            return Math.round(total / last7.length);
         }
 
         function updateStudy() {
@@ -1022,7 +1073,6 @@
                 const el = document.getElementById(`bar-${id}`);
                 if(el) el.style.width = p+'%';
                 
-                // Formateo de números para mostrar decimales si son pequeños
                 const displayVal = (val % 1 !== 0 && val < 10) ? val.toFixed(1) : Math.round(val);
                 
                 document.getElementById(`val-${id}`).innerText = displayVal;
@@ -1033,7 +1083,7 @@
             setBar('prot', sum.prot, currentGoals.prot);
             setBar('fat', sum.fat, currentGoals.fat);
             setBar('carbs', sum.carb, currentGoals.carbs);
-            setBar('sat', sum.sat, currentGoals.sat); // Nueva barra Sat
+            setBar('sat', sum.sat, currentGoals.sat); 
 
             document.getElementById('total-consumed-kcal').innerText = Math.round(sum.cal) + ' kcal';
 
@@ -1069,7 +1119,7 @@
             todayData.runPace = parseFloat(document.getElementById('range-run-pace').value);
             todayData.runInt = parseFloat(document.getElementById('range-run-int').value);
             todayData.bikeKm = parseFloat(document.getElementById('range-bike-km').value);
-            todayData.bikeInt = parseFloat(document.getElementById('range-bike-int').value); // Nuevo
+            todayData.bikeInt = parseFloat(document.getElementById('range-bike-int').value); 
             todayData.steps = parseInt(document.getElementById('range-steps').value);
             todayData.standingHours = parseFloat(document.getElementById('range-standing').value);
             
@@ -1087,35 +1137,55 @@
             document.getElementById('val-run-int-text').innerText = ints[todayData.runInt] || '--';
             document.getElementById('val-bike-km').innerText = todayData.bikeKm;
             
-            // Textos intensidad nuevos
             document.getElementById('val-bike-int-text').innerText = ints[todayData.bikeInt] || '--';
             document.getElementById('val-gym-int-text').innerText = ints[todayData.gymInt] || '--';
 
             updateDay();
         }
 
-        // --- FUNCIONES INTERFAZ ---
+        // --- FUNCIONES INTERFAZ (MODAL MEJORADO) ---
         function showDetails(type) {
             const modal = document.getElementById('info-modal');
             const title = document.getElementById('modal-title');
             const body = document.getElementById('modal-body');
             
             if(type === 'stress') {
-                title.innerText = "Diagnóstico Carga (18 años)";
-                if(stressDetails.length === 0) {
-                    body.innerHTML = '<p class="text-gray-400 text-center italic">Sin datos suficientes.</p>';
-                } else {
-                    body.innerHTML = `
-                        <div class="space-y-3">
-                            ${stressDetails.map(d => `
-                                <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                                    <span class="font-medium text-slate-700 text-sm">${d.text}</span>
-                                    <span class="font-bold ${d.type==='good'?'text-green-500':(d.type==='bad'?'text-red-500':'text-orange-400')}">${d.val}</span>
-                                </div>
-                            `).join('')}
+                title.innerText = "Diagnóstico Integral";
+                
+                // Generar HTML para Mental
+                const mentalItems = stressDetails.filter(d => d.cat === 'mental').map(d => `<li class="text-xs ${d.type === 'bad' ? 'text-red-500 font-bold' : 'text-slate-600'}">• ${d.text}</li>`).join('');
+                const mentalAdvice = mentalLoad > 60 ? "<b>Consejo:</b> Reduce pantallas ya. Tu cerebro pide descanso pasivo." : "Carga mental controlada.";
+
+                // Generar HTML para Física
+                const physItems = stressDetails.filter(d => d.cat === 'physical').map(d => `<li class="text-xs ${d.type === 'bad' ? 'text-red-500 font-bold' : 'text-slate-600'}">• ${d.text}</li>`).join('');
+                const physAdvice = physicalLoad > 60 ? "<b>Consejo:</b> Prioriza proteínas y sueño esta noche. Mañana baja intensidad." : "Buen nivel de actividad.";
+
+                // Generar HTML para Fatiga 7d
+                let fatigueMsg = "";
+                if(fatigue7d < 40) fatigueMsg = "Estas fresco/a (Zona Verde). Puedes entrenar duro.";
+                else if(fatigue7d < 70) fatigueMsg = "Fatiga acumulada moderada (Zona Amarilla). Vigila el sueño.";
+                else fatigueMsg = "<b>ALERTA ROJA:</b> Sobrecarga sistémica. Necesitas un día de descarga total.";
+
+                body.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                            <h4 class="font-bold text-indigo-700 text-sm mb-2">🧠 Carga Mental (${mentalLoad}%)</h4>
+                            <ul class="mb-2 space-y-1">${mentalItems || '<li class="text-xs text-gray-400">Sin carga significativa</li>'}</ul>
+                            <p class="text-xs text-indigo-600 italic">${mentalAdvice}</p>
                         </div>
-                    `;
-                }
+
+                        <div class="bg-orange-50 p-3 rounded-xl border border-orange-100">
+                            <h4 class="font-bold text-orange-700 text-sm mb-2">💪 Carga Física (${physicalLoad}%)</h4>
+                            <ul class="mb-2 space-y-1">${physItems || '<li class="text-xs text-gray-400">Sin carga significativa</li>'}</ul>
+                            <p class="text-xs text-orange-600 italic">${physAdvice}</p>
+                        </div>
+
+                        <div class="bg-teal-50 p-3 rounded-xl border border-teal-100">
+                            <h4 class="font-bold text-teal-700 text-sm mb-2">📅 Fatiga Crónica (7 días: ${fatigue7d}%)</h4>
+                            <p class="text-xs text-teal-800">${fatigueMsg}</p>
+                        </div>
+                    </div>
+                `;
             } else if (type === 'water') {
                 title.innerText = "Hidratación";
                 body.innerHTML = waterDetails.map(d => `
@@ -1170,12 +1240,11 @@
             document.getElementById('info-modal').classList.remove('open');
         }
 
-        // --- SISTEMA DE RENDERIZADO DE ALIMENTOS (DISEÑO MEJORADO) ---
+        // --- SISTEMA DE RENDERIZADO DE ALIMENTOS ---
         function renderFoodCategories() {
             const container = document.getElementById('foodCategoriesContainer');
             container.innerHTML = '';
 
-            // 1. Tiempos de Comida Principales (ESTILIZADOS)
             const mainMealsConfig = [
                 { id: 'Desayuno', icon: 'fa-sun', color: 'yellow' },
                 { id: 'Almuerzo', icon: 'fa-bread-slice', color: 'orange' },
@@ -1185,42 +1254,36 @@
             ];
 
             const mealContainer = document.createElement('div');
-            mealContainer.className = "mb-6 space-y-3"; // Aumentado espacio
+            mealContainer.className = "mb-6 space-y-3"; 
             mealContainer.innerHTML = '<h3 class="font-bold text-slate-700 text-sm uppercase tracking-wider mb-3 ml-1">🍽️ Tiempos de Comida</h3>';
 
             mainMealsConfig.forEach(cfg => {
                 if(foodDatabase[cfg.id]) {
-                    // Creamos grupos con estilo "Super Group" pero para comidas individuales
                     mealContainer.appendChild(createSuperGroupStyle(
                         cfg.id, 
                         cfg.icon, 
                         `bg-${cfg.color}-50`, 
                         `text-${cfg.color}-600`, 
                         `border-${cfg.color}-200`, 
-                        [cfg.id] // Pasamos el ID como array para que renderice esa categoría
+                        [cfg.id] 
                     ));
                 }
             });
             container.appendChild(mealContainer);
 
-            // 2. OTROS / DESPENSA
             const pantryKeys = ['Frutas', 'Verduras', 'Carnes', 'Pescados', 'Huevos', 'Frutos Secos', 'Legumbres Secas', 'Legumbres Cocidas', 'Cereales Grano', 'Pastas', 'Panes', 'Leches', 'Quesos', 'Yogures', 'Bebidas'];
             container.appendChild(createSuperGroup('🍎 Despensa / Otros', 'bg-green-50', 'text-green-800', 'border-green-100', pantryKeys));
 
-            // 3. COMIDA RÁPIDA
             const fastFoodKeys = ['Burger King', 'Hamburguesas', 'Acompañamientos'];
             container.appendChild(createSuperGroup('🍔 Comida Rápida', 'bg-orange-50', 'text-orange-800', 'border-orange-100', fastFoodKeys));
 
-            // 4. BOLLERÍA Y DULCES
             const sweetKeys = ['Bolleria', 'Dulces'];
             container.appendChild(createSuperGroup('🍩 Bollería y Dulces', 'bg-purple-50', 'text-purple-800', 'border-purple-100', sweetKeys));
 
-            // 5. SALSAS
             const sauceKeys = ['Salsas'];
             container.appendChild(createSuperGroup('🥫 Salsas', 'bg-red-50', 'text-red-800', 'border-red-100', sauceKeys));
         }
 
-        // Nueva función para el estilo "chulo" de comidas principales
         function createSuperGroupStyle(title, iconClass, bgClass, textClass, borderClass, keys) {
              const groupDiv = document.createElement('div');
             groupDiv.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm transition hover:shadow-md`;
@@ -1229,7 +1292,6 @@
             header.className = `p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header`;
             header.innerHTML = `<span class="flex items-center gap-3"><i class="fas ${iconClass} text-lg"></i> ${title}</span> <i class="fas fa-chevron-down opacity-50 transition-transform duration-300"></i>`;
             
-            // Toggle Logic visual
             header.onclick = function() { 
                 this.nextElementSibling.classList.toggle('open'); 
                 this.querySelector('.fa-chevron-down').classList.toggle('rotate-180');
@@ -1238,15 +1300,12 @@
             const contentDiv = document.createElement('div');
             contentDiv.className = "group-content bg-white"; 
 
-            // Renderizamos directamente los items sin sub-acordeón para las comidas principales
-            // Ojo: keys[0] es la categoría (ej: 'Desayuno')
             if(keys.length === 1 && foodDatabase[keys[0]]) {
                  contentDiv.innerHTML = renderFoodList(keys[0]);
             } else {
-                 // Fallback para grupos complejos
                  keys.forEach(key => {
                     if(foodDatabase[key]) {
-                        contentDiv.innerHTML += renderFoodList(key); // Concatenamos listas
+                        contentDiv.innerHTML += renderFoodList(key); 
                     }
                 });
             }
@@ -1256,7 +1315,6 @@
             return groupDiv;
         }
 
-        // Helper para los grupos grandes (Despensa, etc) - Mantiene acordeones internos
         function createSuperGroup(title, bgClass, textClass, borderClass, keys) {
             const groupDiv = document.createElement('div');
             groupDiv.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm mb-3`;
@@ -1331,7 +1389,6 @@
                         const div = document.createElement('div');
                         div.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 flex justify-between items-center';
                         div.innerHTML = `<span class="text-sm font-bold text-slate-700">${f.name}</span> <span class="text-xs text-gray-400">${f.cal} kcal</span>`;
-                        // AQUÍ ESTÁ LA CLAVE: Llamamos al detalle pasando TRUE para indicar que viene de búsqueda
                         div.onclick = () => { 
                              viewCalculatedDetails(cat, i, true); 
                              results.classList.add('hidden');
@@ -1360,17 +1417,14 @@
                 prot: base.prot * ratio,
                 fat: base.fat * ratio,
                 carb: base.carb * ratio,
-                sat: (base.sat || 0) * ratio // Agregar cálculo Sat
+                sat: (base.sat || 0) * ratio 
             };
         }
 
-        // --- LÓGICA MODIFICADA PARA DETALLES / BÚSQUEDA ---
         function viewCalculatedDetails(cat, idx, fromSearch = false) {
             const base = foodDatabase[cat][idx];
             
-            // Determinar peso inicial
             let initialWeight = base.weight;
-            // Si NO viene de búsqueda, intentamos coger el valor del input de la lista
             if (!fromSearch) {
                  const catId = cat.replace(/\s+/g, '');
                  const listInput = document.getElementById(`weight-${catId}-${idx}`);
@@ -1396,12 +1450,10 @@
                     const input = document.getElementById('swal-grams');
                     const stats = document.getElementById('swal-stats');
                     
-                    // Función interna para recalcular en tiempo real
                     const updateStats = () => {
                         const w = parseFloat(input.value) || 0;
                         const ratio = w / base.weight;
                         
-                        // Modificado para mostrar decimales en sat
                         const satVal = (base.sat || 0) * ratio;
                         const displaySat = (satVal % 1 !== 0 && satVal < 10) ? satVal.toFixed(1) : Math.round(satVal);
 
@@ -1414,9 +1466,7 @@
                         `;
                     };
 
-                    // Event listener para cuando escribes
                     input.addEventListener('input', updateStats);
-                    // Ejecutar una vez al abrir
                     updateStats();
                 },
                 preConfirm: () => {
@@ -1450,7 +1500,7 @@
 
         function removeFood(i) { todayData.foodLog.splice(i, 1); updateDay(); }
         function addWater(ml) { todayData.water += ml; updateDay(); }
-        function removeWater(ml) { if(todayData.water >= ml) { todayData.water -= ml; updateDay(); } } // Nueva función quitar agua
+        function removeWater(ml) { if(todayData.water >= ml) { todayData.water -= ml; updateDay(); } } 
         
         function openCustomFoodModal() {
             Swal.fire({
@@ -1469,7 +1519,6 @@
             }).then(r => { if(r.value) { todayData.foodLog.push(r.value); updateDay(); } });
         }
 
-        // Sistema
         function saveDay() { localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData)); }
         function loadDay() {
             const s = localStorage.getItem('fitTrackerToday_MD');
@@ -1486,9 +1535,8 @@
                 document.getElementById('range-run-pace').value = todayData.runPace || 5.5;
                 document.getElementById('range-run-int').value = todayData.runInt || 2;
                 document.getElementById('range-bike-km').value = todayData.bikeKm || 0;
-                document.getElementById('range-bike-int').value = todayData.bikeInt || 2; // load bikeInt
+                document.getElementById('range-bike-int').value = todayData.bikeInt || 2; 
                 
-                // Load Gym Data
                 document.getElementById('gym-cals').value = todayData.gymCals || '';
                 document.getElementById('gym-time').value = todayData.gymTime || '';
                 document.getElementById('range-gym-int').value = todayData.gymInt || 2;
@@ -1501,11 +1549,30 @@
 
         function finishDay() {
             Swal.fire({
-                title: '¿Finalizar el día?', text: "Se generará el informe en el historial.", icon: 'warning',
+                title: '¿Finalizar el día?', text: "Se guardará el estrés para el historial.", icon: 'warning',
                 showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#d33', confirmButtonText: 'Sí, guardar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    history.unshift({ date: new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), data: { ...todayData }, goals: { ...currentGoals } });
+                    // Calculamos el estrés medio del día para el historial (Promedio de Mental y Físico)
+                    const dailyStress = Math.round((mentalLoad + physicalLoad) / 2);
+
+                    const record = { 
+                        date: new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 
+                        data: { ...todayData }, 
+                        goals: { ...currentGoals },
+                        stress: dailyStress // Guardamos el estrés unificado para el cálculo de 7 días
+                    };
+
+                    // Evitar duplicados del mismo día (Actualizar si existe)
+                    const todayStr = record.date;
+                    const existingIdx = history.findIndex(h => h.date === todayStr);
+                    
+                    if (existingIdx >= 0) {
+                        history[existingIdx] = record;
+                    } else {
+                        history.unshift(record);
+                    }
+
                     localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
                     todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
                     saveDay();
@@ -1529,7 +1596,7 @@
                 <div class="card p-5 flex justify-between items-center shadow-sm hover:shadow-md transition">
                     <div>
                         <div class="font-bold text-slate-800 capitalize text-sm">${h.date}</div>
-                        <div class="text-[10px] text-gray-400 mt-1">Carga Fisiológica: <b>${Math.round(h.data.water/h.goals.water*100)}%</b></div>
+                        <div class="text-[10px] text-gray-400 mt-1">Carga Global: <b>${h.stress || 0}%</b></div>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="restoreDay(${i})" class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center hover:bg-orange-200 transition"><i class="fas fa-undo-alt text-sm"></i></button>
@@ -1597,14 +1664,15 @@
             doc.setTextColor(0, 0, 0);
             doc.setFontSize(12);
             doc.setFont("helvetica", "bold");
-            doc.text("Resumen Biométrico", 14, y);
+            doc.text("Resumen Biométrico & Carga", 14, y);
             y += 8;
 
             const metricData = [
-                ['Sueño', `${rec.data.sleepHours}h (${rec.data.sleepQuality}%)`, 'Uso Móvil', `${rec.data.mobileHours}h`],
+                ['Carga Global', `${rec.stress}%`, 'Calidad Sueño', `${rec.data.sleepQuality}%`], // Añadido Carga Global
+                ['Sueño', `${rec.data.sleepHours}h`, 'Uso Móvil', `${rec.data.mobileHours}h`],
                 ['Agua', `${rec.data.water} ml`, 'Pasos', `${rec.data.steps}`],
-                ['Deporte', `${rec.data.runKm + rec.data.bikeKm} km`, 'Horas de Pie', `${rec.data.standingHours}h`],
-                ['Gym (Jim)', `${rec.data.gymTime || 0} min`, 'Kcal Gym', `${rec.data.gymCals || 0}`] // Añadido al PDF
+                ['Deporte (Km)', `${rec.data.runKm + rec.data.bikeKm} km`, 'Horas de Pie', `${rec.data.standingHours}h`],
+                ['Gym (Jim)', `${rec.data.gymTime || 0} min`, 'Kcal Gym', `${rec.data.gymCals || 0}`] 
             ];
 
             doc.autoTable({
@@ -1629,21 +1697,21 @@
             doc.setFontSize(12);
             doc.text("Registro Nutricional", 14, y);
             y += 6;
-            // Modificado PDF para incluir columna Sat
+            
             const foodBody = rec.data.foodLog.map(f => [
                 f.name, 
                 Math.round(f.cal), 
                 Math.round(f.prot), 
                 Math.round(f.fat), 
                 Math.round(f.carb),
-                (f.sat ? f.sat.toFixed(1) : '0') // Nueva columna sat
+                (f.sat ? f.sat.toFixed(1) : '0') 
             ]);
             const totalCal = rec.data.foodLog.reduce((a,b)=>a+b.cal,0);
             foodBody.push(['TOTAL', Math.round(totalCal), '-', '-', '-', '-']);
 
             doc.autoTable({
                 startY: y,
-                head: [['Alimento', 'Kcal', 'Prot (g)', 'Grasa (g)', 'Carb (g)', 'Sat (g)']], // Header actualizado
+                head: [['Alimento', 'Kcal', 'Prot (g)', 'Grasa (g)', 'Carb (g)', 'Sat (g)']], 
                 body: foodBody,
                 theme: 'grid',
                 headStyles: { fillColor: dark }
