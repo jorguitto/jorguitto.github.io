@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FitTracker Medical - Final Pro</title>
+    <title>FitTracker AI - Biological Engine V5</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -23,9 +23,6 @@
                         light: '#f8fafc',
                         study: '#8b5cf6',
                         muscle: '#f59e0b'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
                     }
                 }
             }
@@ -66,7 +63,7 @@
         .nav-item { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); color: #94a3b8; }
         
         .page-section { display: none; opacity: 0; animation: fadeIn 0.4s ease-out forwards; }
-        .page-section.active { display: block; opacity: 1; }
+        .page-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         .meal-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; }
@@ -78,6 +75,18 @@
         .group-content.open { max-height: 5000px; }
 
         .pb-safe-area { padding-bottom: env(safe-area-inset-bottom); }
+
+        .alert-card { transition: all 0.3s ease; }
+        .alert-water-low { background-color: #fee2e2; border-color: #ef4444; animation: pulse 2s infinite; }
+        .alert-water-high { background-color: #fef3c7; border-color: #f59e0b; }
+        .alert-food-low { background-color: #fee2e2; border-color: #ef4444; animation: pulse 2s infinite; }
+        .alert-nutrition { background-color: #fef3c7; border-color: #f59e0b; animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -86,9 +95,12 @@
         <button onclick="navigateTo('registro')" class="text-gray-400 hover:text-primary transition"><i class="fas fa-history text-xl"></i></button>
         <div class="text-center">
             <h1 class="text-lg font-black text-slate-800 tracking-tighter italic">FIT<span class="text-primary">TRACKER</span></h1>
-            <p id="season-indicator" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Detectando...</p>
+            <p id="season-indicator" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Sincronizando...</p>
         </div>
-        <button onclick="finishDay()" class="text-gray-400 hover:text-green-500 transition"><i class="fas fa-check-circle text-xl"></i></button>
+        <div class="flex items-center gap-3">
+            <button onclick="editUserProfile()" class="text-gray-400 hover:text-blue-500 transition"><i class="fas fa-user-circle text-xl"></i></button>
+            <button onclick="finishDay()" class="text-gray-400 hover:text-green-500 transition"><i class="fas fa-check-circle text-xl"></i></button>
+        </div>
     </header>
 
     <main class="container mx-auto px-5 mt-24 max-w-lg">
@@ -103,12 +115,12 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label class="text-[10px] text-gray-400 uppercase font-bold block mb-1">Hora Despertar</label>
-                        <input type="time" id="wakeTime" onchange="updateDay()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none font-bold text-slate-600">
+                        <input type="time" id="wakeTime" onchange="triggerMorningPrediction()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none font-bold text-slate-600">
                     </div>
                     <div class="grid grid-cols-2 gap-3 sm:col-span-2">
                         <div>
                             <label class="text-[10px] text-gray-400 uppercase font-bold block mb-1">Horas</label>
-                            <input type="number" id="sleepHours" placeholder="8" oninput="updateDay()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-center focus:border-indigo-500 outline-none font-bold text-slate-600">
+                            <input type="number" id="sleepHours" placeholder="8" onchange="triggerMorningPrediction()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-center focus:border-indigo-500 outline-none font-bold text-slate-600">
                         </div>
                         <div>
                             <label class="text-[10px] text-gray-400 uppercase font-bold block mb-1">Calidad (Watch)</label>
@@ -156,7 +168,7 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4 mb-5">
-                <div class="card p-5 border-b-4 border-blue-400 card-clickable cursor-pointer" onclick="showDetails('water')">
+                <div class="card p-5 border-b-4 border-blue-400 card-clickable cursor-pointer" onclick="showDetails('water')" id="water-home-card">
                     <div class="flex justify-between mb-2">
                         <p class="text-[10px] text-gray-400 font-bold uppercase">Hidratación</p>
                         <i class="fas fa-info-circle text-blue-100 text-xs"></i>
@@ -208,9 +220,9 @@
                 </div>
             </div>
             
-            <div class="card p-6 card-clickable cursor-pointer" onclick="showDetails('nutrition')">
+            <div class="card p-6 card-clickable cursor-pointer" onclick="showDetails('nutrition')" id="food-home-card">
                 <div class="flex justify-between items-center mb-5">
-                    <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fas fa-fire text-orange-500"></i> Combustible (60kg)</h3>
+                    <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fas fa-fire text-orange-500"></i> Combustible (<span id="profile-weight-display">60</span>kg)</h3>
                     <span class="text-[10px] bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-bold">Meta: <span id="goal-cals">2400</span> kcal</span>
                 </div>
 
@@ -334,8 +346,8 @@
                         <span>Horas de pantalla hoy</span>
                         <span class="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded"><span id="val-mobile">0</span> horas</span>
                     </div>
-                    <input type="range" min="0" max="12" step="0.5" value="0" id="range-mobile" oninput="updateStudy()">
-                    <p class="text-[10px] text-gray-400 mt-2 italic">*El uso excesivo afecta a la carga fisiológica.</p>
+                    <input type="range" min="0" max="12" step="0.5" value="0" id="range-mobile" oninput="updateMobile()">
+                    <p class="text-[10px] text-gray-400 mt-2 italic">*Cada hora de móvil suma un 5% a tu carga mental.</p>
                 </div>
             </div>
 
@@ -517,214 +529,176 @@
     </nav>
 
     <script>
-        // --- BASE DE DATOS COMPLETA (Sin cambios) ---
+        // ==========================================================================================
+        // 🧬 CONFIGURACIÓN: PERFIL BIOLÓGICO REACTIVO
+        // ==========================================================================================
+        
+        let USER_BIO = JSON.parse(localStorage.getItem('user_bio_config')) || {
+            nombre: "Usuario",
+            genero: "hombre",
+            edad: 25,
+            altura: 175,
+            peso: 70,
+            grasa: 15,
+            masaMuscular: 0,
+            ubicacion: "Petrer"  
+        };
+
+        const MONTH_NAMES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+
+        // ==========================================================================================
+        // 🌡️ DATASET CLIMATOLÓGICO - Temperaturas reales por mes
+        // ==========================================================================================
+        const CLIMA_PETRER = [
+            { t: 16, h: 65, icon: '❄️' }, // Enero - Frío
+            { t: 17, h: 62, icon: '❄️' }, // Febrero - Frío
+            { t: 20, h: 58, icon: '🌸' }, // Marzo - Primavera
+            { t: 22, h: 55, icon: '🌸' }, // Abril - Primavera
+            { t: 26, h: 52, icon: '☀️' }, // Mayo - Cálido
+            { t: 30, h: 50, icon: '☀️' }, // Junio - Calor
+            { t: 33, h: 48, icon: '🔥' }, // Julio - Muy caluroso
+            { t: 34, h: 55, icon: '🔥' }, // Agosto - Muy caluroso
+            { t: 29, h: 60, icon: '☀️' }, // Septiembre - Cálido
+            { t: 24, h: 65, icon: '🍂' }, // Octubre - Otoño
+            { t: 19, h: 68, icon: '🍂' }, // Noviembre - Otoño
+            { t: 16, h: 70, icon: '❄️' }  // Diciembre - Frío
+        ];
+
+        // ==========================================================================================
+        // 🧠 BIO-ENGINE
+        // ==========================================================================================
+        class BioEngine {
+            constructor() {
+                this.weights = JSON.parse(localStorage.getItem('bio_weights')) || {
+                    fatigueSensitivity: 1.2,
+                    sleepEfficiency: 1.0,
+                    recoveryFatigueFactor: 1.0 
+                };
+            }
+
+            getBMR() {
+                let base = (10 * USER_BIO.peso) + (6.25 * USER_BIO.altura) - (5 * USER_BIO.edad);
+                if (USER_BIO.genero === "hombre") base += 5;
+                else base -= 161;
+                
+                if(USER_BIO.masaMuscular > 0 && USER_BIO.grasa < 15) {
+                    base *= 1.1;
+                }
+                
+                return base;
+            }
+
+            getClimateStress() {
+                const month = new Date().getMonth();
+                const data = CLIMA_PETRER[month];
+                let waterFactor = 1.0;
+                let thermalFatigue = 0;
+
+                if (data.t > 25) { 
+                    let extraDegrees = data.t - 25;
+                    waterFactor += (extraDegrees * 0.05); 
+                    thermalFatigue = 10;
+                }
+                
+                let termogenesis = (data.t < 15) ? 100 : 0;
+                return { waterFactor, termogenesisKcal: termogenesis, temp: data.t, thermalFatigue, icon: data.icon };
+            }
+
+            analyzeHormones(fatIntake, sleepHours) {
+                const minFat = USER_BIO.peso * 0.8;
+                if (fatIntake < minFat) {
+                    return { status: 'ALERTA', advice: `⚠️ Grasa baja. Peligro testosterona baja.` };
+                }
+                return { status: 'OPTIMO', advice: "" };
+            }
+
+            predictTomorrow(lastDayData, climateData) {
+                const scores = lastDayData.stressScores || { physical: 50, mental: 30 };
+                const lastMood = lastDayData.subjective ? lastDayData.subjective.mood : 'NEUTRAL';
+                const physicalPenalty = scores.physical * 0.5 * this.weights.fatigueSensitivity;
+                const mentalPenalty = scores.mental * 0.25;
+                const sleepRecovery = (lastDayData.sleepHours / 8) * 100;
+                
+                let moodPenalty = 0;
+                if (lastMood === 'SAD') moodPenalty = 20;
+                if (lastMood === 'STRESSED') moodPenalty = 15;
+
+                let battery = sleepRecovery; 
+                battery -= physicalPenalty;
+                battery -= mentalPenalty;
+                battery -= moodPenalty;
+                battery -= (climateData.thermalFatigue || 0);
+
+                return Math.min(Math.max(Math.round(battery), 10), 100);
+            }
+
+            predictMentalPerformance(lastDayData) {
+                const scores = lastDayData.stressScores || { mental: 30 };
+                const sleepHours = lastDayData.sleepHours || 7;
+                
+                // Si la carga mental de ayer fue alta, hoy rindes menos
+                let mentalScore = 100 - (scores.mental * 0.4);
+                
+                // Ajuste por sueño
+                if (sleepHours < 6) mentalScore -= 25;
+                else if (sleepHours < 7) mentalScore -= 15;
+                else if (sleepHours > 8) mentalScore += 5;
+                
+                return Math.min(Math.max(Math.round(mentalScore), 10), 100);
+            }
+
+            predictPhysicalPerformance(lastDayData) {
+                const scores = lastDayData.stressScores || { physical: 50 };
+                const sleepHours = lastDayData.sleepHours || 7;
+                
+                let physicalScore = 100 - (scores.physical * 0.5);
+                
+                if (sleepHours < 6) physicalScore -= 25;
+                else if (sleepHours < 7) physicalScore -= 15;
+                
+                return Math.min(Math.max(Math.round(physicalScore), 10), 100);
+            }
+
+            learn(predicted, actual) {
+                const error = actual - predicted;
+                if (error < -20) this.weights.fatigueSensitivity += 0.1;
+                else if (error > 20) this.weights.fatigueSensitivity -= 0.05;
+                localStorage.setItem('bio_weights', JSON.stringify(this.weights));
+            }
+        }
+
+        const ENGINE = new BioEngine();
+
+        // ==========================================================================================
+        // 📦 BASE DE DATOS
+        // ==========================================================================================
         const foodDatabase = {
-            'Desayuno': [
-                { name: 'Cafe con leche', cal: 68.8, prot: 8, fat: 0.8, sat: 0.48, carb: 12, weight: 200 },
-                { name: 'Cafe con leche + proteina', cal: 127.8, prot: 19.5, fat: 1.7, sat: 1.03, carb: 15, weight: 200 },
-                { name: '1 panecillo', cal: 27.03, prot: 3.75, fat: 0.89, sat: 0.21, carb: 5, weight: 50 },
-                { name: 'Tortilla (3 claras + 1 yema)', cal: 145, prot: 16, fat: 5, sat: 1.5, carb: 1, weight: 150 },
-                { name: 'Avena con Leche', cal: 220, prot: 10, fat: 4, sat: 1, carb: 35, weight: 250 }
-            ],
-            'Almuerzo': [
-                { name: 'Bocadillo de jamón', cal: 400, prot: 25, fat: 15, sat: 5, carb: 45, weight: 150 },
-                { name: 'Fruta genérica', cal: 200, prot: 10, fat: 8, sat: 3, carb: 25, weight: 100 }
-            ],
-            'Comida': [
-                { name: 'Cafe con leche', cal: 68.8, prot: 8, fat: 0.8, sat: 0.48, carb: 12, weight: 200 },
-                { name: 'Cafe con leche + proteina', cal: 127.8, prot: 19.5, fat: 1.7, sat: 1.03, carb: 15, weight: 200 }
-            ],
-            'Merienda': [
-                { name: 'Frutos secos', cal: 200, prot: 10, fat: 5, sat: 2, carb: 20, weight: 50 },
-                { name: 'Yogur natural', cal: 150, prot: 8, fat: 3, sat: 1, carb: 18, weight: 125 }
-            ],
-            'Cena': [
-                { name: '1 panecillo', cal: 27.03, prot: 3.75, fat: 0.89, sat: 0.21, carb: 5, weight: 50 }
-            ],
-            'Frutas': [
-                { name: 'Manzana', cal: 52, prot: 0.3, fat: 0.2, sat: 0.03, carb: 13.8, weight: 150 },
-                { name: 'Plátano', cal: 89, prot: 1.1, fat: 0.3, sat: 0.11, carb: 22.8, weight: 120 },
-                { name: 'Fresa', cal: 32, prot: 0.7, fat: 0.3, sat: 0.02, carb: 7.7, weight: 50 },
-                { name: 'Sandía', cal: 30, prot: 0.6, fat: 0.2, sat: 0.02, carb: 7.6, weight: 200 },
-                { name: 'Melón', cal: 34, prot: 0.8, fat: 0.2, sat: 0.05, carb: 8.2, weight: 150 },
-                { name: 'Uvas', cal: 69, prot: 0.7, fat: 0.2, sat: 0.07, carb: 18.1, weight: 100 },
-                { name: 'Pera', cal: 57, prot: 0.4, fat: 0.1, sat: 0.02, carb: 15.2, weight: 170 },
-                { name: 'Piña', cal: 50, prot: 0.5, fat: 0.1, sat: 0.01, carb: 13.1, weight: 200 },
-                { name: 'Kiwi', cal: 61, prot: 1.1, fat: 0.5, sat: 0.03, carb: 14.7, weight: 75 },
-                { name: 'Mango', cal: 60, prot: 0.8, fat: 0.4, sat: 0.09, carb: 15, weight: 200 },
-                { name: 'Naranja', cal: 47, prot: 0.9, fat: 0.1, sat: 0.02, carb: 11.8, weight: 150 },
-                { name: 'Limón', cal: 29, prot: 1.1, fat: 0.3, sat: 0.04, carb: 9.3, weight: 100 },
-                { name: 'Cereza', cal: 63, prot: 1.1, fat: 0.2, sat: 0.04, carb: 16, weight: 50 },
-                { name: 'Melocotón', cal: 39, prot: 0.9, fat: 0.3, sat: 0.02, carb: 9.5, weight: 150 },
-                { name: 'Albaricoque', cal: 48, prot: 1.4, fat: 0.4, sat: 0.03, carb: 11.1, weight: 60 },
-                { name: 'Granada', cal: 83, prot: 1.7, fat: 1.2, sat: 0.12, carb: 18.7, weight: 200 },
-                { name: 'Papaya', cal: 43, prot: 0.5, fat: 0.3, sat: 0.08, carb: 11, weight: 200 },
-                { name: 'Higo', cal: 74, prot: 0.8, fat: 0.3, sat: 0.06, carb: 19.2, weight: 50 },
-                { name: 'Ciruela', cal: 46, prot: 0.7, fat: 0.3, sat: 0.02, carb: 11.4, weight: 60 }
-            ],
-            'Verduras': [
-                { name: 'Tomate', cal: 18, prot: 0.9, fat: 0.2, sat: 0.03, carb: 3.9, weight: 120 },
-                { name: 'Lechuga', cal: 15, prot: 1.4, fat: 0.2, sat: 0.03, carb: 2.9, weight: 50 },
-                { name: 'Espinaca', cal: 23, prot: 2.9, fat: 0.4, sat: 0.06, carb: 3.6, weight: 30 },
-                { name: 'Brócoli', cal: 34, prot: 2.8, fat: 0.4, sat: 0.04, carb: 6.6, weight: 150 },
-                { name: 'Calabacín', cal: 17, prot: 1.2, fat: 0.3, sat: 0.05, carb: 3.1, weight: 200 },
-                { name: 'Zanahoria', cal: 41, prot: 0.9, fat: 0.2, sat: 0.03, carb: 9.6, weight: 75 },
-                { name: 'Pepino', cal: 16, prot: 0.7, fat: 0.1, sat: 0.02, carb: 3.6, weight: 200 },
-                { name: 'Cebolla', cal: 40, prot: 1.1, fat: 0.1, sat: 0.02, carb: 9.3, weight: 100 },
-                { name: 'Ajo', cal: 149, prot: 6.4, fat: 0.5, sat: 0.09, carb: 33.1, weight: 5 },
-                { name: 'Pimiento rojo', cal: 31, prot: 1, fat: 0.3, sat: 0.03, carb: 6, weight: 120 },
-                { name: 'Pimiento verde', cal: 20, prot: 0.9, fat: 0.2, sat: 0.03, carb: 4.6, weight: 100 },
-                { name: 'Berenjena', cal: 25, prot: 1, fat: 0.2, sat: 0.03, carb: 5.9, weight: 200 },
-                { name: 'Alcachofa', cal: 47, prot: 3.3, fat: 0.2, sat: 0.04, carb: 10.5, weight: 120 },
-                { name: 'Coliflor', cal: 25, prot: 1.9, fat: 0.3, sat: 0.05, carb: 5, weight: 100 },
-                { name: 'Apio', cal: 16, prot: 0.7, fat: 0.2, sat: 0.04, carb: 3, weight: 40 },
-                { name: 'Remolacha', cal: 43, prot: 1.6, fat: 0.2, sat: 0.03, carb: 9.6, weight: 100 },
-                { name: 'Espárrago', cal: 20, prot: 2.2, fat: 0.1, sat: 0.03, carb: 3.9, weight: 50 },
-                { name: 'Col de Bruselas', cal: 43, prot: 3.4, fat: 0.3, sat: 0.06, carb: 8.9, weight: 20 }
-            ],
-            'Frutos Secos': [
-                { name: 'Almendras', cal: 579, prot: 21.2, fat: 49.9, sat: 3.8, carb: 21.6, weight: 30 },
-                { name: 'Nueces', cal: 654, prot: 15.2, fat: 65.2, sat: 6.1, carb: 13.7, weight: 30 },
-                { name: 'Avellanas', cal: 628, prot: 15, fat: 60.8, sat: 4.5, carb: 16.7, weight: 30 },
-                { name: 'Pistachos', cal: 562, prot: 20.6, fat: 45.4, sat: 5.6, carb: 27.2, weight: 30 },
-                { name: 'Anacardos', cal: 553, prot: 18.2, fat: 43.9, sat: 7.8, carb: 30.2, weight: 30 },
-                { name: 'Cacahuetes', cal: 567, prot: 25.8, fat: 49.2, sat: 6.8, carb: 16.1, weight: 30 },
-                { name: 'Nueces de Macadamia', cal: 718, prot: 7.9, fat: 75.8, sat: 12.1, carb: 13.8, weight: 30 },
-                { name: 'Nueces de Brasil', cal: 659, prot: 14.3, fat: 67.1, sat: 16.1, carb: 11.7, weight: 30 },
-                { name: 'Piñones', cal: 673, prot: 13.7, fat: 68.4, sat: 4.9, carb: 13.1, weight: 30 }
-            ],
-            'Carnes': [
-                { name: 'Pechuga de pollo', cal: 165, prot: 31, fat: 3.6, sat: 1, carb: 0, weight: 150 },
-                { name: 'Muslo de pollo', cal: 209, prot: 26, fat: 10.9, sat: 3, carb: 0, weight: 150 },
-                { name: 'Pollo entero', cal: 190, prot: 28, fat: 8, sat: 2.3, carb: 0, weight: 1000 },
-                { name: 'Carne de ternera', cal: 250, prot: 26, fat: 17, sat: 7, carb: 0, weight: 150 },
-                { name: 'Carne de ternera magra', cal: 220, prot: 26, fat: 12, sat: 5, carb: 0, weight: 150 },
-                { name: 'Carne de cerdo', cal: 242, prot: 21, fat: 17, sat: 7, carb: 0, weight: 150 },
-                { name: 'Lomo de cerdo', cal: 211, prot: 23, fat: 12, sat: 4.5, carb: 0, weight: 150 },
-                { name: 'Entrecot lomo iberico marinado', cal: 137, prot: 18, fat: 7, sat: 2.5, carb: 0.5, weight: 70 },
-                { name: 'Flamenquines', cal: 167, prot: 11.1, fat: 5.3, sat: 1.9, carb: 18.5, weight: 45 },
-                { name: 'Costillas de cerdo', cal: 291, prot: 25, fat: 21, sat: 8, carb: 0, weight: 150 },
-                { name: 'Cordero', cal: 294, prot: 25, fat: 21, sat: 9, carb: 0, weight: 150 },
-                { name: 'Cordero magro', cal: 236, prot: 26, fat: 14, sat: 6, carb: 0, weight: 150 },
-                { name: 'Pavo chuletas', cal: 85, prot: 16.4, fat: 1.8, sat: 0.6, carb: 0.8, weight: 120 },
-                { name: 'Pavo molido', cal: 150, prot: 26, fat: 5, sat: 1, carb: 0, weight: 150 },
-                { name: 'Conejo', cal: 173, prot: 32, fat: 4, sat: 1, carb: 0, weight: 150 },
-                { name: 'Salchichón', cal: 460, prot: 27, fat: 38, sat: 14, carb: 1, weight: 50 },
-                { name: 'Jamón serrano', cal: 247.8, prot: 33.5, fat: 12.2, sat: 4.6, carb: 1, weight: 100 },
-                { name: 'Jamón cocido extra', cal: 98, prot: 19, fat: 2.5, sat: 1, carb: 0.5, weight: 15 },
-                { name: 'Salchichas', cal: 222, prot: 14, fat: 18, sat: 6, carb: 1, weight: 31 },
-                { name: 'Pelota', cal: 225, prot: 20, fat: 16, sat: 6, carb: 4, weight: 100 },
-                { name: 'Longaniza', cal: 245, prot: 15.9, fat: 19.4, sat: 7.8, carb: 1.7, weight: 30 }
-            ],
-            'Pescados': [
-                { name: 'Merluza', cal: 94, prot: 20, fat: 1, sat: 0.2, carb: 0, weight: 300 },
-                { name: 'Dorada', cal: 96, prot: 18, fat: 2.5, sat: 0.6, carb: 0, weight: 500 },
-                { name: 'Lubina', cal: 98, prot: 19, fat: 2, sat: 0.4, carb: 0, weight: 300 },
-                { name: 'Salmón (salvaje)', cal: 180, prot: 20, fat: 10, sat: 2, carb: 0, weight: 200 },
-                { name: 'Sardinas', cal: 118, prot: 20, fat: 5, sat: 1.2, carb: 0, weight: 100 },
-                { name: 'Gallineta nórdica', cal: 79, prot: 20, fat: 1, sat: 0.2, carb: 0, weight: 380 },
-                { name: 'Trucha', cal: 103, prot: 20, fat: 3, sat: 0.6, carb: 0, weight: 250 },
-                { name: 'Pez espada', cal: 117, prot: 20, fat: 4, sat: 1, carb: 0, weight: 200 },
-                { name: 'Pulpo', cal: 81, prot: 15, fat: 1, sat: 0.2, carb: 2, weight: 100 },
-                { name: 'Mejillones', cal: 171, prot: 24, fat: 4, sat: 0.8, carb: 7, weight: 100 }
-            ],
-            'Bebidas': [
-                { name: 'Agua mineral', cal: 0, prot: 0, fat: 0, sat: 0, carb: 0, weight: 250 },
-                { name: 'Agua con gas', cal: 0, prot: 0, fat: 0, sat: 0, carb: 0, weight: 250 },
-                { name: 'Batido de chocolate', cal: 110, prot: 3, fat: 3.5, sat: 2, carb: 17, weight: 250 },
-                { name: 'Limonada casera', cal: 50, prot: 0, fat: 0, sat: 0, carb: 12, weight: 250 },
-                { name: 'Té helado', cal: 40, prot: 0, fat: 0, sat: 0, carb: 10, weight: 250 },
-                { name: 'Bebida de soja', cal: 33, prot: 3, fat: 1.8, sat: 0.2, carb: 1, weight: 250 },
-                { name: 'Cerveza rubia', cal: 43, prot: 0.5, fat: 0, sat: 0, carb: 3.6, weight: 330 },
-                { name: 'Cerveza sin alcohol', cal: 20, prot: 0.2, fat: 0, sat: 0, carb: 4.5, weight: 330 },
-                { name: 'Vino tinto', cal: 85, prot: 0.1, fat: 0, sat: 0, carb: 2.6, weight: 125 },
-                { name: 'Vino blanco', cal: 82, prot: 0.1, fat: 0, sat: 0, carb: 2.3, weight: 125 }
-            ],
-            'Burger King': [
-                { name: 'Whopper', cal: 657, prot: 28, fat: 37, sat: 10, carb: 49, weight: 300 },
-                { name: 'Chicken Royale', cal: 500, prot: 22, fat: 24, sat: 3, carb: 48, weight: 200 },
-                { name: 'Patatas fritas pequeñas', cal: 230, prot: 3, fat: 11, sat: 1, carb: 32, weight: 90 },
-                { name: 'Aros de cebolla', cal: 270, prot: 2, fat: 18, sat: 2, carb: 25, weight: 100 },
-                { name: 'McFlurry Oreo', cal: 400, prot: 5, fat: 22, sat: 13, carb: 42, weight: 200 }
-            ],
-            'Panes': [
-                { name: 'Pan blanco', cal: 265, prot: 8.5, fat: 1.2, sat: 0.2, carb: 55, weight: 125 },
-                { name: 'Pan integral carrefour', cal: 221, prot: 9.1, fat: 1.7, sat: 0.9, carb: 45, weight: 125 },
-                { name: 'Pan de centeno', cal: 259, prot: 8.5, fat: 3.3, sat: 0.4, carb: 48.3, weight: 30 },
-                { name: 'Pan de molde', cal: 265, prot: 8, fat: 3.5, sat: 0.8, carb: 49, weight: 25 },
-                { name: 'Pan tostado', cal: 350, prot: 10, fat: 5, sat: 1, carb: 60, weight: 20 }
-            ],
-            'Cereales Grano': [
-                { name: 'Arroz blanco (cocido)', cal: 365, prot: 7.1, fat: 0.7, sat: 0.2, carb: 80, weight: 180 },
-                { name: 'Arroz integral (cocido)', cal: 370, prot: 7.9, fat: 2.7, sat: 0.5, carb: 77, weight: 180 },
-                { name: 'Quinoa (cocida)', cal: 368, prot: 14, fat: 6, sat: 0.7, carb: 64, weight: 185 },
-                { name: 'Avena (cruda)', cal: 389, prot: 17, fat: 7, sat: 1.2, carb: 66, weight: 40 }
-            ],
-            'Pastas': [
-                { name: 'Espaguetis (cocidos)', cal: 371, prot: 13, fat: 1.5, sat: 0.3, carb: 75, weight: 140 },
-                { name: 'Macarrones (cocidos)', cal: 371, prot: 13, fat: 1.5, sat: 0.3, carb: 75, weight: 140 },
-                { name: 'Fideos de arroz (cocidos)', cal: 109, prot: 0.9, fat: 0.2, sat: 0.02, carb: 24.9, weight: 180 }
-            ],
-            'Leches': [
-                { name: 'Leche entera', cal: 61, prot: 3.1, fat: 3.3, sat: 2.1, carb: 4.7, weight: 200 },
-                { name: 'Leche semidesnatada (Central Lechera Asturiana)', cal: 45, prot: 3.15, fat: 1.55, sat: 1, carb: 4.65, weight: 200 },
-                { name: 'Leche desnatada Puleva proteina', cal: 43, prot: 5, fat: 0.5, sat: 0.3, carb: 4.8, weight: 200 }
-            ],
-            'Quesos': [
-                { name: 'Queso fresco', cal: 145, prot: 11, fat: 10, sat: 6.5, carb: 2, weight: 100 },
-                { name: 'Queso semicurado', cal: 421, prot: 25, fat: 35, sat: 25, carb: 1.6, weight: 20 },
-                { name: 'Queso curado', cal: 452, prot: 30, fat: 37, sat: 24, carb: 1, weight: 30 },
-                { name: 'Queso cauda viejo', cal: 325, prot: 29.4, fat: 23, sat: 16, carb: 0, weight: 4 },
-                { name: 'Queso havarti', cal: 418, prot: 18.9, fat: 38, sat: 24.2, carb: 0.1, weight: 32 }
-            ],
-            'Yogures': [
-                { name: 'Yogur natural entero', cal: 61, prot: 3.5, fat: 3, sat: 2, carb: 4.7, weight: 125 },
-                { name: 'Yogur natural desnatado', cal: 36, prot: 4.3, fat: 0.1, sat: 0.1, carb: 5, weight: 125 },
-                { name: 'Yogur griego', cal: 115, prot: 9, fat: 5, sat: 3.5, carb: 3.5, weight: 125 }
-            ],
-            'Legumbres Secas': [
-                { name: 'Lentejas (crudas)', cal: 353, prot: 25, fat: 1.1, sat: 0.2, carb: 60, weight: 10 },
-                { name: 'Garbanzos (crudos)', cal: 364, prot: 19, fat: 6, sat: 0.6, carb: 61, weight: 12 },
-                { name: 'Judías blancas (crudas)', cal: 335, prot: 21, fat: 1.6, sat: 0.3, carb: 60, weight: 10 }
-            ],
-            'Legumbres Cocidas': [
-                { name: 'Lentejas cocidas', cal: 116, prot: 9, fat: 0.4, sat: 0.1, carb: 20, weight: 200 },
-                { name: 'Tortitas de arroz', cal: 389, prot: 8, fat: 2.1, sat: 0.4, carb: 83, weight: 7 },
-                { name: 'Garbanzos cocidos', cal: 164, prot: 9, fat: 2.6, sat: 0.3, carb: 27, weight: 200 }
-            ],
-            'Huevos': [
-                { name: 'Huevo de gallina (entero)', cal: 143, prot: 12.6, fat: 10, sat: 3.1, carb: 0.7, weight: 60 },
-                { name: 'Clara de huevo', cal: 52, prot: 11, fat: 0.2, sat: 0, carb: 0.7, weight: 33 },
-                { name: 'Yema de huevo', cal: 322, prot: 16, fat: 27, sat: 9.6, carb: 3.6, weight: 17 },
-                { name: 'Huevo cocido', cal: 155, prot: 12.6, fat: 10.6, sat: 3.3, carb: 1.1, weight: 50 },
-                { name: 'Huevo frito', cal: 196, prot: 13, fat: 15, sat: 4.2, carb: 1.1, weight: 60 }
-            ],
-            'Bolleria': [
-                { name: 'Croissant', cal: 406, prot: 8.2, fat: 21, sat: 12, carb: 46, weight: 60 },
-                { name: 'Donut', cal: 452, prot: 5.3, fat: 25, sat: 12, carb: 51, weight: 70 }
-            ],
-            'Dulces': [
-                { name: 'Chocolate negro', cal: 546, prot: 4.9, fat: 31, sat: 19, carb: 61, weight: 30 },
-                { name: 'Galletas tipo María', cal: 409, prot: 6.8, fat: 8.1, sat: 2.5, carb: 82.3, weight: 6 }
-            ],
-            'Hamburguesas': [
-                { name: 'Big Mac', cal: 550, prot: 25, fat: 30, sat: 10, carb: 45, weight: 200 },
-                { name: 'McChicken', cal: 420, prot: 23, fat: 20, sat: 3, carb: 35, weight: 180 }
-            ],
-            'Acompañamientos': [
-                { name: 'Patatas fritas medianas', cal: 340, prot: 3, fat: 17, sat: 1, carb: 44, weight: 115 }
-            ],
-            'Salsas': [
-                { name: 'Ketchup', cal: 60, prot: 1.3, fat: 0.5, sat: 0.1, carb: 13, weight: 100 },
-                { name: 'Salsa de Yogur', cal: 120, prot: 3, fat: 10, sat: 2, carb: 5, weight: 100 },
-                { name: 'Salsa de Curry', cal: 150, prot: 2, fat: 12, sat: 3, carb: 10, weight: 100 },
-                { name: 'Salsa de Mostaza', cal: 133, prot: 7, fat: 9, sat: 0.5, carb: 5, weight: 100 },
-                { name: 'Salsa de Queso', cal: 250, prot: 10, fat: 22, sat: 14, carb: 5, weight: 100 },
-                { name: 'Salsa de Ajo', cal: 180, prot: 2, fat: 16, sat: 2.5, carb: 6, weight: 100 },
-                { name: 'Salsa de Chile', cal: 40, prot: 1, fat: 0.5, sat: 0.1, carb: 10, weight: 100 },
-                { name: 'Salsa de Miel y Mostaza', cal: 200, prot: 2, fat: 12, sat: 1.5, carb: 20, weight: 100 },
-                { name: 'Salsa de Soja Dulce', cal: 100, prot: 5, fat: 0.5, sat: 0.1, carb: 20, weight: 100 }
-            ]
+            'Desayuno': [ { name: 'Cafe con leche', cal: 68.8, prot: 8, fat: 0.8, sat: 0.48, carb: 12, weight: 200 }, { name: 'Cafe con leche + proteina', cal: 127.8, prot: 19.5, fat: 1.7, sat: 1.03, carb: 15, weight: 200 }, { name: '1 panecillo', cal: 27.03, prot: 3.75, fat: 0.89, sat: 0.21, carb: 5, weight: 50 }, { name: 'Tortilla (3 claras + 1 yema)', cal: 145, prot: 16, fat: 5, sat: 1.5, carb: 1, weight: 150 }, { name: 'Avena con Leche', cal: 220, prot: 10, fat: 4, sat: 1, carb: 35, weight: 250 } ],
+            'Almuerzo': [ { name: 'Bocadillo de jamón', cal: 400, prot: 25, fat: 15, sat: 5, carb: 45, weight: 150 }, { name: 'Fruta genérica', cal: 200, prot: 10, fat: 8, sat: 3, carb: 25, weight: 100 } ],
+            'Comida': [ { name: 'Cafe con leche', cal: 68.8, prot: 8, fat: 0.8, sat: 0.48, carb: 12, weight: 200 }, { name: 'Cafe con leche + proteina', cal: 127.8, prot: 19.5, fat: 1.7, sat: 1.03, carb: 15, weight: 200 } ],
+            'Merienda': [ { name: 'Frutos secos', cal: 200, prot: 10, fat: 5, sat: 2, carb: 20, weight: 50 }, { name: 'Yogur natural', cal: 150, prot: 8, fat: 3, sat: 1, carb: 18, weight: 125 } ],
+            'Cena': [ { name: '1 panecillo', cal: 27.03, prot: 3.75, fat: 0.89, sat: 0.21, carb: 5, weight: 50 } ],
+            'Frutas': [ { name: 'Manzana', cal: 52, prot: 0.3, fat: 0.2, sat: 0.03, carb: 13.8, weight: 150 }, { name: 'Plátano', cal: 89, prot: 1.1, fat: 0.3, sat: 0.11, carb: 22.8, weight: 120 }, { name: 'Fresa', cal: 32, prot: 0.7, fat: 0.3, sat: 0.02, carb: 7.7, weight: 50 }, { name: 'Sandía', cal: 30, prot: 0.6, fat: 0.2, sat: 0.02, carb: 7.6, weight: 200 }, { name: 'Melón', cal: 34, prot: 0.8, fat: 0.2, sat: 0.05, carb: 8.2, weight: 150 }, { name: 'Uvas', cal: 69, prot: 0.7, fat: 0.2, sat: 0.07, carb: 18.1, weight: 100 }, { name: 'Pera', cal: 57, prot: 0.4, fat: 0.1, sat: 0.02, carb: 15.2, weight: 170 }, { name: 'Piña', cal: 50, prot: 0.5, fat: 0.1, sat: 0.01, carb: 13.1, weight: 200 }, { name: 'Kiwi', cal: 61, prot: 1.1, fat: 0.5, sat: 0.03, carb: 14.7, weight: 75 }, { name: 'Mango', cal: 60, prot: 0.8, fat: 0.4, sat: 0.09, carb: 15, weight: 200 }, { name: 'Naranja', cal: 47, prot: 0.9, fat: 0.1, sat: 0.02, carb: 11.8, weight: 150 }, { name: 'Limón', cal: 29, prot: 1.1, fat: 0.3, sat: 0.04, carb: 9.3, weight: 100 }, { name: 'Cereza', cal: 63, prot: 1.1, fat: 0.2, sat: 0.04, carb: 16, weight: 50 }, { name: 'Melocotón', cal: 39, prot: 0.9, fat: 0.3, sat: 0.02, carb: 9.5, weight: 150 }, { name: 'Albaricoque', cal: 48, prot: 1.4, fat: 0.4, sat: 0.03, carb: 11.1, weight: 60 }, { name: 'Granada', cal: 83, prot: 1.7, fat: 1.2, sat: 0.12, carb: 18.7, weight: 200 }, { name: 'Papaya', cal: 43, prot: 0.5, fat: 0.3, sat: 0.08, carb: 11, weight: 200 }, { name: 'Higo', cal: 74, prot: 0.8, fat: 0.3, sat: 0.06, carb: 19.2, weight: 50 }, { name: 'Ciruela', cal: 46, prot: 0.7, fat: 0.3, sat: 0.02, carb: 11.4, weight: 60 } ],
+            'Verduras': [ { name: 'Tomate', cal: 18, prot: 0.9, fat: 0.2, sat: 0.03, carb: 3.9, weight: 120 }, { name: 'Lechuga', cal: 15, prot: 1.4, fat: 0.2, sat: 0.03, carb: 2.9, weight: 50 }, { name: 'Espinaca', cal: 23, prot: 2.9, fat: 0.4, sat: 0.06, carb: 3.6, weight: 30 }, { name: 'Brócoli', cal: 34, prot: 2.8, fat: 0.4, sat: 0.04, carb: 6.6, weight: 150 }, { name: 'Calabacín', cal: 17, prot: 1.2, fat: 0.3, sat: 0.05, carb: 3.1, weight: 200 }, { name: 'Zanahoria', cal: 41, prot: 0.9, fat: 0.2, sat: 0.03, carb: 9.6, weight: 75 }, { name: 'Pepino', cal: 16, prot: 0.7, fat: 0.1, sat: 0.02, carb: 3.6, weight: 200 }, { name: 'Cebolla', cal: 40, prot: 1.1, fat: 0.1, sat: 0.02, carb: 9.3, weight: 100 }, { name: 'Ajo', cal: 149, prot: 6.4, fat: 0.5, sat: 0.09, carb: 33.1, weight: 5 }, { name: 'Pimiento rojo', cal: 31, prot: 1, fat: 0.3, sat: 0.03, carb: 6, weight: 120 }, { name: 'Pimiento verde', cal: 20, prot: 0.9, fat: 0.2, sat: 0.03, carb: 4.6, weight: 100 }, { name: 'Berenjena', cal: 25, prot: 1, fat: 0.2, sat: 0.03, carb: 5.9, weight: 200 }, { name: 'Alcachofa', cal: 47, prot: 3.3, fat: 0.2, sat: 0.04, carb: 10.5, weight: 120 }, { name: 'Coliflor', cal: 25, prot: 1.9, fat: 0.3, sat: 0.05, carb: 5, weight: 100 }, { name: 'Apio', cal: 16, prot: 0.7, fat: 0.2, sat: 0.04, carb: 3, weight: 40 }, { name: 'Remolacha', cal: 43, prot: 1.6, fat: 0.2, sat: 0.03, carb: 9.6, weight: 100 }, { name: 'Espárrago', cal: 20, prot: 2.2, fat: 0.1, sat: 0.03, carb: 3.9, weight: 50 }, { name: 'Col de Bruselas', cal: 43, prot: 3.4, fat: 0.3, sat: 0.06, carb: 8.9, weight: 20 } ],
+            'Frutos Secos': [ { name: 'Almendras', cal: 579, prot: 21.2, fat: 49.9, sat: 3.8, carb: 21.6, weight: 30 }, { name: 'Nueces', cal: 654, prot: 15.2, fat: 65.2, sat: 6.1, carb: 13.7, weight: 30 }, { name: 'Avellanas', cal: 628, prot: 15, fat: 60.8, sat: 4.5, carb: 16.7, weight: 30 }, { name: 'Pistachos', cal: 562, prot: 20.6, fat: 45.4, sat: 5.6, carb: 27.2, weight: 30 }, { name: 'Anacardos', cal: 553, prot: 18.2, fat: 43.9, sat: 7.8, carb: 30.2, weight: 30 }, { name: 'Cacahuetes', cal: 567, prot: 25.8, fat: 49.2, sat: 6.8, carb: 16.1, weight: 30 }, { name: 'Nueces de Macadamia', cal: 718, prot: 7.9, fat: 75.8, sat: 12.1, carb: 13.8, weight: 30 }, { name: 'Nueces de Brasil', cal: 659, prot: 14.3, fat: 67.1, sat: 16.1, carb: 11.7, weight: 30 }, { name: 'Piñones', cal: 673, prot: 13.7, fat: 68.4, sat: 4.9, carb: 13.1, weight: 30 } ],
+            'Carnes': [ { name: 'Pechuga de pollo', cal: 165, prot: 31, fat: 3.6, sat: 1, carb: 0, weight: 150 }, { name: 'Muslo de pollo', cal: 209, prot: 26, fat: 10.9, sat: 3, carb: 0, weight: 150 }, { name: 'Pollo entero', cal: 190, prot: 28, fat: 8, sat: 2.3, carb: 0, weight: 1000 }, { name: 'Carne de ternera', cal: 250, prot: 26, fat: 17, sat: 7, carb: 0, weight: 150 }, { name: 'Carne de ternera magra', cal: 220, prot: 26, fat: 12, sat: 5, carb: 0, weight: 150 }, { name: 'Carne de cerdo', cal: 242, prot: 21, fat: 17, sat: 7, carb: 0, weight: 150 }, { name: 'Lomo de cerdo', cal: 211, prot: 23, fat: 12, sat: 4.5, carb: 0, weight: 150 }, { name: 'Entrecot lomo iberico marinado', cal: 137, prot: 18, fat: 7, sat: 2.5, carb: 0.5, weight: 70 }, { name: 'Flamenquines', cal: 167, prot: 11.1, fat: 5.3, sat: 1.9, carb: 18.5, weight: 45 }, { name: 'Costillas de cerdo', cal: 291, prot: 25, fat: 21, sat: 8, carb: 0, weight: 150 }, { name: 'Cordero', cal: 294, prot: 25, fat: 21, sat: 9, carb: 0, weight: 150 }, { name: 'Cordero magro', cal: 236, prot: 26, fat: 14, sat: 6, carb: 0, weight: 150 }, { name: 'Pavo chuletas', cal: 85, prot: 16.4, fat: 1.8, sat: 0.6, carb: 0.8, weight: 120 }, { name: 'Pavo molido', cal: 150, prot: 26, fat: 5, sat: 1, carb: 0, weight: 150 }, { name: 'Conejo', cal: 173, prot: 32, fat: 4, sat: 1, carb: 0, weight: 150 }, { name: 'Salchichón', cal: 460, prot: 27, fat: 38, sat: 14, carb: 1, weight: 50 }, { name: 'Jamón serrano', cal: 247.8, prot: 33.5, fat: 12.2, sat: 4.6, carb: 1, weight: 100 }, { name: 'Jamón cocido extra', cal: 98, prot: 19, fat: 2.5, sat: 1, carb: 0.5, weight: 15 }, { name: 'Salchichas', cal: 222, prot: 14, fat: 18, sat: 6, carb: 1, weight: 31 }, { name: 'Pelota', cal: 225, prot: 20, fat: 16, sat: 6, carb: 4, weight: 100 }, { name: 'Longaniza', cal: 245, prot: 15.9, fat: 19.4, sat: 7.8, carb: 1.7, weight: 30 } ],
+            'Pescados': [ { name: 'Merluza', cal: 94, prot: 20, fat: 1, sat: 0.2, carb: 0, weight: 300 }, { name: 'Dorada', cal: 96, prot: 18, fat: 2.5, sat: 0.6, carb: 0, weight: 500 }, { name: 'Lubina', cal: 98, prot: 19, fat: 2, sat: 0.4, carb: 0, weight: 300 }, { name: 'Salmón (salvaje)', cal: 180, prot: 20, fat: 10, sat: 2, carb: 0, weight: 200 }, { name: 'Sardinas', cal: 118, prot: 20, fat: 5, sat: 1.2, carb: 0, weight: 100 }, { name: 'Gallineta nórdica', cal: 79, prot: 20, fat: 1, sat: 0.2, carb: 0, weight: 380 }, { name: 'Trucha', cal: 103, prot: 20, fat: 3, sat: 0.6, carb: 0, weight: 250 }, { name: 'Pez espada', cal: 117, prot: 20, fat: 4, sat: 1, carb: 0, weight: 200 }, { name: 'Pulpo', cal: 81, prot: 15, fat: 1, sat: 0.2, carb: 2, weight: 100 }, { name: 'Mejillones', cal: 171, prot: 24, fat: 4, sat: 0.8, carb: 7, weight: 100 } ],
+            'Bebidas': [ { name: 'Agua mineral', cal: 0, prot: 0, fat: 0, sat: 0, carb: 0, weight: 250 }, { name: 'Agua con gas', cal: 0, prot: 0, fat: 0, sat: 0, carb: 0, weight: 250 }, { name: 'Batido de chocolate', cal: 110, prot: 3, fat: 3.5, sat: 2, carb: 17, weight: 250 }, { name: 'Limonada casera', cal: 50, prot: 0, fat: 0, sat: 0, carb: 12, weight: 250 }, { name: 'Té helado', cal: 40, prot: 0, fat: 0, sat: 0, carb: 10, weight: 250 }, { name: 'Bebida de soja', cal: 33, prot: 3, fat: 1.8, sat: 0.2, carb: 1, weight: 250 }, { name: 'Cerveza rubia', cal: 43, prot: 0.5, fat: 0, sat: 0, carb: 3.6, weight: 330 }, { name: 'Cerveza sin alcohol', cal: 20, prot: 0.2, fat: 0, sat: 0, carb: 4.5, weight: 330 }, { name: 'Vino tinto', cal: 85, prot: 0.1, fat: 0, sat: 0, carb: 2.6, weight: 125 }, { name: 'Vino blanco', cal: 82, prot: 0.1, fat: 0, sat: 0, carb: 2.3, weight: 125 } ],
+            'Burger King': [ { name: 'Whopper', cal: 657, prot: 28, fat: 37, sat: 10, carb: 49, weight: 300 }, { name: 'Chicken Royale', cal: 500, prot: 22, fat: 24, sat: 3, carb: 48, weight: 200 }, { name: 'Patatas fritas pequeñas', cal: 230, prot: 3, fat: 11, sat: 1, carb: 32, weight: 90 }, { name: 'Aros de cebolla', cal: 270, prot: 2, fat: 18, sat: 2, carb: 25, weight: 100 }, { name: 'McFlurry Oreo', cal: 400, prot: 5, fat: 22, sat: 13, carb: 42, weight: 200 } ],
+            'Panes': [ { name: 'Pan blanco', cal: 265, prot: 8.5, fat: 1.2, sat: 0.2, carb: 55, weight: 125 }, { name: 'Pan integral carrefour', cal: 221, prot: 9.1, fat: 1.7, sat: 0.9, carb: 45, weight: 125 }, { name: 'Pan de centeno', cal: 259, prot: 8.5, fat: 3.3, sat: 0.4, carb: 48.3, weight: 30 }, { name: 'Pan de molde', cal: 265, prot: 8, fat: 3.5, sat: 0.8, carb: 49, weight: 25 }, { name: 'Pan tostado', cal: 350, prot: 10, fat: 5, sat: 1, carb: 60, weight: 20 } ],
+            'Cereales Grano': [ { name: 'Arroz blanco (cocido)', cal: 365, prot: 7.1, fat: 0.7, sat: 0.2, carb: 80, weight: 180 }, { name: 'Arroz integral (cocido)', cal: 370, prot: 7.9, fat: 2.7, sat: 0.5, carb: 77, weight: 180 }, { name: 'Quinoa (cocida)', cal: 368, prot: 14, fat: 6, sat: 0.7, carb: 64, weight: 185 }, { name: 'Avena (cruda)', cal: 389, prot: 17, fat: 7, sat: 1.2, carb: 66, weight: 40 } ],
+            'Pastas': [ { name: 'Espaguetis (cocidos)', cal: 371, prot: 13, fat: 1.5, sat: 0.3, carb: 75, weight: 140 }, { name: 'Macarrones (cocidos)', cal: 371, prot: 13, fat: 1.5, sat: 0.3, carb: 75, weight: 140 }, { name: 'Fideos de arroz (cocidos)', cal: 109, prot: 0.9, fat: 0.2, sat: 0.02, carb: 24.9, weight: 180 } ],
+            'Leches': [ { name: 'Leche entera', cal: 61, prot: 3.1, fat: 3.3, sat: 2.1, carb: 4.7, weight: 200 }, { name: 'Leche semidesnatada (Central Lechera Asturiana)', cal: 45, prot: 3.15, fat: 1.55, sat: 1, carb: 4.65, weight: 200 }, { name: 'Leche desnatada Puleva proteina', cal: 43, prot: 5, fat: 0.5, sat: 0.3, carb: 4.8, weight: 200 } ],
+            'Quesos': [ { name: 'Queso fresco', cal: 145, prot: 11, fat: 10, sat: 6.5, carb: 2, weight: 100 }, { name: 'Queso semicurado', cal: 421, prot: 25, fat: 35, sat: 25, carb: 1.6, weight: 20 }, { name: 'Queso curado', cal: 452, prot: 30, fat: 37, sat: 24, carb: 1, weight: 30 }, { name: 'Queso cauda viejo', cal: 325, prot: 29.4, fat: 23, sat: 16, carb: 0, weight: 4 }, { name: 'Queso havarti', cal: 418, prot: 18.9, fat: 38, sat: 24.2, carb: 0.1, weight: 32 } ],
+            'Yogures': [ { name: 'Yogur natural entero', cal: 61, prot: 3.5, fat: 3, sat: 2, carb: 4.7, weight: 125 }, { name: 'Yogur natural desnatado', cal: 36, prot: 4.3, fat: 0.1, sat: 0.1, carb: 5, weight: 125 }, { name: 'Yogur griego', cal: 115, prot: 9, fat: 5, sat: 3.5, carb: 3.5, weight: 125 } ],
+            'Legumbres Secas': [ { name: 'Lentejas (crudas)', cal: 353, prot: 25, fat: 1.1, sat: 0.2, carb: 60, weight: 10 }, { name: 'Garbanzos (crudos)', cal: 364, prot: 19, fat: 6, sat: 0.6, carb: 61, weight: 12 }, { name: 'Judías blancas (crudas)', cal: 335, prot: 21, fat: 1.6, sat: 0.3, carb: 60, weight: 10 } ],
+            'Legumbres Cocidas': [ { name: 'Lentejas cocidas', cal: 116, prot: 9, fat: 0.4, sat: 0.1, carb: 20, weight: 200 }, { name: 'Tortitas de arroz', cal: 389, prot: 8, fat: 2.1, sat: 0.4, carb: 83, weight: 7 }, { name: 'Garbanzos cocidos', cal: 164, prot: 9, fat: 2.6, sat: 0.3, carb: 27, weight: 200 } ],
+            'Huevos': [ { name: 'Huevo de gallina (entero)', cal: 143, prot: 12.6, fat: 10, sat: 3.1, carb: 0.7, weight: 60 }, { name: 'Clara de huevo', cal: 52, prot: 11, fat: 0.2, sat: 0, carb: 0.7, weight: 33 }, { name: 'Yema de huevo', cal: 322, prot: 16, fat: 27, sat: 9.6, carb: 3.6, weight: 17 }, { name: 'Huevo cocido', cal: 155, prot: 12.6, fat: 10.6, sat: 3.3, carb: 1.1, weight: 50 }, { name: 'Huevo frito', cal: 196, prot: 13, fat: 15, sat: 4.2, carb: 1.1, weight: 60 } ],
+            'Bolleria': [ { name: 'Croissant', cal: 406, prot: 8.2, fat: 21, sat: 12, carb: 46, weight: 60 }, { name: 'Donut', cal: 452, prot: 5.3, fat: 25, sat: 12, carb: 51, weight: 70 } ],
+            'Dulces': [ { name: 'Chocolate negro', cal: 546, prot: 4.9, fat: 31, sat: 19, carb: 61, weight: 30 }, { name: 'Galletas tipo María', cal: 409, prot: 6.8, fat: 8.1, sat: 2.5, carb: 82.3, weight: 6 } ],
+            'Hamburguesas': [ { name: 'Big Mac', cal: 550, prot: 25, fat: 30, sat: 10, carb: 45, weight: 200 }, { name: 'McChicken', cal: 420, prot: 23, fat: 20, sat: 3, carb: 35, weight: 180 } ],
+            'Acompañamientos': [ { name: 'Patatas fritas medianas', cal: 340, prot: 3, fat: 17, sat: 1, carb: 44, weight: 115 } ],
+            'Salsas': [ { name: 'Ketchup', cal: 60, prot: 1.3, fat: 0.5, sat: 0.1, carb: 13, weight: 100 }, { name: 'Salsa de Yogur', cal: 120, prot: 3, fat: 10, sat: 2, carb: 5, weight: 100 }, { name: 'Salsa de Curry', cal: 150, prot: 2, fat: 12, sat: 3, carb: 10, weight: 100 }, { name: 'Salsa de Mostaza', cal: 133, prot: 7, fat: 9, sat: 0.5, carb: 5, weight: 100 }, { name: 'Salsa de Queso', cal: 250, prot: 10, fat: 22, sat: 14, carb: 5, weight: 100 }, { name: 'Salsa de Ajo', cal: 180, prot: 2, fat: 16, sat: 2.5, carb: 6, weight: 100 }, { name: 'Salsa de Chile', cal: 40, prot: 1, fat: 0.5, sat: 0.1, carb: 10, weight: 100 }, { name: 'Salsa de Miel y Mostaza', cal: 200, prot: 2, fat: 12, sat: 1.5, carb: 20, weight: 100 }, { name: 'Salsa de Soja Dulce', cal: 100, prot: 5, fat: 0.5, sat: 0.1, carb: 20, weight: 100 } ]
         };
 
         const INITIAL_STATE = {
@@ -741,772 +715,974 @@
         };
 
         let todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
-        let BASE_GOALS = { cals: 2400, prot: 140, fat: 65, sat: 20, carbs: 300, water: 2200 };
+        let BASE_GOALS = { cals: 0, prot: 160, fat: 70, sat: 20, carbs: 300, water: 2500 }; 
         let currentGoals = { ...BASE_GOALS };
-        let currentSeason = 'Winter';
         let history = JSON.parse(localStorage.getItem('fitTrackerHistory_MD')) || [];
         
-        // Variables para las 3 barras
         let mentalLoad = 0;
         let physicalLoad = 0;
         let fatigue7d = 0;
-        
-        let stressDetails = []; // Array para guardar mensajes del modal
+        let stressDetails = []; 
         let waterDetails = [];
         let nutritionAdvice = "";
         let studyAdvice = "";
+        let mentalExplanation = "";
+        let physicalExplanation = "";
 
+        let todayAlerts = [];
+
+        // Variables para predicción diaria
+        let predictedMental = 50;
+        let predictedPhysical = 50;
+
+        // ==========================================================================================
+        // 🚀 INICIALIZACIÓN
+        // ==========================================================================================
         window.onload = function() {
-            detectSeason();
             loadDay();
             renderFoodCategories();
-            calculateStressBar(); // Calcular al inicio
+            calculateStressBar();
             updateDay();
             updateHistoryUI();
+            startRealTimeClock();
+            startSmartMonitor();
+            calculateDailyPrediction();
         };
 
-        function detectSeason() {
-            const m = new Date().getMonth();
-            const el = document.getElementById('season-indicator');
-            if (m >= 5 && m <= 8) { currentSeason = 'Summer'; el.innerText = 'Modo Verano ☀️'; }
-            else if (m >= 9 && m <= 10) { currentSeason = 'Autumn'; el.innerText = 'Modo Otoño 🍂'; }
-            else if (m >= 2 && m <= 4) { currentSeason = 'Spring'; el.innerText = 'Modo Primavera 🌸'; }
-            else { currentSeason = 'Winter'; el.innerText = 'Modo Invierno ❄️'; }
+        function startRealTimeClock() {
+            setInterval(() => {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const day = now.getDate();
+                const month = MONTH_NAMES[now.getMonth()];
+                
+                const climate = ENGINE.getClimateStress();
+                
+                document.getElementById('season-indicator').innerHTML = `${hours}:${minutes} · ${day} ${month} ${climate.icon} ${climate.temp}°C`;
+            }, 1000);
+        }
+
+        function calculateDailyPrediction() {
+            if (history.length > 0) {
+                const lastDay = history[0];
+                const climate = ENGINE.getClimateStress();
+                
+                predictedMental = ENGINE.predictMentalPerformance(lastDay);
+                predictedPhysical = ENGINE.predictPhysicalPerformance(lastDay);
+                
+                if (climate.temp > 28) {
+                    predictedPhysical -= 10;
+                }
+                if (climate.temp < 10) {
+                    predictedMental -= 5;
+                }
+            }
+        }
+
+        // ==========================================================================================
+        // 🔔 SISTEMA DE ALERTAS INTELIGENTE
+        // ==========================================================================================
+        function startSmartMonitor() {
+            setInterval(() => {
+                checkAlerts();
+            }, 300000);
+            
+            setTimeout(checkAlerts, 2000);
+        }
+
+        function checkAlerts() {
+            const h = new Date().getHours();
+            const waterPct = (todayData.water / currentGoals.water) * 100;
+            const foodPct = (todayData.foodLog.reduce((a,b)=>a+b.cal, 0) / currentGoals.cals) * 100;
+            
+            const totalCarbs = todayData.foodLog.reduce((a,b)=>a+b.carb, 0);
+            const totalProt = todayData.foodLog.reduce((a,b)=>a+b.prot, 0);
+            const totalStudy = todayData.studySessions.reduce((a,b)=>a+b.hours, 0);
+
+            todayAlerts = [];
+
+            // ALERTAS DE AGUA
+            if (h >= 12 && waterPct < 30) {
+                todayAlerts.push({ type: 'water', severity: 'low', message: '¡Alerta! Muy poca agua. Bebe ahora.' });
+            } else if (h < 14 && waterPct > 100) {
+                todayAlerts.push({ type: 'water', severity: 'high', message: 'Vas muy rápido. Has bebido toda el agua antes de comer.' });
+            } else if (todayData.runKm > 5 && waterPct < 50) {
+                todayAlerts.push({ type: 'water', severity: 'low', message: `Has corrido ${todayData.runKm}km y no has bebido suficiente agua. Necesitas reponer.` });
+            }
+
+            // ALERTAS DE COMBUSTIBLE
+            if (totalCarbs < currentGoals.carbs * 0.5 && todayData.runKm > 5) {
+                todayAlerts.push({ type: 'nutrition', severity: 'carbs', message: 'Te faltan carbohidratos para recuperar del entrenamiento.' });
+            } else if (totalCarbs < currentGoals.carbs * 0.3) {
+                todayAlerts.push({ type: 'nutrition', severity: 'carbs', message: 'Muy pocos carbohidratos. Afectará tu energía.' });
+            }
+            
+            if (totalProt < currentGoals.prot * 0.5) {
+                todayAlerts.push({ type: 'nutrition', severity: 'prot', message: 'Proteína baja. Tus músculos necesitan recuperarse.' });
+            }
+
+            // ALERTAS COGNITIVAS
+            if (totalStudy > 6) {
+                todayAlerts.push({ type: 'cognitive', severity: 'high', message: `Has estudiado ${totalStudy}h. Necesitas carbohidratos y omega-3 para recuperar.` });
+                studyAdvice = `🧠 Alta carga cognitiva (${totalStudy}h). Toma frutos secos, pescado o aguacate.`;
+            } else if (totalStudy > 3) {
+                studyAdvice = `📚 Has estudiado ${totalStudy}h. Mantén una buena hidratación.`;
+            } else {
+                studyAdvice = "✅ Carga cognitiva nominal.";
+            }
+
+            // ALERTA DE COMIDA GENERAL
+            if (h >= 15 && foodPct < 30) {
+                todayAlerts.push({ type: 'food', severity: 'low', message: 'Has comido muy poco. El cuerpo entrará en reserva.' });
+            }
+
+            updateAlertCards();
+        }
+
+        function updateAlertCards() {
+            const waterCard = document.getElementById('water-home-card');
+            const foodCard = document.getElementById('food-home-card');
+
+            waterCard.classList.remove('alert-water-low', 'alert-water-high', 'border-b-4', 'border-blue-400');
+            foodCard.classList.remove('alert-food-low', 'alert-nutrition', 'border-b-4', 'border-orange-500');
+
+            let waterAlert = todayAlerts.find(a => a.type === 'water');
+            if (waterAlert) {
+                if (waterAlert.severity === 'low') {
+                    waterCard.classList.add('alert-water-low');
+                } else if (waterAlert.severity === 'high') {
+                    waterCard.classList.add('alert-water-high');
+                }
+            } else {
+                waterCard.classList.add('border-b-4', 'border-blue-400');
+            }
+
+            let nutritionAlert = todayAlerts.find(a => a.type === 'nutrition');
+            let foodAlert = todayAlerts.find(a => a.type === 'food');
+            let cognitiveAlert = todayAlerts.find(a => a.type === 'cognitive');
+            
+            if (nutritionAlert || foodAlert || cognitiveAlert) {
+                foodCard.classList.add('alert-nutrition');
+            } else {
+                foodCard.classList.add('border-b-4', 'border-orange-500');
+            }
+        }
+
+        function getWaterAdvice() {
+            const h = new Date().getHours();
+            const waterPct = (todayData.water / currentGoals.water) * 100;
+            const remaining = currentGoals.water - todayData.water;
+            
+            let expectedPct = 0;
+            if (h < 10) expectedPct = 20;
+            else if (h < 14) expectedPct = 40;
+            else if (h < 18) expectedPct = 60;
+            else if (h < 22) expectedPct = 80;
+            else expectedPct = 100;
+            
+            if (h >= 20) {
+                if (waterPct < 50) {
+                    return `🌙 Son las ${h}:00, has bebido solo ${todayData.water}ml de ${Math.round(currentGoals.water)}ml. Te quedan ${Math.round(remaining)}ml por beber antes de dormir. ¡Bebe ahora!`;
+                } else if (waterPct >= 90) {
+                    return `🌙 Son las ${h}:00, has bebido ${todayData.water}ml. ¡Bien! Ya casi llegas a la meta.`;
+                } else {
+                    return `🌙 Son las ${h}:00, llevas ${todayData.water}ml. Te quedan ${Math.round(remaining)}ml para hoy.`;
+                }
+            } else if (h >= 12) {
+                if (waterPct < 40) {
+                    return `☀️ Son las ${h}:00 y solo has bebido ${todayData.water}ml. Deberías llevar al menos ${Math.round(currentGoals.water * 0.5)}ml a estas horas. ¡Hidrátate!`;
+                } else if (todayData.runKm > 0 && waterPct < 60) {
+                    return `🏃 Has hecho deporte y solo llevas ${todayData.water}ml. Necesitas más agua para recuperar.`;
+                } else if (waterPct > 80) {
+                    return `☀️ Son las ${h}:00 y ya has bebido ${todayData.water}ml. Vas muy bien, pero no te pases.`;
+                } else {
+                    return `☀️ Son las ${h}:00, llevas ${todayData.water}ml. Objetivo: ${Math.round(currentGoals.water)}ml. Sigue así.`;
+                }
+            } else {
+                if (waterPct === 0) {
+                    return `🌅 Son las ${h}:00 y aún no has bebido agua. Empieza el día hidratándote.`;
+                } else {
+                    return `🌅 Son las ${h}:00, buen comienzo con ${todayData.water}ml. Sigue bebiendo a lo largo del día.`;
+                }
+            }
+        }
+
+        function editUserProfile() {
+            Swal.fire({
+                title: 'Editar Perfil Biológico',
+                html: `
+                    <div class="grid grid-cols-2 gap-3 text-left">
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Género</label>
+                            <select id="swal-user-gen" class="w-full border p-2 rounded mb-2">
+                                <option value="hombre" ${USER_BIO.genero === 'hombre' ? 'selected' : ''}>Hombre</option>
+                                <option value="mujer" ${USER_BIO.genero === 'mujer' ? 'selected' : ''}>Mujer</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Edad</label>
+                            <input id="swal-user-age" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.edad}">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Peso (kg)</label>
+                            <input id="swal-user-w" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.peso}">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Altura (cm)</label>
+                            <input id="swal-user-h" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.altura}">
+                        </div>
+                         <div>
+                            <label class="text-xs font-bold text-gray-500">% Grasa</label>
+                            <input id="swal-user-f" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.grasa}">
+                        </div>
+                         <div>
+                            <label class="text-xs font-bold text-gray-500">Músculo (kg)</label>
+                            <input id="swal-user-m" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.masaMuscular}">
+                        </div>
+                    </div>
+                `,
+                confirmButtonText: 'Guardar y Recalcular',
+                preConfirm: () => {
+                    return {
+                        genero: document.getElementById('swal-user-gen').value,
+                        edad: Number(document.getElementById('swal-user-age').value),
+                        peso: Number(document.getElementById('swal-user-w').value),
+                        altura: Number(document.getElementById('swal-user-h').value),
+                        grasa: Number(document.getElementById('swal-user-f').value),
+                        masaMuscular: Number(document.getElementById('swal-user-m').value)
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    USER_BIO = { ...USER_BIO, ...result.value };
+                    localStorage.setItem('user_bio_config', JSON.stringify(USER_BIO));
+                    updateDay();
+                    Swal.fire('Perfil Actualizado', 'Las metas de agua y calorías se han ajustado a tu nueva biología.', 'success');
+                }
+            });
+        }
+
+        function triggerMorningPrediction() {
+            updateDay(); 
+            const sleep = parseFloat(document.getElementById('sleepHours').value);
+            const wake = document.getElementById('wakeTime').value;
+            
+            if (sleep > 0 && wake && history.length > 0) {
+                const lastDay = history[0];
+                const climate = ENGINE.getClimateStress();
+                
+                const predictedEnergy = ENGINE.predictTomorrow(lastDay, climate);
+                const mentalPrediction = ENGINE.predictMentalPerformance(lastDay);
+                const physicalPrediction = ENGINE.predictPhysicalPerformance(lastDay);
+                
+                let msg = `<div class="text-3xl font-black text-center mb-2 ${predictedEnergy > 70 ? 'text-green-500' : 'text-orange-500'}">${predictedEnergy}%</div>`;
+                msg += `<p class="text-sm text-center text-gray-600 mb-4">Batería estimada para hoy</p>`;
+                
+                msg += `<div class="grid grid-cols-2 gap-3 mb-4">`;
+                msg += `<div class="bg-indigo-50 p-3 rounded-xl text-center"><span class="text-xs text-indigo-600">🧠 Mental</span><div class="text-xl font-bold text-indigo-700">${mentalPrediction}%</div></div>`;
+                msg += `<div class="bg-orange-50 p-3 rounded-xl text-center"><span class="text-xs text-orange-600">💪 Física</span><div class="text-xl font-bold text-orange-700">${physicalPrediction}%</div></div>`;
+                msg += `</div>`;
+                
+                const scores = lastDay.stressScores || { physical: 0, mental: 0 };
+                
+                if (scores.physical > 80) msg += `<div class="bg-red-50 p-2 rounded text-xs text-red-600 mb-2">🛑 <b>Ayer te pasaste:</b> Tus músculos están rotos. Hoy es día de descanso activo obligatorio.</div>`;
+                else if (scores.physical > 50) msg += `<div class="bg-orange-50 p-2 rounded text-xs text-orange-600 mb-2">⚠️ <b>Carga Media:</b> Ayer entrenaste duro. Tómalo con calma.</div>`;
+                else msg += `<div class="bg-green-50 p-2 rounded text-xs text-green-600 mb-2">✅ <b>Físico Ok:</b> Ayer fue suave. Hoy puedes apretar.</div>`;
+
+                if (scores.mental > 80) msg += `<div class="bg-red-50 p-2 rounded text-xs text-red-600 mb-2">🧠 <b>Carga mental alta ayer:</b> Tu cerebro necesita descanso.</div>`;
+                else if (scores.mental > 50) msg += `<div class="bg-orange-50 p-2 rounded text-xs text-orange-600 mb-2">📚 <b>Estudiaste mucho ayer:</b> Recuperación cognitiva necesaria.</div>`;
+
+                if (climate.temp > 28) msg += `<div class="bg-orange-50 p-2 rounded text-xs text-orange-600 mb-2">🔥 <b>Calor (${climate.temp}°C):</b> Rendimiento -10%</div>`;
+                else if (climate.temp < 15) msg += `<div class="bg-blue-50 p-2 rounded text-xs text-blue-600 mb-2">❄️ <b>Frío (${climate.temp}°C):</b> Quemas más calorías.</div>`;
+                
+                if (predictedEnergy < 40) msg += `<div class="bg-slate-100 p-2 rounded text-xs text-slate-700">🛌 <b>Sistema Crítico:</b> Solo dormir y comer hoy.</div>`;
+
+                Swal.fire({ title: 'Buenos días ☀️', html: msg, confirmButtonText: 'Entendido' });
+            }
         }
 
         function updateDay() {
             const wakeEl = document.getElementById('wakeTime');
             if(wakeEl) todayData.wakeTime = wakeEl.value;
             const sleepHEl = document.getElementById('sleepHours');
-            if(sleepHEl) todayData.sleepHours = Number(sleepHEl.value);
+            if(sleepHEl) todayData.sleepHours = Number(sleepHEl.value) || 0;
             const sleepQEl = document.getElementById('sleepQuality');
-            if(sleepQEl) todayData.sleepQuality = Number(sleepQEl.value);
+            if(sleepQEl) todayData.sleepQuality = Number(sleepQEl.value) || 0;
 
             calculateDynamicGoals();
-            calculateStressBar(); // Recalcula las 3 barras
+            calculateStressBar(); 
             saveDay();
             updateUI();
+            checkAlerts();
+        }
+
+        function updateMobile() {
+            todayData.mobileHours = parseFloat(document.getElementById('range-mobile').value) || 0;
+            document.getElementById('val-mobile').innerText = todayData.mobileHours;
+            document.getElementById('home-mobile').innerText = `${todayData.mobileHours}h Móvil`;
+            updateDay();
         }
 
         function calculateDynamicGoals() {
-            let g = { ...BASE_GOALS };
-            waterDetails = [];
-            nutritionAdvice = "";
-            studyAdvice = "";
+            const BMR = ENGINE.getBMR();
+            const climate = ENGINE.getClimateStress();
             
-            waterDetails.push({ txt: "Base (18 años)", val: "+2200ml" });
+            let g = { 
+                cals: BMR + climate.termogenesisKcal, 
+                prot: (USER_BIO.masaMuscular > 0 ? 2.2 : 1.8) * USER_BIO.peso,
+                fat: 0.9 * USER_BIO.peso, 
+                sat: 25, 
+                carbs: 0, 
+                water: (USER_BIO.peso * 35) * climate.waterFactor 
+            };
 
-            if (currentSeason === 'Summer') {
-                g.water += 400;
-                waterDetails.push({ txt: "Calor (Verano)", val: "+400ml" });
+            if(USER_BIO.genero === 'mujer') {
+                g.fat = 1.0 * USER_BIO.peso;
+                g.prot = 1.8 * USER_BIO.peso;
             }
+
+            waterDetails = [];
+            waterDetails.push({ txt: `Base (${USER_BIO.peso}kg)`, val: `${Math.round(USER_BIO.peso * 35)}ml` });
+            
+            if(climate.waterFactor > 1) waterDetails.push({ txt: `Calor (${climate.temp}°C)`, val: `+${Math.round((climate.waterFactor-1)*100)}%` });
 
             if (todayData.steps > 0) {
-                const stepCals = Math.round(todayData.steps * 0.04); 
-                g.cals += stepCals;
-                const stepWater = Math.round(todayData.steps * 0.05);
-                g.water += stepWater;
-                waterDetails.push({ txt: `Pasos (${todayData.steps})`, val: `+${stepWater}ml` });
+                const neatCals = todayData.steps * 0.045; 
+                g.cals += neatCals;
+                g.water += (todayData.steps * 0.05); 
             }
 
-            if (todayData.standingHours > 4) {
-                 g.cals += (todayData.standingHours * 10);
-                 g.water += (todayData.standingHours * 50);
-                 waterDetails.push({ txt: `De pie (${todayData.standingHours}h)`, val: `+${Math.round(todayData.standingHours * 50)}ml` });
+            let activityCals = 0;
+            if(todayData.runKm > 0) {
+                const cost = todayData.runKm * USER_BIO.peso * 1.03;
+                activityCals += cost;
+                g.water += (todayData.runKm * 80 * climate.waterFactor);
+                waterDetails.push({ txt: `Run (${todayData.runKm}km)`, val: `+${Math.round(todayData.runKm * 80 * climate.waterFactor)}ml` });
             }
-
-            let gymLoad = 0;
             if(todayData.gymCals > 0) {
-                g.cals += parseFloat(todayData.gymCals);
-                const gymWater = todayData.gymTime * 10; 
-                g.water += gymWater;
-                waterDetails.push({ txt: `Gym (${todayData.gymTime}min)`, val: `+${gymWater}ml` });
-                gymLoad = todayData.gymTime / 10; 
+                activityCals += parseFloat(todayData.gymCals) || 0;
+                g.water += (todayData.gymTime * 10);
+                waterDetails.push({ txt: `Gym (${todayData.gymTime}min)`, val: `${todayData.gymTime * 10}ml` });
             }
+            g.cals += activityCals;
 
-            let sportLoad = todayData.runKm + (todayData.bikeKm * 0.4) + gymLoad;
+            const remainingCals = g.cals - ((g.prot * 4) + (g.fat * 9));
+            g.carbs = Math.max(remainingCals / 4, 150); 
+
+            // NUTRICIÓN ADVICE
+            nutritionAdvice = "";
+            const totalCarbs = todayData.foodLog.reduce((a,b)=>a+b.carb, 0);
+            const totalProt = todayData.foodLog.reduce((a,b)=>a+b.prot, 0);
+            const totalStudy = todayData.studySessions.reduce((a,b)=>a+b.hours, 0);
             
-            if (sportLoad > 10 || todayData.steps > 15000) {
-                nutritionAdvice += "<li>🏃‍♂️ <b>Carga Alta:</b> Depósitos de glucógeno vacíos. Cena carbohidratos (arroz/pasta) para recuperar.</li>";
-                g.cals += 400; g.carbs += 60;
-            } else if (sportLoad > 0 || todayData.steps > 8000) {
-                nutritionAdvice += "<li>👌 <b>Actividad Moderada:</b> Mantén el equilibrio proteico.</li>";
-            } else {
-                nutritionAdvice += "<li>💤 <b>Día Sedentario:</b> Controla los carbohidratos, prioriza verduras y proteínas.</li>";
+            if (todayData.runKm > 10 && totalCarbs < g.carbs * 0.6) {
+                nutritionAdvice += "<li class='text-orange-600'>🏃 <b>Recuperación:</b> Aún te faltan carbohidratos para reponer glucógeno.</li>";
+            } else if (todayData.runKm > 5 && totalCarbs < g.carbs * 0.4) {
+                nutritionAdvice += "<li class='text-orange-600'>⚠️ <b>Bajos de carbos:</b> Después de correr necesitas reponer energía.</li>";
             }
-
-            if (todayData.runKm > 0) {
-                let intensityFactor = 1;
-                if(todayData.runPace < 5) intensityFactor = 1.3;
-                const runWater = todayData.runKm * (currentSeason === 'Summer' ? 200 : 150);
-                g.water += runWater;
-                waterDetails.push({ txt: `Running (${todayData.runKm}km)`, val: `+${Math.round(runWater)}ml` });
+            
+            if (todayData.gymTime > 30 && totalProt < g.prot * 0.5) {
+                nutritionAdvice += "<li class='text-orange-600'>💪 <b>Proteína baja:</b> Tus músculos necesitan proteína para repararse.</li>";
             }
-
-            let totalStudy = todayData.studySessions.reduce((a,b)=>a+b.hours,0);
+            
             if (totalStudy > 6) {
-                studyAdvice = "⚠️ <b>Alerta Cortisol:</b> Llevas mucha carga mental. El cerebro necesita glucosa y descanso. <br>👉 Recomendación: Come nueces (Omega 3) o un plátano ahora. Duerme 8h hoy sí o sí.";
-                const studyWater = totalStudy * 80;
-                g.water += studyWater;
-                waterDetails.push({ txt: `Estudio Intenso`, val: `+${Math.round(studyWater)}ml` });
-            } else if (totalStudy > 2) {
-                studyAdvice = "✅ <b>Buen ritmo:</b> Recuerda hidratarte cada hora. El agua mejora la concentración un 20%.";
-                g.water += totalStudy * 50;
-            } else {
-                studyAdvice = "💡 Sin fatiga mental aparente.";
+                nutritionAdvice += "<li class='text-purple-600'>🧠 <b>Alta carga mental:</b> Toma frutos secos, pescado o aguacate para el cerebro.</li>";
+            } else if (totalStudy > 3) {
+                nutritionAdvice += "<li class='text-purple-600'>📚 <b>Estudio moderado:</b> Mantén hidratación y snacks saludables.</li>";
+            }
+            
+            if (totalProt >= g.prot * 0.8 && totalCarbs >= g.carbs * 0.8) {
+                nutritionAdvice = "<li class='text-green-600'>✅ <b>Combustible óptimo:</b> Tus macros están equilibrados.</li>";
+            }
+            
+            if (nutritionAdvice === "") {
+                nutritionAdvice = "<li class='text-gray-600'>Mantén una alimentación equilibrada.</li>";
             }
 
             currentGoals = g;
         }
 
+        function calculatePhysicalStressScore() {
+            let score = 0;
+            // Running: 3 puntos por km base + intensidad
+            score += todayData.runKm * (todayData.runInt === 3 ? 5 : todayData.runInt === 2 ? 3.5 : 2);
+            // Gym: 0.8 puntos por minuto * intensidad
+            score += (todayData.gymTime / 60) * (todayData.gymInt == 3 ? 50 : todayData.gymInt == 2 ? 35 : 20);
+            // Pasos: 1 punto por cada 1000 pasos
+            score += (todayData.steps / 1000) * 1.5;
+            // Ciclismo: 1.5 puntos por km
+            score += todayData.bikeKm * 1.5;
+            
+            return score;
+        }
+
         function calculateStressBar() {
-            // ----------------------------------------------------
-            // 1. CALCULO CARGA MENTAL (Barra 1)
-            // ----------------------------------------------------
+            stressDetails = [];
+            
+            // CÁLCULO DE CARGA MENTAL
             let mLoad = 0;
-            stressDetails = []; // Limpiamos detalles para regenerarlos en el modal
-
-            // Sueño
-            if (todayData.sleepHours > 0) {
-                if (todayData.sleepQuality < 60) {
-                    mLoad += 20;
-                    stressDetails.push({ cat: 'mental', text: "Mala Calidad Sueño", type: 'bad' });
-                }
-                if (todayData.sleepHours < 7) {
-                    mLoad += (7 - todayData.sleepHours) * 10;
-                    stressDetails.push({ cat: 'mental', text: "Deuda Sueño", type: 'bad' });
-                }
+            
+            // Deuda de sueño (máximo 40 puntos)
+            const sleepDeficit = Math.max(8 - todayData.sleepHours, 0);
+            mLoad += sleepDeficit * 10;
+            if(sleepDeficit > 0) {
+                stressDetails.push({cat:'mental', text: `Deuda Sueño (${sleepDeficit}h)`, type:'bad'});
+                mentalExplanation = `Has dormido ${todayData.sleepHours}h. Necesitas 8h para rendir al 100%.`;
+            } else {
+                mentalExplanation = `Has dormido ${todayData.sleepHours}h. ¡Perfecto!`;
             }
 
-            // Estudio ponderado
-            let totalStudyWeighted = todayData.studySessions.reduce((a,b) => a + (b.hours * (b.focus === 1 ? 4 : (b.focus === 2 ? 6 : 9))), 0);
-            if(totalStudyWeighted > 0) {
-                mLoad += (totalStudyWeighted / 2); // Escalar un poco
-                stressDetails.push({ cat: 'mental', text: "Sesiones Estudio", type: 'neutral' });
-            }
-
-            // Móvil
-            if (todayData.mobileHours > 2) {
-                mLoad += (todayData.mobileHours - 2) * 5;
-                stressDetails.push({ cat: 'mental', text: "Exceso Pantallas", type: 'bad' });
-            }
-
-            // Comida (Penaliza falta de carbs si hay carga mental alta)
-            let currentCarbs = todayData.foodLog.reduce((a,b)=>a+b.carb, 0);
-            if(totalStudyWeighted > 40 && currentCarbs < 150) {
-                mLoad += 15;
-                stressDetails.push({ cat: 'mental', text: "Cerebro sin Glucosa (Faltan Carbs)", type: 'bad' });
-            }
-
-            mentalLoad = Math.min(Math.round(mLoad), 100);
-
-
-            // ----------------------------------------------------
-            // 2. CALCULO CARGA FÍSICA (Barra 2)
-            // ----------------------------------------------------
-            let pLoad = 0;
-
-            // Pasos (Carga alta, no sedentarismo)
-            if (todayData.steps > 15000) {
-                pLoad += 20;
-                stressDetails.push({ cat: 'physical', text: "Volumen Pasos Alto", type: 'neutral' });
+            // Estudio: 5 puntos por hora * foco
+            const studyLoad = todayData.studySessions.reduce((a,b) => a + (b.hours * (b.focus * 4)), 0);
+            mLoad += studyLoad;
+            if(studyLoad > 0) {
+                mentalExplanation += ` Has estudiado ${todayData.studySessions.reduce((a,b)=>a+b.hours,0)}h (${Math.round(studyLoad)} puntos).`;
             }
             
-            // Running
-            if (todayData.runKm > 0) {
-                let runFactor = 5; 
-                if (todayData.runInt === 3) runFactor = 7;
-                pLoad += todayData.runKm * runFactor;
-                stressDetails.push({ cat: 'physical', text: "Running", type: 'neutral' });
+            // Móvil: 4 puntos por hora
+            const mobileLoad = todayData.mobileHours * 4;
+            mLoad += mobileLoad;
+            if(todayData.mobileHours > 3) {
+                stressDetails.push({cat:'mental', text: `Uso excesivo móvil (${todayData.mobileHours}h)`, type:'bad'});
+                mentalExplanation += ` Móvil: ${todayData.mobileHours}h.`;
+            }
+            
+            // Grasa saturada baja afecta al cerebro
+            const satFat = todayData.foodLog.reduce((a,b)=>a+(b.sat||0), 0);
+            if (satFat < 8 && todayData.mobileHours > 2) {
+                mLoad += 15;
+                stressDetails.push({cat:'mental', text: "Cerebro Inflamado (Poca Grasa)", type:'bad'});
+                mentalExplanation += " Poca grasa saturada afecta a la función cognitiva.";
+            }
+            
+            mentalLoad = Math.min(Math.round(mLoad), 100);
+
+            // CÁLCULO DE CARGA FÍSICA
+            let pLoad = calculatePhysicalStressScore();
+            
+            if(todayData.runKm > 20) {
+                stressDetails.push({cat:'physical', text: `Ultra running (${todayData.runKm}km)`, type:'bad'});
+                physicalExplanation = `Has corrido ${todayData.runKm}km. Carga EXTREMA (${Math.round(pLoad)} puntos).`;
+            } else if(todayData.runKm > 10) {
+                stressDetails.push({cat:'physical', text: `Media maratón (${todayData.runKm}km)`, type:'bad'});
+                physicalExplanation = `Has corrido ${todayData.runKm}km. Carga muy alta.`;
+            } else if(todayData.runKm > 5) {
+                stressDetails.push({cat:'physical', text: `Running (${todayData.runKm}km)`, type:'neutral'});
+                physicalExplanation = `Has corrido ${todayData.runKm}km. Carga moderada-alta.`;
+            } else {
+                physicalExplanation = `Actividad física: ${Math.round(pLoad)} puntos.`;
             }
 
-            // Bici
-            if (todayData.bikeKm > 0) {
-                let bikeFactor = 2;
-                if(todayData.bikeInt === 3) bikeFactor = 3;
-                pLoad += todayData.bikeKm * bikeFactor;
-                stressDetails.push({ cat: 'physical', text: "Ciclismo", type: 'neutral' });
+            if(currentGoals.water > 0 && todayData.water < currentGoals.water * 0.5) {
+                pLoad += 20;
+                stressDetails.push({cat:'physical', text: "Deshidratación severa", type:'bad'});
+                physicalExplanation += " Estás deshidratado, afecta al rendimiento.";
             }
-
-            // Gym
-            if (todayData.gymTime > 0) {
-                let gymFactor = 0.6; 
-                if (todayData.gymInt == 3) gymFactor = 1.0;
-                pLoad += todayData.gymTime * gymFactor;
-                stressDetails.push({ cat: 'physical', text: "Gimnasio", type: 'neutral' });
+            
+            if(todayData.gymTime > 90) {
+                physicalExplanation += ` Gimnasio: ${todayData.gymTime}min (alta intensidad).`;
             }
-
-            // De pie
-            if (todayData.standingHours > 6) {
-                pLoad += (todayData.standingHours - 6) * 5;
-                stressDetails.push({ cat: 'physical', text: "Fatiga Postural", type: 'bad' });
-            }
-
-            // Hidratación (Si falta mucha agua, aumenta el estrés físico)
-            if (currentGoals.water > 0 && todayData.water < (currentGoals.water * 0.7)) {
-                pLoad += 15;
-                stressDetails.push({ cat: 'physical', text: "Deshidratación", type: 'bad' });
-            }
-
+            
             physicalLoad = Math.min(Math.round(pLoad), 100);
-
-
-            // ----------------------------------------------------
-            // 3. CALCULO FATIGA 7 DÍAS (Barra 3)
-            // ----------------------------------------------------
             fatigue7d = getFatigue7Days();
 
-            // ----------------------------------------------------
-            // ACTUALIZAR UI
-            // ----------------------------------------------------
             updateBar('mental', mentalLoad);
             updateBar('physical', physicalLoad);
             updateBar('fatigue', fatigue7d);
         }
 
-        function updateBar(type, val) {
-            const bar = document.getElementById(`bar-${type}`);
-            const txt = document.getElementById(type === 'fatigue' ? 'fatigue-val' : (type === 'mental' ? 'mental-val' : 'phys-val'));
-            
-            if(bar && txt) {
-                bar.style.width = val + '%';
-                txt.innerText = val + '%';
-
-                // Colores específicos para fatiga 7 días
-                if(type === 'fatigue') {
-                    bar.className = `h-full rounded-full transition-all duration-700 ${val < 40 ? 'bg-green-500' : (val < 70 ? 'bg-yellow-400' : 'bg-red-500')}`;
-                }
-            }
-        }
-
-        // --- LÓGICA DE 7 DÍAS ---
-        function getFatigue7Days() {
-            if (history.length === 0) return 0;
-            
-            // Tomamos los últimos 7 días
-            const last7 = history.slice(0, 7);
-            
-            // Calculamos media de 'stress' guardado en history
-            let total = 0;
-            last7.forEach(h => {
-                total += (h.stress || 0);
-            });
-            
-            return Math.round(total / last7.length);
-        }
-
-        function updateStudy() {
-            todayData.mobileHours = parseFloat(document.getElementById('range-mobile').value);
-            document.getElementById('val-mobile').innerText = todayData.mobileHours;
-            updateDay();
-        }
-
-        function addStudySession() {
-            const hInput = document.getElementById('session-hours');
-            const fInput = document.getElementById('session-focus');
-            const hours = parseFloat(hInput.value);
-            const focus = parseInt(fInput.value);
-
-            if (!hours || hours <= 0) { Swal.fire('Error', 'Indica las horas', 'error'); return; }
-            todayData.studySessions.push({ hours, focus, id: Date.now() });
-            hInput.value = '';
-            updateDay();
-            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }).fire({ icon: 'success', title: 'Añadido' });
-        }
-
-        function removeStudySession(index) { todayData.studySessions.splice(index, 1); updateDay(); }
-
-        function renderStudySessions() {
-            const list = document.getElementById('studySessionsList');
-            const totalDisplay = document.getElementById('total-study-hours-display');
-            let total = 0;
-            const focusLabels = {1: 'Bajo', 2: 'Medio', 3: 'Deep Work'};
-            const focusColors = {1: 'text-gray-400', 2: 'text-blue-500', 3: 'text-purple-600 font-black'};
-
-            if (todayData.studySessions.length === 0) {
-                list.innerHTML = '<p class="text-center text-gray-300 text-xs italic py-4">No hay sesiones registradas hoy.</p>';
-                totalDisplay.innerText = "0 horas";
-                document.getElementById('home-study').innerText = "0";
-                document.getElementById('mini-bar-study').style.width = "0%";
-                return;
-            }
-
-            list.innerHTML = todayData.studySessions.map((s, i) => `
-                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <div>
-                        <div class="font-bold text-slate-700 text-sm">${s.hours} horas</div>
-                        <div class="text-[10px] uppercase ${focusColors[s.focus]}">${focusLabels[s.focus]}</div>
-                    </div>
-                    <button onclick="removeStudySession(${i})" class="w-6 h-6 rounded-full bg-white text-red-300 hover:text-red-500 flex items-center justify-center shadow-sm"><i class="fas fa-times text-xs"></i></button>
-                </div>
-            `).join('');
-
-            todayData.studySessions.forEach(s => total += s.hours);
-            totalDisplay.innerText = total + " horas";
-            document.getElementById('home-study').innerText = total;
-            document.getElementById('mini-bar-study').style.width = Math.min((total/10)*100, 100) + '%';
-        }
-
-        function updateUI() {
-            renderStudySessions();
-
-            document.getElementById('range-mobile').value = todayData.mobileHours;
-            document.getElementById('val-mobile').innerText = todayData.mobileHours;
-            document.getElementById('home-mobile').innerText = `${todayData.mobileHours}h Móvil`;
-
-            document.getElementById('range-steps').value = todayData.steps;
-            document.getElementById('val-steps').innerText = todayData.steps;
-            document.getElementById('home-steps').innerText = todayData.steps;
-
-            document.getElementById('range-standing').value = todayData.standingHours;
-            document.getElementById('val-standing').innerText = todayData.standingHours;
-
-
-            let sum = { cal:0, prot:0, fat:0, sat:0, carb:0 };
-            todayData.foodLog.forEach(f => {
-                sum.cal+=f.cal; sum.prot+=f.prot; sum.fat+=f.fat; sum.carb+=f.carb;
-                if(f.sat) sum.sat+=f.sat;
-            });
-
-            const setBar = (id, val, max, color) => {
-                const p = Math.min((val/max)*100, 100);
-                const el = document.getElementById(`bar-${id}`);
-                if(el) el.style.width = p+'%';
-                
-                const displayVal = (val % 1 !== 0 && val < 10) ? val.toFixed(1) : Math.round(val);
-                
-                document.getElementById(`val-${id}`).innerText = displayVal;
-                document.getElementById(`goal-${id}`).innerText = Math.round(max);
-            };
-
-            setBar('cals', sum.cal, currentGoals.cals);
-            setBar('prot', sum.prot, currentGoals.prot);
-            setBar('fat', sum.fat, currentGoals.fat);
-            setBar('carbs', sum.carb, currentGoals.carbs);
-            setBar('sat', sum.sat, currentGoals.sat); 
-
-            document.getElementById('total-consumed-kcal').innerText = Math.round(sum.cal) + ' kcal';
-
-            document.getElementById('home-water').innerText = todayData.water;
-            document.getElementById('home-water-goal').innerText = Math.round(currentGoals.water);
-            document.getElementById('mini-bar-water').style.width = Math.min((todayData.water/currentGoals.water)*100, 100) + '%';
-            
-            const wp = Math.min(todayData.water / currentGoals.water, 1);
-            document.getElementById('water-circle').style.strokeDashoffset = 628 - (wp * 628);
-            document.getElementById('water-display-lg').innerText = todayData.water;
-            document.getElementById('water-goal-text').innerText = `Meta dinámica: ${Math.round(currentGoals.water)} ml`;
-
-            document.getElementById('home-sport-km').innerText = todayData.runKm + todayData.bikeKm;
-            const sportProgress = Math.min(((todayData.runKm + (todayData.bikeKm*0.4)) / 10) * 100, 100);
-            document.getElementById('bar-sport-home').style.width = sportProgress + '%';
-
-            document.getElementById('addedFoodsList').innerHTML = todayData.foodLog.map((f, i) => `
-                <div class="flex justify-between items-center text-sm py-3 border-b border-gray-100 last:border-0 bg-white p-3 rounded-xl mb-2 shadow-sm">
-                    <div>
-                        <div class="text-slate-700 font-bold">${f.name} <span class="text-xs text-gray-400 font-normal">(${f.weight}g)</span></div>
-                        <div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g | S: ${f.sat ? f.sat.toFixed(1) : 0}g</div>
-                    </div>
+        function finishDay() {
+            Swal.fire({
+                title: 'Informe Realidad',
+                html: `
+                    <label class="block text-xs font-bold uppercase mb-1">Energía Real (1-10)</label>
                     <div class="flex items-center gap-3">
-                        <span class="font-bold text-xs text-slate-500 bg-gray-100 px-2 py-1 rounded">${Math.round(f.cal)} kcal</span>
-                        <button onclick="removeFood(${i})" class="text-red-300 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 transition"><i class="fas fa-times"></i></button>
+                        <input type="range" id="swal-energy" min="1" max="10" value="5" class="w-full" oninput="document.getElementById('energy-val-disp').innerText = this.value">
+                        <span id="energy-val-disp" class="font-bold text-2xl text-blue-600">5</span>
                     </div>
-                </div>
-            `).join('') || '<p class="text-center text-gray-300 text-xs py-4">No has añadido comidas aún.</p>';
+                    <label class="block text-xs font-bold uppercase mb-1 mt-4">Estado Anímico</label>
+                    <select id="swal-mood" class="w-full p-2 border rounded mb-2">
+                        <option value="NEUTRAL">Normal</option>
+                        <option value="MOTIVATED">Motivado / Bestia</option>
+                        <option value="TIRED">Cansado / Roto</option>
+                        <option value="STRESSED">Estresado / Ansioso</option>
+                        <option value="SAD">Triste / Bajón</option>
+                    </select>
+                `,
+                confirmButtonText: 'Aprender y Guardar',
+                preConfirm: () => ({ energy: parseInt(document.getElementById('swal-energy').value), mood: document.getElementById('swal-mood').value })
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const actualScore = result.value.energy * 10;
+                    const predicted = parseFloat(localStorage.getItem('today_prediction_score')) || 50;
+                    
+                    if (Math.abs(actualScore - predicted) > 25) {
+                        Swal.fire({
+                            title: '¿Por qué fallé?',
+                            text: `Predije ${predicted} pero sientes ${actualScore}.`,
+                            input: 'select',
+                            inputOptions: { 'UNKNOWN': 'No lo sé (Ajustar Motor)', 'TIRED_TRAINING': 'Entreno muy duro', 'EXTERNAL': 'Problema Externo (Vida)' },
+                            confirmButtonText: 'Corregir IA'
+                        }).then((cause) => {
+                            if(cause.value) ENGINE.learn(predicted, actualScore, cause.value);
+                            saveAndClose(actualScore, result.value.mood);
+                        });
+                    } else {
+                        saveAndClose(actualScore, result.value.mood);
+                    }
+                }
+            });
         }
 
-        function updateSport() {
-            todayData.runKm = parseFloat(document.getElementById('range-run-km').value);
-            todayData.runPace = parseFloat(document.getElementById('range-run-pace').value);
-            todayData.runInt = parseFloat(document.getElementById('range-run-int').value);
-            todayData.bikeKm = parseFloat(document.getElementById('range-bike-km').value);
-            todayData.bikeInt = parseFloat(document.getElementById('range-bike-int').value); 
-            todayData.steps = parseInt(document.getElementById('range-steps').value);
-            todayData.standingHours = parseFloat(document.getElementById('range-standing').value);
+        function saveAndClose(actualEnergy, mood) {
+            const record = { 
+                date: new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 
+                data: { ...todayData }, 
+                goals: { ...currentGoals },
+                stress: Math.round((mentalLoad + physicalLoad) / 2),
+                stressScores: { mental: mentalLoad, physical: physicalLoad },
+                subjective: { energy: actualEnergy, mood: mood },
+                alerts: [...todayAlerts],
+                mentalExplanation: mentalExplanation,
+                physicalExplanation: physicalExplanation
+            };
             
-            // GYM DATA
-            todayData.gymCals = document.getElementById('gym-cals').value;
-            todayData.gymTime = document.getElementById('gym-time').value;
-            todayData.gymInt = document.getElementById('range-gym-int').value;
-
-            document.getElementById('val-run-km').innerText = todayData.runKm;
-            let min = Math.floor(todayData.runPace);
-            let sec = Math.round((todayData.runPace - min) * 60);
-            document.getElementById('val-run-pace').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+            const todayStr = record.date;
+            const existingIdx = history.findIndex(h => h.date === todayStr);
+            if (existingIdx >= 0) history[existingIdx] = record;
+            else history.unshift(record);
             
-            const ints = ['--', 'Suave', 'Normal', 'Alta'];
-            document.getElementById('val-run-int-text').innerText = ints[todayData.runInt] || '--';
-            document.getElementById('val-bike-km').innerText = todayData.bikeKm;
-            
-            document.getElementById('val-bike-int-text').innerText = ints[todayData.bikeInt] || '--';
-            document.getElementById('val-gym-int-text').innerText = ints[todayData.gymInt] || '--';
-
-            updateDay();
+            localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
+            todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
+            todayAlerts = [];
+            saveDay();
+            window.location.reload();
         }
 
-        // --- FUNCIONES INTERFAZ (MODAL MEJORADO) ---
-        function showDetails(type) {
-            const modal = document.getElementById('info-modal');
-            const title = document.getElementById('modal-title');
-            const body = document.getElementById('modal-body');
+        // ==========================================================================================
+        // 🛠️ UTILIDADES UI
+        // ==========================================================================================
+        function updateBar(type, val) { 
+            const bar = document.getElementById(`bar-${type}`); 
+            const txt = document.getElementById(type === 'fatigue' ? 'fatigue-val' : (type === 'mental' ? 'mental-val' : 'phys-val')); 
+            if(bar && txt) { 
+                bar.style.width = val + '%'; 
+                txt.innerText = val + '%'; 
+                if(type === 'fatigue') { 
+                    bar.className = `h-full rounded-full transition-all duration-700 ${val < 40 ? 'bg-green-500' : (val < 70 ? 'bg-yellow-400' : 'bg-red-500')}`; 
+                } 
+            } 
+        }
+        
+        function getFatigue7Days() { 
+            if (history.length === 0) return 0; 
+            const last7 = history.slice(0, 7); 
+            let total = 0; 
+            last7.forEach(h => { 
+                total += (h.stress || 0); 
+            }); 
+            return Math.round(total / last7.length); 
+        }
+        
+        function addStudySession() { 
+            const hInput = document.getElementById('session-hours'); 
+            const fInput = document.getElementById('session-focus'); 
+            const hours = parseFloat(hInput.value); 
+            const focus = parseInt(fInput.value); 
+            if (!hours || hours <= 0) { 
+                Swal.fire('Error', 'Indica las horas', 'error'); 
+                return; 
+            } 
+            todayData.studySessions.push({ hours, focus, id: Date.now() }); 
+            hInput.value = ''; 
+            updateDay(); 
+            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }).fire({ icon: 'success', title: 'Añadido' }); 
+        }
+        
+        function removeStudySession(index) { 
+            todayData.studySessions.splice(index, 1); 
+            updateDay(); 
+        }
+        
+        function renderStudySessions() { 
+            const list = document.getElementById('studySessionsList'); 
+            const totalDisplay = document.getElementById('total-study-hours-display'); 
+            let total = 0; 
+            const focusLabels = {1: 'Bajo', 2: 'Medio', 3: 'Deep Work'}; 
+            const focusColors = {1: 'text-gray-400', 2: 'text-blue-500', 3: 'text-purple-600 font-black'}; 
+            if (todayData.studySessions.length === 0) { 
+                list.innerHTML = '<p class="text-center text-gray-300 text-xs italic py-4">No hay sesiones registradas hoy.</p>'; 
+                totalDisplay.innerText = "0 horas"; 
+                document.getElementById('home-study').innerText = "0"; 
+                document.getElementById('mini-bar-study').style.width = "0%"; 
+                return; 
+            } 
+            list.innerHTML = todayData.studySessions.map((s, i) => `<div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100"><div><div class="font-bold text-slate-700 text-sm">${s.hours} horas</div><div class="text-[10px] uppercase ${focusColors[s.focus]}">${focusLabels[s.focus]}</div></div><button onclick="removeStudySession(${i})" class="w-6 h-6 rounded-full bg-white text-red-300 hover:text-red-500 flex items-center justify-center shadow-sm"><i class="fas fa-times text-xs"></i></button></div>`).join(''); 
+            todayData.studySessions.forEach(s => total += s.hours); 
+            totalDisplay.innerText = total + " horas"; 
+            document.getElementById('home-study').innerText = total; 
+            document.getElementById('mini-bar-study').style.width = Math.min((total/10)*100, 100) + '%'; 
+        }
+        
+        function updateUI() { 
+            renderStudySessions(); 
+            document.getElementById('range-mobile').value = todayData.mobileHours; 
+            document.getElementById('val-mobile').innerText = todayData.mobileHours; 
+            document.getElementById('home-mobile').innerText = `${todayData.mobileHours}h Móvil`; 
+            document.getElementById('range-steps').value = todayData.steps; 
+            document.getElementById('val-steps').innerText = todayData.steps; 
+            document.getElementById('home-steps').innerText = todayData.steps; 
+            document.getElementById('range-standing').value = todayData.standingHours; 
+            document.getElementById('val-standing').innerText = todayData.standingHours; 
             
-            if(type === 'stress') {
-                title.innerText = "Diagnóstico Integral";
+            let sum = { cal:0, prot:0, fat:0, sat:0, carb:0 }; 
+            todayData.foodLog.forEach(f => { 
+                sum.cal+=f.cal; 
+                sum.prot+=f.prot; 
+                sum.fat+=f.fat; 
+                sum.carb+=f.carb; 
+                if(f.sat) sum.sat+=f.sat; 
+            }); 
+            
+            const setBar = (id, val, max) => { 
+                const p = Math.min((val/max)*100, 100); 
+                const el = document.getElementById(`bar-${id}`); 
+                if(el) el.style.width = p+'%'; 
+                document.getElementById(`val-${id}`).innerText = (val % 1 !== 0 && val < 10) ? val.toFixed(1) : Math.round(val); 
+                document.getElementById(`goal-${id}`).innerText = Math.round(max); 
+            }; 
+            
+            setBar('cals', sum.cal, currentGoals.cals); 
+            setBar('prot', sum.prot, currentGoals.prot); 
+            setBar('fat', sum.fat, currentGoals.fat); 
+            setBar('carbs', sum.carb, currentGoals.carbs); 
+            setBar('sat', sum.sat, currentGoals.sat); 
+            
+            document.getElementById('total-consumed-kcal').innerText = Math.round(sum.cal) + ' kcal'; 
+            document.getElementById('home-water').innerText = todayData.water; 
+            document.getElementById('home-water-goal').innerText = Math.round(currentGoals.water); 
+            document.getElementById('mini-bar-water').style.width = Math.min((todayData.water/currentGoals.water)*100, 100) + '%'; 
+            
+            const wp = Math.min(todayData.water / currentGoals.water, 1); 
+            document.getElementById('water-circle').style.strokeDashoffset = 628 - (wp * 628); 
+            document.getElementById('water-display-lg').innerText = todayData.water; 
+            document.getElementById('water-goal-text').innerText = `Meta dinámica: ${Math.round(currentGoals.water)} ml`; 
+            
+            document.getElementById('home-sport-km').innerText = todayData.runKm + todayData.bikeKm; 
+            const sportProgress = Math.min(((todayData.runKm + (todayData.bikeKm*0.4)) / 10) * 100, 100); 
+            document.getElementById('bar-sport-home').style.width = sportProgress + '%'; 
+            document.getElementById('profile-weight-display').innerText = Math.round(USER_BIO.peso); 
+            
+            document.getElementById('addedFoodsList').innerHTML = todayData.foodLog.map((f, i) => `<div class="flex justify-between items-center text-sm py-3 border-b border-gray-100 last:border-0 bg-white p-3 rounded-xl mb-2 shadow-sm"><div><div class="text-slate-700 font-bold">${f.name} <span class="text-xs text-gray-400 font-normal">(${f.weight}g)</span></div><div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g | S: ${f.sat ? f.sat.toFixed(1) : 0}g</div></div><div class="flex items-center gap-3"><span class="font-bold text-xs text-slate-500 bg-gray-100 px-2 py-1 rounded">${Math.round(f.cal)} kcal</span><button onclick="removeFood(${i})" class="text-red-300 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 transition"><i class="fas fa-times"></i></button></div></div>`).join('') || '<p class="text-center text-gray-300 text-xs py-4">No has añadido comidas aún.</p>'; 
+        }
+        
+        function updateSport() { 
+            todayData.runKm = parseFloat(document.getElementById('range-run-km').value) || 0; 
+            todayData.runPace = parseFloat(document.getElementById('range-run-pace').value) || 5.5; 
+            todayData.runInt = parseInt(document.getElementById('range-run-int').value) || 2; 
+            todayData.bikeKm = parseFloat(document.getElementById('range-bike-km').value) || 0; 
+            todayData.bikeInt = parseInt(document.getElementById('range-bike-int').value) || 2; 
+            todayData.steps = parseInt(document.getElementById('range-steps').value) || 0; 
+            todayData.standingHours = parseFloat(document.getElementById('range-standing').value) || 0; 
+            todayData.gymCals = parseFloat(document.getElementById('gym-cals').value) || 0; 
+            todayData.gymTime = parseFloat(document.getElementById('gym-time').value) || 0; 
+            todayData.gymInt = parseInt(document.getElementById('range-gym-int').value) || 2; 
+            
+            document.getElementById('val-run-km').innerText = todayData.runKm; 
+            let min = Math.floor(todayData.runPace); 
+            let sec = Math.round((todayData.runPace - min) * 60); 
+            document.getElementById('val-run-pace').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`; 
+            
+            const ints = ['--', 'Suave', 'Normal', 'Alta']; 
+            document.getElementById('val-run-int-text').innerText = ints[todayData.runInt] || '--'; 
+            document.getElementById('val-bike-km').innerText = todayData.bikeKm; 
+            document.getElementById('val-bike-int-text').innerText = ints[todayData.bikeInt] || '--'; 
+            document.getElementById('val-gym-int-text').innerText = ints[todayData.gymInt] || '--'; 
+            
+            updateDay(); 
+        }
+        
+        function showDetails(type) { 
+            const modal = document.getElementById('info-modal'); 
+            const title = document.getElementById('modal-title'); 
+            const body = document.getElementById('modal-body'); 
+            
+            if(type === 'stress') { 
+                title.innerText = "Diagnóstico Integral"; 
                 
-                // Generar HTML para Mental
-                const mentalItems = stressDetails.filter(d => d.cat === 'mental').map(d => `<li class="text-xs ${d.type === 'bad' ? 'text-red-500 font-bold' : 'text-slate-600'}">• ${d.text}</li>`).join('');
-                const mentalAdvice = mentalLoad > 60 ? "<b>Consejo:</b> Reduce pantallas ya. Tu cerebro pide descanso pasivo." : "Carga mental controlada.";
-
-                // Generar HTML para Física
-                const physItems = stressDetails.filter(d => d.cat === 'physical').map(d => `<li class="text-xs ${d.type === 'bad' ? 'text-red-500 font-bold' : 'text-slate-600'}">• ${d.text}</li>`).join('');
-                const physAdvice = physicalLoad > 60 ? "<b>Consejo:</b> Prioriza proteínas y sueño esta noche. Mañana baja intensidad." : "Buen nivel de actividad.";
-
-                // Generar HTML para Fatiga 7d
-                let fatigueMsg = "";
-                if(fatigue7d < 40) fatigueMsg = "Estas fresco/a (Zona Verde). Puedes entrenar duro.";
-                else if(fatigue7d < 70) fatigueMsg = "Fatiga acumulada moderada (Zona Amarilla). Vigila el sueño.";
-                else fatigueMsg = "<b>ALERTA ROJA:</b> Sobrecarga sistémica. Necesitas un día de descarga total.";
-
-                body.innerHTML = `
-                    <div class="space-y-4">
-                        <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
-                            <h4 class="font-bold text-indigo-700 text-sm mb-2">🧠 Carga Mental (${mentalLoad}%)</h4>
-                            <ul class="mb-2 space-y-1">${mentalItems || '<li class="text-xs text-gray-400">Sin carga significativa</li>'}</ul>
-                            <p class="text-xs text-indigo-600 italic">${mentalAdvice}</p>
-                        </div>
-
-                        <div class="bg-orange-50 p-3 rounded-xl border border-orange-100">
-                            <h4 class="font-bold text-orange-700 text-sm mb-2">💪 Carga Física (${physicalLoad}%)</h4>
-                            <ul class="mb-2 space-y-1">${physItems || '<li class="text-xs text-gray-400">Sin carga significativa</li>'}</ul>
-                            <p class="text-xs text-orange-600 italic">${physAdvice}</p>
-                        </div>
-
-                        <div class="bg-teal-50 p-3 rounded-xl border border-teal-100">
-                            <h4 class="font-bold text-teal-700 text-sm mb-2">📅 Fatiga Crónica (7 días: ${fatigue7d}%)</h4>
-                            <p class="text-xs text-teal-800">${fatigueMsg}</p>
-                        </div>
+                const mentalItems = stressDetails.filter(d => d.cat === 'mental').map(d => `<li class="text-xs ${d.type === 'bad' ? 'text-red-500 font-bold' : 'text-slate-600'}">• ${d.text}</li>`).join(''); 
+                const physItems = stressDetails.filter(d => d.cat === 'physical').map(d => `<li class="text-xs ${d.type === 'bad' ? 'text-red-500 font-bold' : 'text-slate-600'}">• ${d.text}</li>`).join(''); 
+                
+                let fatigueMsg = ""; 
+                if(fatigue7d < 40) fatigueMsg = "Estás fresco/a (Zona Verde). Puedes entrenar duro."; 
+                else if(fatigue7d < 70) fatigueMsg = "Fatiga acumulada moderada (Zona Amarilla). Vigila el sueño."; 
+                else fatigueMsg = "<b>ALERTA ROJA:</b> Sobrecarga sistémica. Necesitas un día de descarga total."; 
+                
+                body.innerHTML = `<div class="space-y-4">
+                    <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                        <h4 class="font-bold text-indigo-700 text-sm mb-2">🧠 Carga Mental (${mentalLoad}%)</h4>
+                        <p class="text-xs text-slate-600 mb-2">${mentalExplanation || 'Sin datos'}</p>
+                        <ul class="mb-2 space-y-1">${mentalItems || '<li class="text-xs text-gray-400">Sin carga significativa</li>'}</ul>
                     </div>
-                `;
-            } else if (type === 'water') {
-                title.innerText = "Hidratación";
-                body.innerHTML = waterDetails.map(d => `
-                    <div class="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl mb-2">
-                        <span class="text-sm text-slate-600">${d.txt}</span>
-                        <span class="text-sm font-bold text-blue-500">${d.val}</span>
-                    </div>`).join('');
-            } else if (type === 'study') {
-                title.innerText = "Detalle Cognitivo";
-                const focusLabels = {1: 'Bajo', 2: 'Medio', 3: 'Deep Work'};
-                let content = `<div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-sm text-slate-700 mb-4">${studyAdvice}</div>`;
-                content += todayData.studySessions.length ? todayData.studySessions.map(s => `
-                    <div class="bg-gray-50 p-3 rounded-xl mb-2 flex justify-between">
-                        <span class="font-bold text-slate-700">${s.hours} horas</span>
-                        <span class="text-xs text-purple-500 font-bold uppercase">${focusLabels[s.focus]}</span>
+                    <div class="bg-orange-50 p-3 rounded-xl border border-orange-100">
+                        <h4 class="font-bold text-orange-700 text-sm mb-2">💪 Carga Física (${physicalLoad}%)</h4>
+                        <p class="text-xs text-slate-600 mb-2">${physicalExplanation || 'Sin datos'}</p>
+                        <ul class="mb-2 space-y-1">${physItems || '<li class="text-xs text-gray-400">Sin carga significativa</li>'}</ul>
                     </div>
-                `).join('') : '<p class="text-gray-400 text-center italic">Sin sesiones.</p>';
-                body.innerHTML = content;
-
-            } else if (type === 'nutrition') {
-                title.innerText = "Control de Dieta";
-                body.innerHTML = `
-                    <p class="text-xs font-bold text-gray-400 uppercase mb-2">Consejo Recuperación</p>
-                    <div class="bg-orange-50 p-4 rounded-2xl border border-orange-100 text-sm text-slate-600 mb-4">
-                        <ul class="list-disc pl-4 space-y-1">
-                            ${nutritionAdvice || "<li>Mantén la proteína alta.</li>"}
-                        </ul>
+                    <div class="bg-teal-50 p-3 rounded-xl border border-teal-100">
+                        <h4 class="font-bold text-teal-700 text-sm mb-2">📅 Fatiga Crónica (7 días: ${fatigue7d}%)</h4>
+                        <p class="text-xs text-teal-800">${fatigueMsg}</p>
                     </div>
-                `;
-            } else if (type === 'sport') {
-                title.innerText = "Detalle Actividad";
-                body.innerHTML = `
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <div class="bg-green-50 p-3 rounded-2xl text-center">
-                            <i class="fas fa-shoe-prints text-green-500 text-2xl mb-1"></i>
-                            <div class="font-bold text-slate-700">${todayData.steps}</div>
-                            <div class="text-[10px] text-gray-400">Pasos</div>
-                        </div>
-                         <div class="bg-orange-50 p-3 rounded-2xl text-center">
-                            <i class="fas fa-running text-orange-500 text-2xl mb-1"></i>
-                            <div class="font-bold text-slate-700">${todayData.runKm} km</div>
-                            <div class="text-[10px] text-gray-400">Running</div>
-                        </div>
-                    </div>
-                `;
-            }
-            modal.classList.add('open');
+                </div>`; 
+            } else if (type === 'water') { 
+                title.innerText = "Hidratación"; 
+                body.innerHTML = waterDetails.map(d => `<div class="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl mb-2"><span class="text-sm text-slate-600">${d.txt}</span><span class="text-sm font-bold text-blue-500">${d.val}</span></div>`).join('') +
+                `<div class="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <p class="text-sm text-slate-700">${getWaterAdvice()}</p>
+                </div>`; 
+            } else if (type === 'study') { 
+                title.innerText = "Detalle Cognitivo"; 
+                const focusLabels = {1: 'Bajo', 2: 'Medio', 3: 'Deep Work'}; 
+                let content = `<div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-sm text-slate-700 mb-4">${studyAdvice}</div>`; 
+                content += todayData.studySessions.length ? todayData.studySessions.map(s => `<div class="bg-gray-50 p-3 rounded-xl mb-2 flex justify-between"><span class="font-bold text-slate-700">${s.hours} horas</span><span class="text-xs text-purple-500 font-bold uppercase">${focusLabels[s.focus]}</span></div>`).join('') : '<p class="text-gray-400 text-center italic">Sin sesiones.</p>'; 
+                body.innerHTML = content; 
+            } else if (type === 'nutrition') { 
+                title.innerText = "Control de Dieta"; 
+                body.innerHTML = `<p class="text-xs font-bold text-gray-400 uppercase mb-2">Recomendaciones</p><div class="bg-orange-50 p-4 rounded-2xl border border-orange-100 text-sm text-slate-600 mb-4"><ul class="list-disc pl-4 space-y-1">${nutritionAdvice || "<li>Mantén una alimentación equilibrada.</li>"}</ul></div>`; 
+            } else if (type === 'sport') { 
+                title.innerText = "Detalle Actividad"; 
+                body.innerHTML = `<div class="grid grid-cols-2 gap-3 mb-4"><div class="bg-green-50 p-3 rounded-2xl text-center"><i class="fas fa-shoe-prints text-green-500 text-2xl mb-1"></i><div class="font-bold text-slate-700">${todayData.steps}</div><div class="text-[10px] text-gray-400">Pasos</div></div><div class="bg-orange-50 p-3 rounded-2xl text-center"><i class="fas fa-running text-orange-500 text-2xl mb-1"></i><div class="font-bold text-slate-700">${todayData.runKm} km</div><div class="text-[10px] text-gray-400">Running</div></div></div>`; 
+            } 
+            modal.classList.add('open'); 
         }
-
-        function closeModal(e) {
-            if (e && !e.target.classList.contains('modal-overlay')) return;
-            document.getElementById('info-modal').classList.remove('open');
+        
+        function closeModal(e) { 
+            if (e && !e.target.classList.contains('modal-overlay')) return; 
+            document.getElementById('info-modal').classList.remove('open'); 
         }
-
-        // --- SISTEMA DE RENDERIZADO DE ALIMENTOS ---
-        function renderFoodCategories() {
-            const container = document.getElementById('foodCategoriesContainer');
-            container.innerHTML = '';
-
-            const mainMealsConfig = [
-                { id: 'Desayuno', icon: 'fa-sun', color: 'yellow' },
-                { id: 'Almuerzo', icon: 'fa-bread-slice', color: 'orange' },
-                { id: 'Comida', icon: 'fa-utensils', color: 'red' },
-                { id: 'Merienda', icon: 'fa-cookie-bite', color: 'pink' },
-                { id: 'Cena', icon: 'fa-moon', color: 'indigo' }
-            ];
-
-            const mealContainer = document.createElement('div');
+        
+        function renderFoodCategories() { 
+            const container = document.getElementById('foodCategoriesContainer'); 
+            container.innerHTML = ''; 
+            const mainMealsConfig = [ 
+                { id: 'Desayuno', icon: 'fa-sun', color: 'yellow' }, 
+                { id: 'Almuerzo', icon: 'fa-bread-slice', color: 'orange' }, 
+                { id: 'Comida', icon: 'fa-utensils', color: 'red' }, 
+                { id: 'Merienda', icon: 'fa-cookie-bite', color: 'pink' }, 
+                { id: 'Cena', icon: 'fa-moon', color: 'indigo' } 
+            ]; 
+            
+            const mealContainer = document.createElement('div'); 
             mealContainer.className = "mb-6 space-y-3"; 
-            mealContainer.innerHTML = '<h3 class="font-bold text-slate-700 text-sm uppercase tracking-wider mb-3 ml-1">🍽️ Tiempos de Comida</h3>';
-
-            mainMealsConfig.forEach(cfg => {
-                if(foodDatabase[cfg.id]) {
-                    mealContainer.appendChild(createSuperGroupStyle(
+            mealContainer.innerHTML = '<h3 class="font-bold text-slate-700 text-sm uppercase tracking-wider mb-3 ml-1">🍽️ Tiempos de Comida</h3>'; 
+            
+            mainMealsConfig.forEach(cfg => { 
+                if(foodDatabase[cfg.id]) { 
+                    mealContainer.appendChild(createSuperGroupStyle( 
                         cfg.id, 
                         cfg.icon, 
                         `bg-${cfg.color}-50`, 
                         `text-${cfg.color}-600`, 
                         `border-${cfg.color}-200`, 
                         [cfg.id] 
-                    ));
-                }
-            });
-            container.appendChild(mealContainer);
-
-            const pantryKeys = ['Frutas', 'Verduras', 'Carnes', 'Pescados', 'Huevos', 'Frutos Secos', 'Legumbres Secas', 'Legumbres Cocidas', 'Cereales Grano', 'Pastas', 'Panes', 'Leches', 'Quesos', 'Yogures', 'Bebidas'];
-            container.appendChild(createSuperGroup('🍎 Despensa / Otros', 'bg-green-50', 'text-green-800', 'border-green-100', pantryKeys));
-
-            const fastFoodKeys = ['Burger King', 'Hamburguesas', 'Acompañamientos'];
-            container.appendChild(createSuperGroup('🍔 Comida Rápida', 'bg-orange-50', 'text-orange-800', 'border-orange-100', fastFoodKeys));
-
-            const sweetKeys = ['Bolleria', 'Dulces'];
-            container.appendChild(createSuperGroup('🍩 Bollería y Dulces', 'bg-purple-50', 'text-purple-800', 'border-purple-100', sweetKeys));
-
-            const sauceKeys = ['Salsas'];
-            container.appendChild(createSuperGroup('🥫 Salsas', 'bg-red-50', 'text-red-800', 'border-red-100', sauceKeys));
+                    )); 
+                } 
+            }); 
+            container.appendChild(mealContainer); 
+            
+            const pantryKeys = ['Frutas', 'Verduras', 'Carnes', 'Pescados', 'Huevos', 'Frutos Secos', 'Legumbres Secas', 'Legumbres Cocidas', 'Cereales Grano', 'Pastas', 'Panes', 'Leches', 'Quesos', 'Yogures', 'Bebidas']; 
+            container.appendChild(createSuperGroup('🍎 Despensa / Otros', 'bg-green-50', 'text-green-800', 'border-green-100', pantryKeys)); 
+            
+            const fastFoodKeys = ['Burger King', 'Hamburguesas', 'Acompañamientos']; 
+            container.appendChild(createSuperGroup('🍔 Comida Rápida', 'bg-orange-50', 'text-orange-800', 'border-orange-100', fastFoodKeys)); 
+            
+            const sweetKeys = ['Bolleria', 'Dulces']; 
+            container.appendChild(createSuperGroup('🍩 Bollería y Dulces', 'bg-purple-50', 'text-purple-800', 'border-purple-100', sweetKeys)); 
+            
+            const sauceKeys = ['Salsas']; 
+            container.appendChild(createSuperGroup('🥫 Salsas', 'bg-red-50', 'text-red-800', 'border-red-100', sauceKeys)); 
         }
-
-        function createSuperGroupStyle(title, iconClass, bgClass, textClass, borderClass, keys) {
-             const groupDiv = document.createElement('div');
-            groupDiv.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm transition hover:shadow-md`;
+        
+        function createSuperGroupStyle(title, iconClass, bgClass, textClass, borderClass, keys) { 
+            const groupDiv = document.createElement('div'); 
+            groupDiv.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm transition hover:shadow-md`; 
             
-            const header = document.createElement('div');
-            header.className = `p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header`;
-            header.innerHTML = `<span class="flex items-center gap-3"><i class="fas ${iconClass} text-lg"></i> ${title}</span> <i class="fas fa-chevron-down opacity-50 transition-transform duration-300"></i>`;
-            
+            const header = document.createElement('div'); 
+            header.className = `p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header`; 
+            header.innerHTML = `<span class="flex items-center gap-3"><i class="fas ${iconClass} text-lg"></i> ${title}</span> <i class="fas fa-chevron-down opacity-50 transition-transform duration-300"></i>`; 
             header.onclick = function() { 
                 this.nextElementSibling.classList.toggle('open'); 
-                this.querySelector('.fa-chevron-down').classList.toggle('rotate-180');
-            };
+                this.querySelector('.fa-chevron-down').classList.toggle('rotate-180'); 
+            }; 
             
-            const contentDiv = document.createElement('div');
+            const contentDiv = document.createElement('div'); 
             contentDiv.className = "group-content bg-white"; 
-
-            if(keys.length === 1 && foodDatabase[keys[0]]) {
-                 contentDiv.innerHTML = renderFoodList(keys[0]);
-            } else {
-                 keys.forEach(key => {
-                    if(foodDatabase[key]) {
+            
+            if(keys.length === 1 && foodDatabase[keys[0]]) { 
+                contentDiv.innerHTML = renderFoodList(keys[0]); 
+            } else { 
+                keys.forEach(key => { 
+                    if(foodDatabase[key]) { 
                         contentDiv.innerHTML += renderFoodList(key); 
-                    }
-                });
-            }
-
-            groupDiv.appendChild(header);
-            groupDiv.appendChild(contentDiv);
-            return groupDiv;
-        }
-
-        function createSuperGroup(title, bgClass, textClass, borderClass, keys) {
-            const groupDiv = document.createElement('div');
-            groupDiv.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm mb-3`;
+                    } 
+                }); 
+            } 
             
-            const header = document.createElement('div');
-            header.className = `p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header`;
-            header.innerHTML = `<span>${title}</span> <i class="fas fa-layer-group opacity-50"></i>`;
-            header.onclick = function() { this.nextElementSibling.classList.toggle('open'); };
-            
-            const contentDiv = document.createElement('div');
-            contentDiv.className = "group-content bg-white px-2 py-2 space-y-2";
-
-            keys.forEach(key => {
-                if(foodDatabase[key]) {
-                    const subCat = createAccordion(key, 'bg-gray-50', 'text-gray-600', 'border-gray-200');
-                    contentDiv.appendChild(subCat);
-                }
-            });
-
-            groupDiv.appendChild(header);
-            groupDiv.appendChild(contentDiv);
-            return groupDiv;
+            groupDiv.appendChild(header); 
+            groupDiv.appendChild(contentDiv); 
+            return groupDiv; 
         }
-
-        function createAccordion(cat, bgClass, textClass, borderClass) {
-            const div = document.createElement('div');
-            div.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm transition hover:shadow-md`;
-            div.innerHTML = `
-                <div class="p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header" onclick="this.nextElementSibling.classList.toggle('open')">
-                    <span class="flex items-center gap-2">${cat}</span> 
-                    <i class="fas fa-chevron-down text-xs opacity-50"></i>
-                </div>
-                <div class="meal-content bg-slate-50">
-                    ${renderFoodList(cat)}
-                </div>
-            `;
-            return div;
-        }
-
-        function renderFoodList(cat) {
-            if(!foodDatabase[cat]) return '';
-            return foodDatabase[cat].map((f, i) => `
-                <div class="p-3 border-t border-gray-100 flex items-center justify-between hover:bg-blue-50/30 transition px-4 gap-2 search-item bg-white">
-                    <div class="flex-1">
-                        <div class="font-bold text-sm text-slate-700 item-name">${f.name}</div>
-                        <div class="text-[10px] text-gray-400 font-mono mt-0.5">Base: ${f.cal} kcal / ${f.weight}g</div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input type="number" id="weight-${cat.replace(/\s+/g, '')}-${i}" value="${f.weight}" class="w-14 bg-white border border-gray-200 rounded-lg text-xs font-bold text-center py-2 focus:border-blue-500 outline-none shadow-sm" placeholder="g">
-                        <span class="text-[10px] text-gray-400">g</span>
-                    </div>
-                    <div class="flex gap-2 ml-1">
-                            <button onclick="viewCalculatedDetails('${cat}', ${i})" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-blue-500 shadow-sm flex items-center justify-center"><i class="fas fa-search text-xs"></i></button>
-                            <button onclick="addCalculatedFood('${cat}', ${i})" class="w-8 h-8 rounded-full bg-primary text-white shadow-sm active:scale-90 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function searchGlobal(query) {
-            const results = document.getElementById('searchResults');
-            if (query.length < 2) { results.classList.add('hidden'); return; }
-            
-            results.classList.remove('hidden');
-            results.innerHTML = '';
-            
-            let count = 0;
-            for (const cat in foodDatabase) {
-                foodDatabase[cat].forEach((f, i) => {
-                    if (f.name.toLowerCase().includes(query.toLowerCase()) && count < 10) {
-                        count++;
-                        const div = document.createElement('div');
-                        div.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 flex justify-between items-center';
-                        div.innerHTML = `<span class="text-sm font-bold text-slate-700">${f.name}</span> <span class="text-xs text-gray-400">${f.cal} kcal</span>`;
-                        div.onclick = () => { 
-                             viewCalculatedDetails(cat, i, true); 
-                             results.classList.add('hidden');
-                             document.getElementById('globalSearch').value = '';
-                        };
-                        results.appendChild(div);
-                    }
-                });
-            }
-            if(count === 0) results.innerHTML = '<div class="p-3 text-xs text-gray-400">No encontrado</div>';
-        }
-
-        function getCalculatedFood(cat, idx) {
-            const base = foodDatabase[cat][idx];
-            const catId = cat.replace(/\s+/g, '');
-            const inputEl = document.getElementById(`weight-${catId}-${idx}`);
-            const inputVal = inputEl ? inputEl.value : base.weight;
-            
-            const newWeight = parseFloat(inputVal) || base.weight;
-            const ratio = newWeight / base.weight;
-
-            return {
-                name: base.name,
-                weight: newWeight,
-                cal: base.cal * ratio,
-                prot: base.prot * ratio,
-                fat: base.fat * ratio,
-                carb: base.carb * ratio,
-                sat: (base.sat || 0) * ratio 
-            };
-        }
-
-        function viewCalculatedDetails(cat, idx, fromSearch = false) {
-            const base = foodDatabase[cat][idx];
-            
-            let initialWeight = base.weight;
-            if (!fromSearch) {
-                 const catId = cat.replace(/\s+/g, '');
-                 const listInput = document.getElementById(`weight-${catId}-${idx}`);
-                 if (listInput) initialWeight = parseFloat(listInput.value) || base.weight;
-            }
-
-            Swal.fire({
-                title: base.name,
-                html: `
-                    <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Cantidad (Gramos)</label>
-                        <input id="swal-grams" type="number" value="${initialWeight}" class="w-full bg-gray-100 border border-gray-200 rounded-xl p-3 text-center text-xl font-bold text-slate-700 focus:border-blue-500 outline-none">
-                    </div>
-                    
-                    <div id="swal-stats" class="grid grid-cols-2 gap-3 text-center mb-2 transition-all">
-                        </div>
-                `,
-                confirmButtonText: 'Añadir a Dieta',
-                confirmButtonColor: '#3b82f6',
-                showCancelButton: true,
-                cancelButtonText: 'Cancelar',
-                didOpen: () => {
-                    const input = document.getElementById('swal-grams');
-                    const stats = document.getElementById('swal-stats');
-                    
-                    const updateStats = () => {
-                        const w = parseFloat(input.value) || 0;
-                        const ratio = w / base.weight;
-                        
-                        const satVal = (base.sat || 0) * ratio;
-                        const displaySat = (satVal % 1 !== 0 && satVal < 10) ? satVal.toFixed(1) : Math.round(satVal);
-
-                        stats.innerHTML = `
-                            <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-gray-400">Energía</span><span class="font-bold text-slate-700">${Math.round(base.cal * ratio)} kcal</span></div>
-                            <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-green-500">Proteína</span><span class="font-bold text-green-600">${Math.round(base.prot * ratio)}g</span></div>
-                            <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-yellow-500">Grasas</span><span class="font-bold text-yellow-600">${Math.round(base.fat * ratio)}g</span></div>
-                            <div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-red-500">Carbos</span><span class="font-bold text-red-600">${Math.round(base.carb * ratio)}g</span></div>
-                            <div class="bg-gray-50 p-2 rounded-lg col-span-2"><span class="block text-xs text-yellow-700">G. Saturadas</span><span class="font-bold text-yellow-800">${displaySat}g</span></div>
-                        `;
-                    };
-
-                    input.addEventListener('input', updateStats);
-                    updateStats();
-                },
-                preConfirm: () => {
-                    const finalWeight = parseFloat(document.getElementById('swal-grams').value) || base.weight;
-                    const ratio = finalWeight / base.weight;
-                    return {
-                        name: base.name,
-                        weight: finalWeight,
-                        cal: base.cal * ratio,
-                        prot: base.prot * ratio,
-                        fat: base.fat * ratio,
-                        carb: base.carb * ratio,
-                        sat: (base.sat || 0) * ratio
-                    };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    todayData.foodLog.push(result.value);
-                    updateDay();
-                    Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 }).fire({ icon: 'success', title: 'Añadido' });
-                }
-            });
-        }
-
-        function addCalculatedFood(cat, idx) {
-            const f = getCalculatedFood(cat, idx);
-            todayData.foodLog.push(f);
-            updateDay();
-            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 }).fire({ icon: 'success', title: 'Añadido' });
-        }
-
-        function removeFood(i) { todayData.foodLog.splice(i, 1); updateDay(); }
-        function addWater(ml) { todayData.water += ml; updateDay(); }
-        function removeWater(ml) { if(todayData.water >= ml) { todayData.water -= ml; updateDay(); } } 
         
-        function openCustomFoodModal() {
-            Swal.fire({
-                title: 'Crear Alimento',
-                html: `<input id="swal-n" class="swal2-input" placeholder="Nombre"><div class="grid grid-cols-2 gap-2"><input id="swal-k" type="number" class="swal2-input" placeholder="Kcal"><input id="swal-p" type="number" class="swal2-input" placeholder="Prot"><input id="swal-c" type="number" class="swal2-input" placeholder="Carb"><input id="swal-f" type="number" class="swal2-input" placeholder="Fat"><input id="swal-s" type="number" class="swal2-input" placeholder="Sat. Fat"><input id="swal-w" type="number" class="swal2-input" placeholder="Gramos (ref)"></div>`,
-                confirmButtonColor: '#1e293b', confirmButtonText: 'Guardar',
+        function createSuperGroup(title, bgClass, textClass, borderClass, keys) { 
+            const groupDiv = document.createElement('div'); 
+            groupDiv.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm mb-3`; 
+            
+            const header = document.createElement('div'); 
+            header.className = `p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header`; 
+            header.innerHTML = `<span>${title}</span> <i class="fas fa-layer-group opacity-50"></i>`; 
+            header.onclick = function() { 
+                this.nextElementSibling.classList.toggle('open'); 
+            }; 
+            
+            const contentDiv = document.createElement('div'); 
+            contentDiv.className = "group-content bg-white px-2 py-2 space-y-2"; 
+            
+            keys.forEach(key => { 
+                if(foodDatabase[key]) { 
+                    const subCat = createAccordion(key, 'bg-gray-50', 'text-gray-600', 'border-gray-200'); 
+                    contentDiv.appendChild(subCat); 
+                } 
+            }); 
+            
+            groupDiv.appendChild(header); 
+            groupDiv.appendChild(contentDiv); 
+            return groupDiv; 
+        }
+        
+        function createAccordion(cat, bgClass, textClass, borderClass) { 
+            const div = document.createElement('div'); 
+            div.className = `border ${borderClass} rounded-2xl ${bgClass} overflow-hidden shadow-sm transition hover:shadow-md`; 
+            div.innerHTML = `<div class="p-4 font-bold ${textClass} cursor-pointer flex justify-between items-center group-header" onclick="this.nextElementSibling.classList.toggle('open')"><span class="flex items-center gap-2">${cat}</span> <i class="fas fa-chevron-down text-xs opacity-50"></i></div><div class="meal-content bg-slate-50">${renderFoodList(cat)}</div>`; 
+            return div; 
+        }
+        
+        function renderFoodList(cat) { 
+            if(!foodDatabase[cat]) return ''; 
+            return foodDatabase[cat].map((f, i) => `<div class="p-3 border-t border-gray-100 flex items-center justify-between hover:bg-blue-50/30 transition px-4 gap-2 search-item bg-white"><div class="flex-1"><div class="font-bold text-sm text-slate-700 item-name">${f.name}</div><div class="text-[10px] text-gray-400 font-mono mt-0.5">Base: ${f.cal} kcal / ${f.weight}g</div></div><div class="flex items-center gap-2"><input type="number" id="weight-${cat.replace(/\s+/g, '')}-${i}" value="${f.weight}" class="w-14 bg-white border border-gray-200 rounded-lg text-xs font-bold text-center py-2 focus:border-blue-500 outline-none shadow-sm" placeholder="g"><span class="text-[10px] text-gray-400">g</span></div><div class="flex gap-2 ml-1"><button onclick="viewCalculatedDetails('${cat}', ${i})" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-blue-500 shadow-sm flex items-center justify-center"><i class="fas fa-search text-xs"></i></button><button onclick="addCalculatedFood('${cat}', ${i})" class="w-8 h-8 rounded-full bg-primary text-white shadow-sm active:scale-90 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button></div></div>`).join(''); 
+        }
+        
+        function searchGlobal(query) { 
+            const results = document.getElementById('searchResults'); 
+            if (query.length < 2) { 
+                results.classList.add('hidden'); 
+                return; 
+            } 
+            results.classList.remove('hidden'); 
+            results.innerHTML = ''; 
+            let count = 0; 
+            for (const cat in foodDatabase) { 
+                foodDatabase[cat].forEach((f, i) => { 
+                    if (f.name.toLowerCase().includes(query.toLowerCase()) && count < 10) { 
+                        count++; 
+                        const div = document.createElement('div'); 
+                        div.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 flex justify-between items-center'; 
+                        div.innerHTML = `<span class="text-sm font-bold text-slate-700">${f.name}</span> <span class="text-xs text-gray-400">${f.cal} kcal</span>`; 
+                        div.onclick = () => { 
+                            viewCalculatedDetails(cat, i, true); 
+                            results.classList.add('hidden'); 
+                            document.getElementById('globalSearch').value = ''; 
+                        }; 
+                        results.appendChild(div); 
+                    } 
+                }); 
+            } 
+            if(count === 0) results.innerHTML = '<div class="p-3 text-xs text-gray-400">No encontrado</div>'; 
+        }
+        
+        function getCalculatedFood(cat, idx) { 
+            const base = foodDatabase[cat][idx]; 
+            const catId = cat.replace(/\s+/g, ''); 
+            const inputEl = document.getElementById(`weight-${catId}-${idx}`); 
+            const inputVal = inputEl ? inputEl.value : base.weight; 
+            const newWeight = parseFloat(inputVal) || base.weight; 
+            const ratio = newWeight / base.weight; 
+            return { name: base.name, weight: newWeight, cal: base.cal * ratio, prot: base.prot * ratio, fat: base.fat * ratio, carb: base.carb * ratio, sat: (base.sat || 0) * ratio }; 
+        }
+        
+        function viewCalculatedDetails(cat, idx, fromSearch = false) { 
+            const base = foodDatabase[cat][idx]; 
+            let initialWeight = base.weight; 
+            if (!fromSearch) { 
+                const catId = cat.replace(/\s+/g, ''); 
+                const listInput = document.getElementById(`weight-${catId}-${idx}`); 
+                if (listInput) initialWeight = parseFloat(listInput.value) || base.weight; 
+            } 
+            
+            Swal.fire({ 
+                title: base.name, 
+                html: `<div class="mb-4"><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Cantidad (Gramos)</label><input id="swal-grams" type="number" value="${initialWeight}" class="w-full bg-gray-100 border border-gray-200 rounded-xl p-3 text-center text-xl font-bold text-slate-700 focus:border-blue-500 outline-none"></div><div id="swal-stats" class="grid grid-cols-2 gap-3 text-center mb-2 transition-all"></div>`, 
+                confirmButtonText: 'Añadir a Dieta', 
+                confirmButtonColor: '#3b82f6', 
+                showCancelButton: true, 
+                cancelButtonText: 'Cancelar', 
+                didOpen: () => { 
+                    const input = document.getElementById('swal-grams'); 
+                    const stats = document.getElementById('swal-stats'); 
+                    const updateStats = () => { 
+                        const w = parseFloat(input.value) || 0; 
+                        const ratio = w / base.weight; 
+                        const satVal = (base.sat || 0) * ratio; 
+                        const displaySat = (satVal % 1 !== 0 && satVal < 10) ? satVal.toFixed(1) : Math.round(satVal); 
+                        stats.innerHTML = `<div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-gray-400">Energía</span><span class="font-bold text-slate-700">${Math.round(base.cal * ratio)} kcal</span></div><div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-green-500">Proteína</span><span class="font-bold text-green-600">${Math.round(base.prot * ratio)}g</span></div><div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-yellow-500">Grasas</span><span class="font-bold text-yellow-600">${Math.round(base.fat * ratio)}g</span></div><div class="bg-gray-50 p-2 rounded-lg"><span class="block text-xs text-red-500">Carbos</span><span class="font-bold text-red-600">${Math.round(base.carb * ratio)}g</span></div><div class="bg-gray-50 p-2 rounded-lg col-span-2"><span class="block text-xs text-yellow-700">G. Saturadas</span><span class="font-bold text-yellow-800">${displaySat}g</span></div>`; 
+                    }; 
+                    input.addEventListener('input', updateStats); 
+                    updateStats(); 
+                }, 
+                preConfirm: () => { 
+                    const finalWeight = parseFloat(document.getElementById('swal-grams').value) || base.weight; 
+                    const ratio = finalWeight / base.weight; 
+                    return { name: base.name, weight: finalWeight, cal: base.cal * ratio, prot: base.prot * ratio, fat: base.fat * ratio, carb: base.carb * ratio, sat: (base.sat || 0) * ratio }; 
+                } 
+            }).then((result) => { 
+                if (result.isConfirmed) { 
+                    todayData.foodLog.push(result.value); 
+                    updateDay(); 
+                    Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 }).fire({ icon: 'success', title: 'Añadido' }); 
+                } 
+            }); 
+        }
+        
+        function addCalculatedFood(cat, idx) { 
+            const f = getCalculatedFood(cat, idx); 
+            todayData.foodLog.push(f); 
+            updateDay(); 
+            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 }).fire({ icon: 'success', title: 'Añadido' }); 
+        }
+        
+        function removeFood(i) { 
+            todayData.foodLog.splice(i, 1); 
+            updateDay(); 
+        }
+        
+        function addWater(ml) { 
+            todayData.water += ml; 
+            updateDay(); 
+        }
+        
+        function removeWater(ml) { 
+            if(todayData.water >= ml) { 
+                todayData.water -= ml; 
+                updateDay(); 
+            } 
+        }
+        
+        function openCustomFoodModal() { 
+            Swal.fire({ 
+                title: 'Crear Alimento', 
+                html: `<input id="swal-n" class="swal2-input" placeholder="Nombre"><div class="grid grid-cols-2 gap-2"><input id="swal-k" type="number" class="swal2-input" placeholder="Kcal"><input id="swal-p" type="number" class="swal2-input" placeholder="Prot"><input id="swal-c" type="number" class="swal2-input" placeholder="Carb"><input id="swal-f" type="number" class="swal2-input" placeholder="Fat"><input id="swal-s" type="number" class="swal2-input" placeholder="Sat. Fat"><input id="swal-w" type="number" class="swal2-input" placeholder="Gramos (ref)"></div>`, 
+                confirmButtonColor: '#1e293b', 
+                confirmButtonText: 'Guardar', 
                 preConfirm: () => ({ 
                     name: document.getElementById('swal-n').value, 
                     cal: Number(document.getElementById('swal-k').value), 
@@ -1515,211 +1691,272 @@
                     carb: Number(document.getElementById('swal-c').value), 
                     sat: Number(document.getElementById('swal-s').value), 
                     weight: Number(document.getElementById('swal-w').value) || 100 
-                })
-            }).then(r => { if(r.value) { todayData.foodLog.push(r.value); updateDay(); } });
-        }
-
-        function saveDay() { localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData)); }
-        function loadDay() {
-            const s = localStorage.getItem('fitTrackerToday_MD');
-            if(s) {
-                const loaded = JSON.parse(s);
-                todayData = { ...INITIAL_STATE, ...loaded };
-                if (!Array.isArray(todayData.studySessions)) todayData.studySessions = [];
-                
-                if(document.getElementById('wakeTime')) document.getElementById('wakeTime').value = todayData.wakeTime;
-                if(document.getElementById('sleepHours')) document.getElementById('sleepHours').value = todayData.sleepHours || '';
-                if(document.getElementById('sleepQuality')) document.getElementById('sleepQuality').value = todayData.sleepQuality || '';
-                
-                document.getElementById('range-run-km').value = todayData.runKm || 0;
-                document.getElementById('range-run-pace').value = todayData.runPace || 5.5;
-                document.getElementById('range-run-int').value = todayData.runInt || 2;
-                document.getElementById('range-bike-km').value = todayData.bikeKm || 0;
-                document.getElementById('range-bike-int').value = todayData.bikeInt || 2; 
-                
-                document.getElementById('gym-cals').value = todayData.gymCals || '';
-                document.getElementById('gym-time').value = todayData.gymTime || '';
-                document.getElementById('range-gym-int').value = todayData.gymInt || 2;
-
-                document.getElementById('range-mobile').value = todayData.mobileHours || 0;
-                document.getElementById('range-steps').value = todayData.steps || 0;
-                document.getElementById('range-standing').value = todayData.standingHours || 0;
-            }
-        }
-
-        function finishDay() {
-            Swal.fire({
-                title: '¿Finalizar el día?', text: "Se guardará el estrés para el historial.", icon: 'warning',
-                showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#d33', confirmButtonText: 'Sí, guardar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Calculamos el estrés medio del día para el historial (Promedio de Mental y Físico)
-                    const dailyStress = Math.round((mentalLoad + physicalLoad) / 2);
-
-                    const record = { 
-                        date: new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 
-                        data: { ...todayData }, 
-                        goals: { ...currentGoals },
-                        stress: dailyStress // Guardamos el estrés unificado para el cálculo de 7 días
-                    };
-
-                    // Evitar duplicados del mismo día (Actualizar si existe)
-                    const todayStr = record.date;
-                    const existingIdx = history.findIndex(h => h.date === todayStr);
-                    
-                    if (existingIdx >= 0) {
-                        history[existingIdx] = record;
-                    } else {
-                        history.unshift(record);
-                    }
-
-                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
-                    todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
-                    saveDay();
-                    Swal.fire('¡Guardado!', 'Día registrado.', 'success').then(() => window.location.reload());
-                }
-            });
+                }) 
+            }).then(r => { 
+                if(r.value) { 
+                    todayData.foodLog.push(r.value); 
+                    updateDay(); 
+                } 
+            }); 
         }
         
-        function navigateTo(id) {
-            document.querySelectorAll('.page-section').forEach(e=>e.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
-            document.getElementById('nav-'+id).classList.add('active');
-            window.scrollTo(0,0);
+        function saveDay() { 
+            localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData)); 
         }
-
-        function updateHistoryUI() {
-            const list = document.getElementById('historyList');
-            if(history.length === 0) { list.innerHTML = '<div class="text-center text-gray-400 mt-10"><i class="fas fa-history text-4xl mb-3 opacity-30"></i><p>Sin historial</p></div>'; return; }
-            list.innerHTML = history.map((h, i) => `
-                <div class="card p-5 flex justify-between items-center shadow-sm hover:shadow-md transition">
-                    <div>
-                        <div class="font-bold text-slate-800 capitalize text-sm">${h.date}</div>
-                        <div class="text-[10px] text-gray-400 mt-1">Carga Global: <b>${h.stress || 0}%</b></div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="restoreDay(${i})" class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center hover:bg-orange-200 transition"><i class="fas fa-undo-alt text-sm"></i></button>
-                        <button onclick="generateBeautifulPDF(${i})" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-file-pdf text-sm"></i></button>
-                        <button onclick="deleteDay(${i})" class="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200 transition"><i class="fas fa-trash-alt text-sm"></i></button>
-                    </div>
-                </div>
-            `).join('');
+        
+        function loadDay() { 
+            const s = localStorage.getItem('fitTrackerToday_MD'); 
+            if(s) { 
+                const loaded = JSON.parse(s); 
+                todayData = { ...INITIAL_STATE, ...loaded }; 
+                if (!Array.isArray(todayData.studySessions)) todayData.studySessions = []; 
+                if(document.getElementById('wakeTime')) document.getElementById('wakeTime').value = todayData.wakeTime; 
+                if(document.getElementById('sleepHours')) document.getElementById('sleepHours').value = todayData.sleepHours || ''; 
+                if(document.getElementById('sleepQuality')) document.getElementById('sleepQuality').value = todayData.sleepQuality || ''; 
+                
+                document.getElementById('range-run-km').value = todayData.runKm || 0; 
+                document.getElementById('range-run-pace').value = todayData.runPace || 5.5; 
+                document.getElementById('range-run-int').value = todayData.runInt || 2; 
+                document.getElementById('range-bike-km').value = todayData.bikeKm || 0; 
+                document.getElementById('range-bike-int').value = todayData.bikeInt || 2; 
+                document.getElementById('gym-cals').value = todayData.gymCals || ''; 
+                document.getElementById('gym-time').value = todayData.gymTime || ''; 
+                document.getElementById('range-gym-int').value = todayData.gymInt || 2; 
+                document.getElementById('range-mobile').value = todayData.mobileHours || 0; 
+                document.getElementById('range-steps').value = todayData.steps || 0; 
+                document.getElementById('range-standing').value = todayData.standingHours || 0; 
+            } 
         }
-
-        function restoreDay(index) {
-            Swal.fire({
-                title: '¿Restaurar este día?',
-                text: "Esto sobreescribirá lo que lleves registrado hoy.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, restaurar',
-                confirmButtonColor: '#f59e0b'
-            }).then((result) => {
-                if(result.isConfirmed) {
-                    todayData = history[index].data;
+        
+        function navigateTo(id) { 
+            document.querySelectorAll('.page-section').forEach(e=>e.classList.remove('active')); 
+            document.getElementById(id).classList.add('active'); 
+            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); 
+            document.getElementById('nav-'+id).classList.add('active'); 
+            window.scrollTo(0,0); 
+        }
+        
+        function updateHistoryUI() { 
+            const list = document.getElementById('historyList'); 
+            if(history.length === 0) { 
+                list.innerHTML = '<div class="text-center text-gray-400 mt-10"><i class="fas fa-history text-4xl mb-3 opacity-30"></i><p>Sin historial</p></div>'; 
+                return; 
+            } 
+            list.innerHTML = history.map((h, i) => `<div class="card p-5 flex justify-between items-center shadow-sm hover:shadow-md transition"><div><div class="font-bold text-slate-800 capitalize text-sm">${h.date}</div><div class="text-[10px] text-gray-400 mt-1">Carga Global: <b>${h.stress || 0}%</b></div></div><div class="flex gap-2"><button onclick="restoreDay(${i})" class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center hover:bg-orange-200 transition"><i class="fas fa-undo-alt text-sm"></i></button><button onclick="generateBeautifulPDF(${i})" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-file-pdf text-sm"></i></button><button onclick="deleteDay(${i})" class="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200 transition"><i class="fas fa-trash-alt text-sm"></i></button></div></div>`).join(''); 
+        }
+        
+        function restoreDay(index) { 
+            Swal.fire({ 
+                title: '¿Restaurar este día?', 
+                text: "Esto sobreescribirá lo que lleves registrado hoy.", 
+                icon: 'question', 
+                showCancelButton: true, 
+                confirmButtonText: 'Sí, restaurar', 
+                confirmButtonColor: '#f59e0b' 
+            }).then((result) => { 
+                if(result.isConfirmed) { 
+                    todayData = history[index].data; 
                     history.splice(index, 1); 
-                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
+                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history)); 
                     saveDay(); 
-                    window.location.reload();
-                }
-            });
+                    window.location.reload(); 
+                } 
+            }); 
         }
-
-        function deleteDay(index) {
-            Swal.fire({
-                title: '¿Eliminar registro?',
-                text: "No se podrá recuperar.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, eliminar',
-                confirmButtonColor: '#ef4444'
-            }).then((result) => {
-                if(result.isConfirmed) {
-                    history.splice(index, 1);
-                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
-                    updateHistoryUI();
-                    Swal.fire('Eliminado', '', 'success');
-                }
-            });
+        
+        function deleteDay(index) { 
+            Swal.fire({ 
+                title: '¿Eliminar registro?', 
+                text: "No se podrá recuperar.", 
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonText: 'Sí, eliminar', 
+                confirmButtonColor: '#ef4444' 
+            }).then((result) => { 
+                if(result.isConfirmed) { 
+                    history.splice(index, 1); 
+                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history)); 
+                    updateHistoryUI(); 
+                    Swal.fire('Eliminado', '', 'success'); 
+                } 
+            }); 
         }
-
+        
         function generateBeautifulPDF(index) {
             const rec = history[index];
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
             const dark = [30, 41, 59];
+            
             doc.setFillColor(...dark);
-            doc.rect(0, 0, 210, 35, 'F');
+            doc.rect(0, 0, 210, 45, 'F');
             doc.setTextColor(255, 255, 255);
-            doc.setFontSize(18);
+            doc.setFontSize(22);
             doc.setFont("helvetica", "bold");
-            doc.text("INFORME DIARIO DE RENDIMIENTO", 105, 18, null, null, "center");
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            doc.text(rec.date.toUpperCase(), 105, 26, null, null, "center");
-
-            let y = 45;
-            doc.setTextColor(0, 0, 0);
+            doc.text("INFORME DE RENDIMIENTO", 105, 20, null, null, "center");
             doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text(rec.date.toUpperCase(), 105, 32, null, null, "center");
+            
+            let y = 55;
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFillColor(240, 240, 240);
+            doc.rect(14, y-5, 180, 25, 'F');
+            doc.setFontSize(14);
             doc.setFont("helvetica", "bold");
-            doc.text("Resumen Biométrico & Carga", 14, y);
-            y += 8;
-
+            doc.text("RESUMEN DEL DIA", 20, y);
+            y += 10;
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Carga Global: ${rec.stress}% | Energia Subjetiva: ${rec.subjective ? rec.subjective.energy : 'N/A'}/10 | Estado: ${rec.subjective ? rec.subjective.mood : 'N/A'}`, 20, y);
+            y += 15;
+            
+            doc.setFillColor(79, 70, 229);
+            doc.rect(14, y-3, (rec.stressScores.mental * 1.8), 6, 'F');
+            doc.setFillColor(249, 115, 22);
+            doc.rect(14, y+5, (rec.stressScores.physical * 1.8), 6, 'F');
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Mental: ${rec.stressScores.mental}%`, 160, y);
+            doc.text(`Fisica: ${rec.stressScores.physical}%`, 160, y+8);
+            y += 20;
+            
+            if (rec.mentalExplanation) {
+                doc.setFontSize(10);
+                doc.setTextColor(79, 70, 229);
+                doc.text(`Mental: ${rec.mentalExplanation}`, 14, y);
+                y += 6;
+            }
+            if (rec.physicalExplanation) {
+                doc.setFontSize(10);
+                doc.setTextColor(249, 115, 22);
+                doc.text(`Fisica: ${rec.physicalExplanation}`, 14, y);
+                y += 10;
+            }
+            
             const metricData = [
-                ['Carga Global', `${rec.stress}%`, 'Calidad Sueño', `${rec.data.sleepQuality}%`], // Añadido Carga Global
-                ['Sueño', `${rec.data.sleepHours}h`, 'Uso Móvil', `${rec.data.mobileHours}h`],
-                ['Agua', `${rec.data.water} ml`, 'Pasos', `${rec.data.steps}`],
-                ['Deporte (Km)', `${rec.data.runKm + rec.data.bikeKm} km`, 'Horas de Pie', `${rec.data.standingHours}h`],
-                ['Gym (Jim)', `${rec.data.gymTime || 0} min`, 'Kcal Gym', `${rec.data.gymCals || 0}`] 
+                ['Sueño', `${rec.data.sleepHours}h / ${rec.data.sleepQuality}%`, 'Pasos', `${rec.data.steps}`],
+                ['Agua', `${rec.data.water} ml / ${Math.round(rec.goals.water)} ml`, 'Movil', `${rec.data.mobileHours}h`],
+                ['Running', `${rec.data.runKm} km`, 'Ciclismo', `${rec.data.bikeKm} km`],
+                ['Gym', `${rec.data.gymTime || 0} min / ${rec.data.gymCals || 0} kcal`, 'Horas Pie', `${rec.data.standingHours}h`]
             ];
-
+            
             doc.autoTable({
                 startY: y,
-                head: [['Métrica', 'Valor', 'Métrica', 'Valor']],
+                head: [['Metrica', 'Valor', 'Metrica', 'Valor']],
                 body: metricData,
                 theme: 'grid',
-                headStyles: { fillColor: [240, 240, 240], textColor: [50, 50, 50] },
-                styles: { fontSize: 10 }
+                headStyles: { fillColor: dark, textColor: [255,255,255] },
+                styles: { fontSize: 9, cellPadding: 3 },
+                columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 35 }, 2: { cellWidth: 40 }, 3: { cellWidth: 35 } }
             });
-            y = doc.lastAutoTable.finalY + 10;
-
-            doc.text("Carga Cognitiva (Estudio)", 14, y);
-            y += 6;
-            let studyRows = rec.data.studySessions ? rec.data.studySessions.map(s => [s.hours + 'h', s.focus === 1 ? 'Bajo' : (s.focus === 2 ? 'Medio' : 'Alto (Deep Work)')]) : [];
-            if(studyRows.length > 0) {
-                 doc.autoTable({ startY: y, head: [['Duración', 'Foco']], body: studyRows, theme: 'striped', headStyles: { fillColor: [139, 92, 246] } });
-                y = doc.lastAutoTable.finalY + 10;
-            } else { doc.text("Sin sesiones.", 14, y+5); y += 15; }
-
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("Registro Nutricional", 14, y);
-            y += 6;
             
-            const foodBody = rec.data.foodLog.map(f => [
-                f.name, 
-                Math.round(f.cal), 
-                Math.round(f.prot), 
-                Math.round(f.fat), 
-                Math.round(f.carb),
-                (f.sat ? f.sat.toFixed(1) : '0') 
-            ]);
-            const totalCal = rec.data.foodLog.reduce((a,b)=>a+b.cal,0);
-            foodBody.push(['TOTAL', Math.round(totalCal), '-', '-', '-', '-']);
-
-            doc.autoTable({
-                startY: y,
-                head: [['Alimento', 'Kcal', 'Prot (g)', 'Grasa (g)', 'Carb (g)', 'Sat (g)']], 
-                body: foodBody,
-                theme: 'grid',
-                headStyles: { fillColor: dark }
-            });
-
+            y = doc.lastAutoTable.finalY + 10;
+            
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("SESIONES DE ESTUDIO", 14, y);
+            y += 5;
+            
+            if (rec.data.studySessions && rec.data.studySessions.length > 0) {
+                const studyRows = rec.data.studySessions.map(s => [
+                    s.hours + 'h',
+                    s.focus === 1 ? 'Bajo' : (s.focus === 2 ? 'Medio' : 'Alto')
+                ]);
+                doc.autoTable({
+                    startY: y,
+                    head: [['Duracion', 'Foco']],
+                    body: studyRows,
+                    theme: 'striped',
+                    headStyles: { fillColor: [139, 92, 246] },
+                    styles: { fontSize: 9 }
+                });
+                y = doc.lastAutoTable.finalY + 10;
+            } else {
+                doc.setFontSize(10);
+                doc.setTextColor(150, 150, 150);
+                doc.text("Sin sesiones de estudio registradas.", 14, y+5);
+                y += 15;
+            }
+            
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("REGISTRO NUTRICIONAL", 14, y);
+            y += 5;
+            
+            if (rec.data.foodLog && rec.data.foodLog.length > 0) {
+                const foodBody = rec.data.foodLog.map(f => [
+                    f.name.substring(0, 20),
+                    Math.round(f.cal),
+                    Math.round(f.prot),
+                    Math.round(f.fat),
+                    Math.round(f.carb),
+                    f.sat ? f.sat.toFixed(1) : '0'
+                ]);
+                
+                const totalCal = rec.data.foodLog.reduce((a,b)=>a+b.cal,0);
+                const totalProt = rec.data.foodLog.reduce((a,b)=>a+b.prot,0);
+                const totalFat = rec.data.foodLog.reduce((a,b)=>a+b.fat,0);
+                const totalCarb = rec.data.foodLog.reduce((a,b)=>a+b.carb,0);
+                const totalSat = rec.data.foodLog.reduce((a,b)=>a+(b.sat||0),0);
+                
+                foodBody.push(['TOTAL', Math.round(totalCal), Math.round(totalProt), Math.round(totalFat), Math.round(totalCarb), totalSat.toFixed(1)]);
+                
+                doc.autoTable({
+                    startY: y,
+                    head: [['Alimento', 'Kcal', 'Prot', 'Grasa', 'Carb', 'Sat']],
+                    body: foodBody,
+                    theme: 'grid',
+                    headStyles: { fillColor: [34, 197, 94] },
+                    styles: { fontSize: 8 },
+                    columnStyles: { 0: { cellWidth: 60 } }
+                });
+                y = doc.lastAutoTable.finalY + 10;
+            } else {
+                doc.setFontSize(10);
+                doc.setTextColor(150, 150, 150);
+                doc.text("Sin alimentos registrados.", 14, y+5);
+                y += 15;
+            }
+            
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("ALERTAS DEL DIA", 14, y);
+            y += 5;
+            
+            if (rec.alerts && rec.alerts.length > 0) {
+                const alertBody = rec.alerts.map(a => {
+                    let typeText = a.type === 'water' ? 'Agua' : (a.type === 'nutrition' ? 'Nutricion' : 'Comida');
+                    return [typeText, a.message];
+                });
+                doc.autoTable({
+                    startY: y,
+                    head: [['Tipo', 'Alerta']],
+                    body: alertBody,
+                    theme: 'grid',
+                    headStyles: { fillColor: [239, 68, 68] },
+                    styles: { fontSize: 9 }
+                });
+            } else {
+                doc.setFontSize(10);
+                doc.setTextColor(150, 150, 150);
+                doc.text("No hubo alertas este dia.", 14, y+5);
+            }
+            
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`FitTracker AI - Informe generado el ${new Date().toLocaleDateString()}`, 105, 285, null, null, 'center');
+            }
+            
             const blob = doc.output('bloburl');
             window.open(blob, '_blank');
         }
     </script>
 </body>
 </html>
+
