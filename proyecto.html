@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FitTracker Medical - Pro V2</title>
+    <title>FitTracker Medical - Pro V3</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -33,7 +33,13 @@
     </script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; padding-bottom: 110px; }
+        /* Ajuste para que no sobre tanto espacio blanco al final, pero respete la barra */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f1f5f9; 
+            -webkit-tap-highlight-color: transparent; 
+            padding-bottom: 140px; /* Espacio justo para la barra subida */
+        }
         
         /* UI Cards */
         .card { background: white; border-radius: 24px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.08); transition: transform 0.2s; border: 1px solid #f1f5f9; }
@@ -64,7 +70,7 @@
             min-width: 95px;
         }
         
-        /* Input numérico limpio para la comida */
+        /* Input numérico limpio */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
@@ -84,6 +90,11 @@
 
         .stress-bar-container { background: #e2e8f0; border-radius: 99px; overflow: hidden; height: 12px; }
         .stress-bar { height: 100%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; border-radius: 99px; }
+
+        /* CLASE CLAVE: Safe Area para iOS */
+        .pb-safe-area {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
     </style>
 </head>
 <body>
@@ -194,7 +205,7 @@
                 </div>
             </div>
             
-            <div class="card p-6 mb-24 card-clickable cursor-pointer" onclick="showDetails('nutrition')">
+            <div class="card p-6 card-clickable cursor-pointer" onclick="showDetails('nutrition')">
                 <div class="flex justify-between items-center mb-5">
                     <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fas fa-fire text-orange-500"></i> Combustible (60kg)</h3>
                     <span class="text-[10px] bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-bold">Meta: <span id="goal-cals">2400</span> kcal</span>
@@ -386,7 +397,7 @@
         <div id="registro" class="page-section">
             <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">Historial de Informes</h2>
             <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200 mb-6">
-                <p class="text-xs text-yellow-700"><i class="fas fa-mobile-alt mr-1"></i> <b>Nota iPhone:</b> Si se abre una pestaña nueva, pulsa "Compartir" -> "Guardar en Archivos".</p>
+                <p class="text-xs text-yellow-700"><i class="fas fa-mobile-alt mr-1"></i> <b>Nota:</b> Si la guardas por error, usa el botón de "flecha" para devolverla al día de hoy.</p>
             </div>
             <div id="historyList" class="space-y-4 pb-24"></div>
         </div>
@@ -404,7 +415,7 @@
         </div>
     </div>
 
-    <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-lg border-t border-gray-100 py-3 px-2 flex justify-between items-center z-50 pb-safe">
+    <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-lg border-t border-gray-100 py-3 px-2 flex justify-between items-center z-50 pb-safe-area pb-6">
         <button onclick="navigateTo('inicio')" class="nav-item active flex flex-col items-center w-1/5 group" id="nav-inicio">
             <i class="fas fa-home text-xl mb-1 group-active:scale-90 transition"></i><span class="text-[10px] font-bold">Inicio</span>
         </button>
@@ -517,7 +528,6 @@
                 waterDetails.push({ txt: "Calor (Verano)", val: "+400ml" });
             }
 
-            // Consejos Médicos de Nutrición basados en deporte
             let sportLoad = todayData.runKm + (todayData.bikeKm * 0.4);
             if (sportLoad > 10) {
                 nutritionAdvice += "<li>🏃‍♂️ <b>Carga Alta:</b> Depósitos de glucógeno vacíos. Cena carbohidratos (arroz/pasta) para recuperar.</li>";
@@ -536,7 +546,6 @@
                 waterDetails.push({ txt: `Running (${todayData.runKm}km)`, val: `+${Math.round(runWater)}ml` });
             }
 
-            // Consejos Médicos de Estudio
             let totalStudy = todayData.studySessions.reduce((a,b)=>a+b.hours,0);
             if (totalStudy > 6) {
                 studyAdvice = "⚠️ <b>Alerta Cortisol:</b> Llevas mucha carga mental. El cerebro necesita glucosa y descanso. <br>👉 Recomendación: Come nueces (Omega 3) o un plátano ahora. Duerme 8h hoy sí o sí.";
@@ -715,7 +724,6 @@
             document.getElementById('water-display-lg').innerText = todayData.water;
             document.getElementById('water-goal-text').innerText = `Meta dinámica: ${Math.round(currentGoals.water)} ml`;
 
-            // Actualizar barra deporte en Home
             document.getElementById('home-sport-km').innerText = todayData.runKm + todayData.bikeKm;
             const sportProgress = Math.min(((todayData.runKm + (todayData.bikeKm*0.4)) / 10) * 100, 100);
             document.getElementById('bar-sport-home').style.width = sportProgress + '%';
@@ -752,7 +760,7 @@
             updateDay();
         }
 
-        // --- 4. MODALS & ADVICE (Lógica de Consejos) ---
+        // --- MODALS & ADVICE ---
         function showDetails(type) {
             const modal = document.getElementById('info-modal');
             const title = document.getElementById('modal-title');
@@ -782,11 +790,9 @@
                         <span class="text-sm font-bold text-blue-500">${d.val}</span>
                     </div>`).join('');
             } else if (type === 'study') {
-                // Consejos Productividad
                 title.innerText = "Detalle Estudio";
                 const focusLabels = {1: 'Bajo', 2: 'Medio', 3: 'Deep Work'};
                 let content = `<div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-sm text-slate-700 mb-4">${studyAdvice}</div>`;
-                
                 content += todayData.studySessions.length ? todayData.studySessions.map(s => `
                     <div class="bg-gray-50 p-3 rounded-xl mb-2 flex justify-between">
                         <span class="font-bold text-slate-700">${s.hours} horas</span>
@@ -796,7 +802,6 @@
                 body.innerHTML = content;
 
             } else if (type === 'nutrition') {
-                // Consejos Nutrición
                 title.innerText = "Control de Dieta";
                 body.innerHTML = `
                     <p class="text-xs font-bold text-gray-400 uppercase mb-2">Consejo Recuperación</p>
@@ -811,7 +816,6 @@
                     </div>
                 `;
             } else if (type === 'sport') {
-                // Detalle Deporte (Nueva sección)
                 title.innerText = "Detalle Actividad";
                 body.innerHTML = `
                     <div class="grid grid-cols-2 gap-3 mb-4">
@@ -856,12 +860,10 @@
                                     <div class="font-bold text-sm text-slate-700">${f.name}</div>
                                     <div class="text-[10px] text-gray-400 font-mono mt-0.5">Base: ${f.cal} kcal / ${f.weight}g</div>
                                 </div>
-                                
                                 <div class="flex items-center gap-2">
                                     <input type="number" id="weight-${cat}-${i}" value="${f.weight}" class="w-14 bg-white border border-gray-200 rounded-lg text-xs font-bold text-center py-2 focus:border-blue-500 outline-none shadow-sm" placeholder="g">
                                     <span class="text-[10px] text-gray-400">g</span>
                                 </div>
-
                                 <div class="flex gap-2 ml-1">
                                      <button onclick="viewCalculatedDetails('${cat}', ${i})" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-blue-500 shadow-sm flex items-center justify-center"><i class="fas fa-search text-xs"></i></button>
                                      <button onclick="addCalculatedFood('${cat}', ${i})" class="w-8 h-8 rounded-full bg-primary text-white shadow-sm active:scale-90 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button>
@@ -873,11 +875,10 @@
             `).join('');
         }
 
-        // Función para calcular valores basados en el input de peso
         function getCalculatedFood(cat, idx) {
             const base = foodDatabase[cat][idx];
             const inputVal = document.getElementById(`weight-${cat}-${idx}`).value;
-            const newWeight = parseFloat(inputVal) || base.weight; // Si está vacío usa base
+            const newWeight = parseFloat(inputVal) || base.weight;
             const ratio = newWeight / base.weight;
 
             return {
@@ -982,6 +983,7 @@
             window.scrollTo(0,0);
         }
 
+        // --- GESTIÓN DE HISTORIAL (Eliminar / Restaurar) ---
         function updateHistoryUI() {
             const list = document.getElementById('historyList');
             if(history.length === 0) { list.innerHTML = '<div class="text-center text-gray-400 mt-10"><i class="fas fa-history text-4xl mb-3 opacity-30"></i><p>Sin historial</p></div>'; return; }
@@ -991,9 +993,50 @@
                         <div class="font-bold text-slate-800 capitalize text-sm">${h.date}</div>
                         <div class="text-[10px] text-gray-400 mt-1">Carga Fisiológica calculada: <b>${Math.round(h.data.water/h.goals.water*100)}%</b></div>
                     </div>
-                    <button onclick="generateBeautifulPDF(${i})" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-file-pdf text-sm"></i></button>
+                    <div class="flex gap-2">
+                        <button onclick="restoreDay(${i})" class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center hover:bg-orange-200 transition"><i class="fas fa-undo-alt text-sm"></i></button>
+                        <button onclick="generateBeautifulPDF(${i})" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-file-pdf text-sm"></i></button>
+                        <button onclick="deleteDay(${i})" class="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200 transition"><i class="fas fa-trash-alt text-sm"></i></button>
+                    </div>
                 </div>
             `).join('');
+        }
+
+        function restoreDay(index) {
+            Swal.fire({
+                title: '¿Restaurar este día?',
+                text: "Esto sobreescribirá lo que lleves registrado hoy.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, restaurar',
+                confirmButtonColor: '#f59e0b'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    todayData = history[index].data;
+                    history.splice(index, 1); // Lo quitamos del historial
+                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
+                    saveDay(); // Lo guardamos como "hoy"
+                    window.location.reload();
+                }
+            });
+        }
+
+        function deleteDay(index) {
+            Swal.fire({
+                title: '¿Eliminar registro?',
+                text: "No se podrá recuperar.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                confirmButtonColor: '#ef4444'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    history.splice(index, 1);
+                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
+                    updateHistoryUI();
+                    Swal.fire('Eliminado', '', 'success');
+                }
+            });
         }
 
         function generateBeautifulPDF(index) {
