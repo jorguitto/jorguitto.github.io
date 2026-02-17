@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FitTracker Pro - Lean Muscle</title>
+    <title>FitTracker Pro - Medical Edition</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -33,10 +33,10 @@
     </script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; padding-bottom: 100px; }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; padding-bottom: 110px; }
         
         /* UI Cards */
-        .card { background: white; border-radius: 20px; box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05); transition: transform 0.2s; border: 1px solid #e2e8f0; }
+        .card { background: white; border-radius: 24px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.08); transition: transform 0.2s; border: 1px solid #f1f5f9; }
         .card-clickable:active { transform: scale(0.98); background-color: #f8fafc; }
         
         /* Modal Animation */
@@ -45,19 +45,20 @@
         .modal-content { transform: scale(0.9); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .modal-overlay.open .modal-content { transform: scale(1); opacity: 1; }
 
-        /* Sliders */
+        /* Sliders Custom */
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
-            background: white; border: 2px solid #3b82f6; cursor: pointer; margin-top: -10px; 
+            -webkit-appearance: none; height: 28px; width: 28px; border-radius: 50%;
+            background: white; border: 2px solid #3b82f6; cursor: pointer; margin-top: -12px; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
         input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 6px; cursor: pointer; background: #cbd5e1; border-radius: 99px;
+            width: 100%; height: 6px; cursor: pointer; background: #e2e8f0; border-radius: 99px;
         }
 
-        .nav-item.active { color: #3b82f6; transform: translateY(-2px); font-weight: bold; }
-        .nav-item { transition: all 0.2s; color: #94a3b8; }
+        .nav-item.active { color: #3b82f6; transform: translateY(-2px); }
+        .nav-item.active i { transform: scale(1.1); }
+        .nav-item { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); color: #94a3b8; }
         
         .page-section { display: none; opacity: 0; animation: fadeIn 0.4s ease-out forwards; }
         .page-section.active { display: block; opacity: 1; }
@@ -66,345 +67,350 @@
         .meal-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; }
         .meal-content.open { max-height: 2000px; }
 
-        .stress-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 1s; }
+        .stress-bar-container { background: #f1f5f9; border-radius: 99px; overflow: hidden; height: 12px; }
+        .stress-bar { height: 100%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; border-radius: 99px; }
     </style>
 </head>
 <body>
 
-    <header class="fixed top-0 w-full bg-white/95 backdrop-blur-md z-40 border-b border-gray-100 px-5 py-4 flex justify-between items-center">
+    <header class="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-40 border-b border-gray-100 px-6 py-4 flex justify-between items-center shadow-sm">
         <button onclick="navigateTo('registro')" class="text-gray-400 hover:text-primary transition"><i class="fas fa-history text-xl"></i></button>
         <div class="text-center">
-            <h1 class="text-lg font-black text-slate-800 tracking-tight italic">FIT<span class="text-primary">TRACKER</span></h1>
-            <p id="season-indicator" class="text-[10px] text-gray-500 font-bold uppercase">Detectando...</p>
+            <h1 class="text-lg font-black text-slate-800 tracking-tighter italic">FIT<span class="text-primary">TRACKER</span></h1>
+            <p id="season-indicator" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Detectando...</p>
         </div>
-        <button onclick="openSettings()" class="text-gray-400 hover:text-primary transition"><i class="fas fa-cog text-xl"></i></button>
+        <button onclick="finishDay()" class="text-gray-400 hover:text-green-500 transition"><i class="fas fa-check-circle text-xl"></i></button>
     </header>
 
-    <main class="container mx-auto px-4 mt-24 max-w-lg">
+    <main class="container mx-auto px-5 mt-24 max-w-lg">
 
         <div id="inicio" class="page-section active">
             
-            <div class="card p-5 mb-5 border-l-4 border-indigo-500">
+            <div class="card p-5 mb-5 border-l-4 border-indigo-500 relative">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-gray-700 text-sm flex items-center gap-2"><i class="fas fa-moon text-indigo-500"></i> Recuperación</h3>
-                    <span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">Vital para Músculo</span>
+                    <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fas fa-moon text-indigo-500"></i> Recuperación</h3>
+                    <span id="sleep-score" class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">--</span>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label class="text-[10px] text-gray-400 uppercase font-bold block mb-1">Despertar</label>
-                        <input type="time" id="wakeTime" onchange="updateDay()" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:border-indigo-500 outline-none">
+                        <input type="time" id="wakeTime" onchange="updateDay()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none font-bold text-slate-600">
                     </div>
-                    <div class="grid grid-cols-2 gap-4 sm:col-span-2">
+                    <div class="grid grid-cols-2 gap-3 sm:col-span-2">
                         <div>
                             <label class="text-[10px] text-gray-400 uppercase font-bold block mb-1">Horas</label>
-                            <input type="number" id="sleepHours" placeholder="8" onchange="updateDay()" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-center focus:border-indigo-500 outline-none">
+                            <input type="number" id="sleepHours" placeholder="8" oninput="updateDay()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-center focus:border-indigo-500 outline-none font-bold text-slate-600">
                         </div>
                         <div>
                             <label class="text-[10px] text-gray-400 uppercase font-bold block mb-1">Calidad %</label>
-                            <input type="number" id="sleepQuality" placeholder="100" onchange="updateDay()" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-center focus:border-indigo-500 outline-none">
+                            <input type="number" id="sleepQuality" placeholder="100" oninput="updateDay()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm text-center focus:border-indigo-500 outline-none font-bold text-slate-600">
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-6 mb-6 relative overflow-hidden card-clickable cursor-pointer" onclick="showDetails('stress')">
-                <div class="absolute top-2 right-3 text-gray-300"><i class="fas fa-info-circle"></i></div>
-                <div class="flex justify-between items-end mb-2">
+            <div class="card p-6 mb-6 card-clickable cursor-pointer relative" onclick="showDetails('stress')">
+                <div class="absolute top-4 right-4 text-gray-300"><i class="fas fa-chevron-right text-xs"></i></div>
+                <div class="flex justify-between items-end mb-3">
                     <div>
                         <h2 class="text-lg font-bold text-slate-800">Carga Diaria</h2>
                         <p class="text-xs text-gray-500">Estrés Fisiológico & Mental</p>
                     </div>
                     <div class="text-right">
-                        <span id="stress-score" class="text-3xl font-black text-green-500">0%</span>
+                        <span id="stress-score" class="text-3xl font-black text-slate-200">0%</span>
                     </div>
                 </div>
                 
-                <div class="h-3 bg-gray-100 rounded-full overflow-hidden mb-3">
-                    <div id="stress-bar" class="stress-bar bg-green-500 h-full" style="width: 0%"></div>
+                <div class="stress-bar-container mb-3">
+                    <div id="stress-bar" class="stress-bar bg-slate-200" style="width: 0%"></div>
                 </div>
-                <p id="stress-msg" class="text-xs font-bold text-center text-slate-600 bg-slate-50 py-2 rounded-lg">
-                    Analizando estado...
+                <p id="stress-msg" class="text-xs font-bold text-center text-slate-500 bg-slate-50 py-2 rounded-lg border border-slate-100">
+                    Esperando datos...
                 </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="card p-4 border-b-4 border-blue-400 card-clickable cursor-pointer" onclick="showDetails('water')">
-                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Hidratación</p>
-                    <div class="flex items-end justify-between mb-2">
+                <div class="card p-5 border-b-4 border-blue-400 card-clickable cursor-pointer" onclick="showDetails('water')">
+                    <div class="flex justify-between mb-2">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase">Hidratación</p>
+                        <i class="fas fa-info-circle text-blue-100 text-xs"></i>
+                    </div>
+                    <div class="flex items-end justify-between mb-3">
                         <div class="leading-none">
                             <span class="text-2xl font-bold text-slate-700 block" id="home-water">0</span>
                             <span class="text-[10px] text-gray-400 font-medium">/ <span id="home-water-goal">0</span> ml</span>
                         </div>
-                        <i class="fas fa-glass-water text-blue-400 text-xl opacity-50"></i>
+                        <i class="fas fa-glass-water text-blue-500 text-xl"></i>
                     </div>
                     <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                        <div id="mini-bar-water" class="bg-blue-400 h-full w-0 transition-all duration-500"></div>
+                        <div id="mini-bar-water" class="bg-blue-400 h-full w-0 transition-all duration-500 rounded-full"></div>
                     </div>
                 </div>
 
-                <div class="card p-4 border-b-4 border-study card-clickable cursor-pointer" onclick="showDetails('study')">
-                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Productividad</p>
+                <div class="card p-5 border-b-4 border-study card-clickable cursor-pointer" onclick="showDetails('study')">
+                    <div class="flex justify-between mb-2">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase">Productividad</p>
+                        <i class="fas fa-info-circle text-purple-100 text-xs"></i>
+                    </div>
                     <div class="flex items-end justify-between mb-2">
                         <span class="text-2xl font-bold text-slate-700"><span id="home-study">0</span><span class="text-sm text-gray-400 font-normal">h</span></span>
-                        <i class="fas fa-brain text-study text-xl opacity-50"></i>
+                        <i class="fas fa-brain text-study text-xl"></i>
                     </div>
-                     <p id="home-focus-label" class="text-[10px] text-study font-bold text-right bg-purple-50 rounded px-1">Sin registro</p>
+                    <p id="home-focus-label" class="text-[10px] text-study font-bold text-right bg-purple-50 rounded px-2 py-0.5 inline-block float-right">Sin registro</p>
                 </div>
             </div>
             
-            <div class="card p-5 mb-6 card-clickable cursor-pointer" onclick="showDetails('nutrition')">
-                <div class="flex justify-between items-center mb-4">
+            <div class="card p-6 mb-24 card-clickable cursor-pointer" onclick="showDetails('nutrition')">
+                <div class="flex justify-between items-center mb-5">
                     <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fas fa-fire text-orange-500"></i> Combustible</h3>
-                    <span class="text-[10px] bg-orange-50 text-orange-600 px-2 py-1 rounded font-bold">Meta: <span id="goal-cals">2000</span> kcal</span>
+                    <span class="text-[10px] bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-bold">Meta: <span id="goal-cals">2000</span> kcal</span>
                 </div>
 
-                <div class="space-y-4">
+                <div class="space-y-5">
                     <div>
                         <div class="flex justify-between text-xs mb-1 font-bold text-slate-600">
-                            <span>Energía</span>
+                            <span>Energía Total</span>
                             <span><span id="val-cals">0</span> kcal</span>
                         </div>
-                        <div class="w-full bg-gray-100 rounded-full h-2">
-                            <div id="bar-cals" class="bg-slate-800 h-2 rounded-full transition-all duration-700" style="width: 0%"></div>
+                        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                            <div id="bar-cals" class="bg-slate-800 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-4 mt-2">
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
                             <span class="text-[10px] text-gray-400 font-bold block mb-1">Proteína</span>
-                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                <div id="bar-prot" class="h-full bg-green-500 w-0"></div>
+                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
+                                <div id="bar-prot" class="h-full bg-green-500 w-0 rounded-full"></div>
                             </div>
-                            <span class="text-[10px] text-right block mt-0.5 font-mono"><span id="val-prot">0</span>/<span id="goal-prot">0</span></span>
+                            <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-prot">0</span>/<span id="goal-prot">0</span>g</span>
                         </div>
                         <div>
                             <span class="text-[10px] text-gray-400 font-bold block mb-1">Grasas</span>
-                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                <div id="bar-fat" class="h-full bg-yellow-400 w-0"></div>
+                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
+                                <div id="bar-fat" class="h-full bg-yellow-400 w-0 rounded-full"></div>
                             </div>
-                            <span class="text-[10px] text-right block mt-0.5 font-mono"><span id="val-fat">0</span>/<span id="goal-fat">0</span></span>
+                            <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-fat">0</span>/<span id="goal-fat">0</span>g</span>
                         </div>
                         <div>
                             <span class="text-[10px] text-gray-400 font-bold block mb-1">Carbos</span>
-                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                <div id="bar-carbs" class="h-full bg-red-400 w-0"></div>
+                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
+                                <div id="bar-carbs" class="h-full bg-red-400 w-0 rounded-full"></div>
                             </div>
-                            <span class="text-[10px] text-right block mt-0.5 font-mono"><span id="val-carbs">0</span>/<span id="goal-carbs">0</span></span>
+                            <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-carbs">0</span>/<span id="goal-carbs">0</span>g</span>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <button onclick="finishDay()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-lg shadow-slate-300 active:scale-95 transition-transform flex items-center justify-center gap-2 mb-6">
-                <i class="fas fa-flag-checkered"></i> Finalizar Día & Guardar
-            </button>
         </div>
 
         <div id="comida" class="page-section">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-slate-800">Nutrición</h2>
-                <button onclick="openCustomFoodModal()" class="bg-blue-50 text-primary px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition">
-                    + Crear Propio
+                <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Registro de Dieta</h2>
+                <button onclick="openCustomFoodModal()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold active:scale-95 transition shadow-lg shadow-slate-200">
+                    + Crear Alimento
                 </button>
             </div>
             
             <div class="relative mb-6">
-                <input type="text" id="globalSearch" onkeyup="searchGlobal(this.value)" placeholder="🔍 Buscar (ej: pollo, arroz)..." class="w-full bg-white p-4 pl-12 rounded-2xl border-none shadow-sm text-sm focus:ring-2 focus:ring-primary/50 outline-none">
-                <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
-                <div id="searchResults" class="absolute z-20 w-full bg-white shadow-xl rounded-xl mt-2 hidden max-h-60 overflow-y-auto border border-gray-100"></div>
+                <input type="text" id="globalSearch" onkeyup="searchGlobal(this.value)" placeholder="🔍 Buscar pollo, arroz, avena..." class="w-full bg-white p-4 pl-12 rounded-2xl border border-gray-100 shadow-sm text-sm focus:ring-2 focus:ring-primary/20 outline-none transition">
+                <div id="searchResults" class="absolute z-20 w-full bg-white shadow-xl rounded-xl mt-2 hidden max-h-60 overflow-y-auto border border-gray-100 px-2 py-2"></div>
             </div>
 
             <div id="foodCategoriesContainer" class="space-y-3 pb-8"></div>
 
-            <div class="mt-6 pt-4 border-t border-gray-200">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Consumido Hoy</h3>
-                <div id="addedFoodsList" class="space-y-2"></div>
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Consumido Hoy</h3>
+                    <span id="total-consumed-kcal" class="text-xs font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded">0 kcal</span>
+                </div>
+                <div id="addedFoodsList" class="space-y-2 pb-24"></div>
             </div>
         </div>
 
         <div id="agua" class="page-section">
-            <h2 class="text-2xl font-bold text-center text-slate-800 mb-2">Hidratación</h2>
-            <p id="water-goal-text" class="text-center text-xs text-blue-500 font-bold bg-blue-50 py-1 px-3 rounded-full mx-auto w-max mb-8">Meta dinámica: 2200 ml</p>
+            <h2 class="text-2xl font-bold text-center text-slate-800 mb-1">Monitor de Hidratación</h2>
+            <div id="water-goal-text" class="text-center text-xs text-blue-600 font-bold bg-blue-50 py-1.5 px-4 rounded-full mx-auto w-max mb-8 border border-blue-100 shadow-sm">Meta dinámica: Calculando...</div>
             
             <div class="flex flex-col items-center">
-                <div class="relative w-56 h-56 mb-10 flex items-center justify-center">
-                    <svg class="w-full h-full transform -rotate-90 filter drop-shadow-lg">
-                        <circle cx="112" cy="112" r="90" stroke="#e2e8f0" stroke-width="15" fill="transparent"/>
-                        <circle id="water-circle" cx="112" cy="112" r="90" stroke="#3b82f6" stroke-width="15" fill="transparent" stroke-dasharray="565" stroke-dashoffset="565" stroke-linecap="round" class="transition-all duration-1000"/>
+                <div class="relative w-64 h-64 mb-10 flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90 filter drop-shadow-2xl">
+                        <circle cx="128" cy="128" r="100" stroke="#f1f5f9" stroke-width="20" fill="transparent"/>
+                        <circle id="water-circle" cx="128" cy="128" r="100" stroke="#3b82f6" stroke-width="20" fill="transparent" stroke-dasharray="628" stroke-dashoffset="628" stroke-linecap="round" class="transition-all duration-1000 ease-out"/>
                     </svg>
                     <div class="absolute text-center">
-                        <i class="fas fa-glass-water text-blue-400 text-2xl mb-1"></i>
-                        <span id="water-display-lg" class="text-5xl font-black text-slate-800 block">0</span>
+                        <i class="fas fa-droplet text-blue-400 text-3xl mb-2 animate-bounce"></i>
+                        <span id="water-display-lg" class="text-5xl font-black text-slate-800 block tracking-tighter">0</span>
                         <span class="text-sm text-gray-400 font-medium">ml bebidos</span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-6 w-full max-w-sm px-4">
-                    <button onclick="addWater(250)" class="bg-white h-32 rounded-3xl shadow-sm border border-gray-100 hover:border-blue-300 active:scale-95 transition flex flex-col items-center justify-center gap-2">
-                        <div class="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center"><i class="fas fa-glass-water text-blue-500"></i></div>
-                        <span class="font-bold text-slate-600 text-sm">Vaso<br><span class="text-xs text-gray-400">250 ml</span></span>
+                <div class="grid grid-cols-2 gap-4 w-full px-2">
+                    <button onclick="addWater(250)" class="bg-white py-6 rounded-3xl shadow-lg shadow-blue-50 border border-blue-50 hover:border-blue-300 active:scale-95 transition flex flex-col items-center justify-center gap-2 group">
+                        <div class="bg-blue-50 w-14 h-14 rounded-full flex items-center justify-center group-hover:bg-blue-500 transition-colors"><i class="fas fa-glass-water text-blue-500 group-hover:text-white transition-colors text-xl"></i></div>
+                        <span class="font-bold text-slate-600 text-sm">Vaso<br><span class="text-xs text-gray-400 font-normal">250 ml</span></span>
                     </button>
-                    <button onclick="addWater(1000)" class="bg-white h-32 rounded-3xl shadow-sm border border-gray-100 hover:border-blue-300 active:scale-95 transition flex flex-col items-center justify-center gap-2">
-                         <div class="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center"><i class="fas fa-bottle-water text-blue-600"></i></div>
-                        <span class="font-bold text-slate-600 text-sm">Jarra<br><span class="text-xs text-gray-400">1 Litro</span></span>
+                    <button onclick="addWater(500)" class="bg-white py-6 rounded-3xl shadow-lg shadow-blue-50 border border-blue-50 hover:border-blue-300 active:scale-95 transition flex flex-col items-center justify-center gap-2 group">
+                         <div class="bg-blue-50 w-14 h-14 rounded-full flex items-center justify-center group-hover:bg-blue-500 transition-colors"><i class="fas fa-bottle-water text-blue-600 group-hover:text-white transition-colors text-xl"></i></div>
+                        <span class="font-bold text-slate-600 text-sm">Botella<br><span class="text-xs text-gray-400 font-normal">500 ml</span></span>
                     </button>
                 </div>
             </div>
         </div>
 
         <div id="estudio" class="page-section">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800">Productividad</h2>
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">Sesión de Productividad</h2>
             
             <div class="card p-6 mb-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-bold text-slate-700 flex items-center gap-2"><i class="fas fa-clock text-study"></i> Horas</h3>
-                    <span class="text-2xl font-bold text-study"><span id="val-study-hours">0</span>h</span>
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2"><i class="fas fa-clock text-study"></i> Tiempo Dedicado</h3>
+                    <span class="text-3xl font-black text-study"><span id="val-study-hours">0</span><span class="text-lg text-gray-400">h</span></span>
                 </div>
-                <input type="range" min="0" max="12" step="0.5" value="0" id="range-study-hours" oninput="updateStudy('hours', this.value)" class="accent-study">
+                <input type="range" min="0" max="12" step="0.5" value="0" id="range-study-hours" oninput="updateStudy('hours', this.value)" class="accent-study mb-2">
+                <div class="flex justify-between text-xs text-gray-400 font-bold px-1">
+                    <span>0h</span><span>6h</span><span>12h+</span>
+                </div>
             </div>
 
             <div class="card p-6">
                 <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-brain text-orange-400"></i> Calidad del Foco</h3>
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="setFocusLevel(1)" id="focus-btn-1" class="focus-btn bg-gray-50 py-4 rounded-xl flex flex-col items-center gap-2 border-2 border-transparent transition">
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="setFocusLevel(1)" id="focus-btn-1" class="focus-btn bg-gray-50 py-4 rounded-2xl flex flex-col items-center gap-2 border-2 border-transparent transition hover:bg-gray-100">
                         <i class="fas fa-mobile-alt text-lg text-gray-400"></i>
                         <span class="text-[10px] font-bold text-gray-500">Bajo</span>
                     </button>
-                    <button onclick="setFocusLevel(2)" id="focus-btn-2" class="focus-btn bg-gray-50 py-4 rounded-xl flex flex-col items-center gap-2 border-2 border-transparent transition">
-                        <i class="fas fa-user-check text-lg text-gray-400"></i>
+                    <button onclick="setFocusLevel(2)" id="focus-btn-2" class="focus-btn bg-gray-50 py-4 rounded-2xl flex flex-col items-center gap-2 border-2 border-transparent transition hover:bg-gray-100">
+                        <i class="fas fa-book-reader text-lg text-gray-400"></i>
                         <span class="text-[10px] font-bold text-gray-500">Medio</span>
                     </button>
-                    <button onclick="setFocusLevel(3)" id="focus-btn-3" class="focus-btn bg-gray-50 py-4 rounded-xl flex flex-col items-center gap-2 border-2 border-transparent transition">
+                    <button onclick="setFocusLevel(3)" id="focus-btn-3" class="focus-btn bg-gray-50 py-4 rounded-2xl flex flex-col items-center gap-2 border-2 border-transparent transition hover:bg-gray-100">
                         <i class="fas fa-bolt text-lg text-gray-400"></i>
                         <span class="text-[10px] font-bold text-gray-500">Deep Work</span>
                     </button>
                 </div>
-                <p id="focus-desc" class="text-xs text-center text-gray-400 mt-4 italic">Selecciona nivel de concentración</p>
+                <p id="focus-desc" class="text-xs text-center text-gray-400 mt-5 italic bg-slate-50 py-2 rounded">Selecciona intensidad para calcular el gasto energético cerebral.</p>
             </div>
         </div>
 
         <div id="deporte" class="page-section">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800">Entrenamiento</h2>
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">Entrenamiento</h2>
             
-            <div class="card p-5 mb-6 border-l-4 border-orange-500">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="bg-orange-100 p-2 rounded-lg text-orange-600"><i class="fas fa-running text-xl"></i></div>
+            <div class="card p-6 mb-6 border-l-4 border-orange-500">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="bg-orange-100 p-3 rounded-xl text-orange-600 shadow-sm"><i class="fas fa-running text-2xl"></i></div>
                     <div>
-                        <h3 class="font-bold text-slate-700">Running</h3>
-                        <p class="text-[10px] text-gray-400">Quema grasa / Cardio</p>
+                        <h3 class="font-bold text-slate-700 text-lg">Running</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase">Cardio / Quema Grasa</p>
                     </div>
                 </div>
                 <div class="space-y-6">
                     <div>
                         <div class="flex justify-between text-xs font-bold text-gray-500 mb-2">
                             <span>Distancia</span>
-                            <span class="text-orange-600"><span id="val-run-km">0</span> km</span>
+                            <span class="text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><span id="val-run-km">0</span> km</span>
                         </div>
                         <input type="range" min="0" max="21" step="0.5" value="0" id="range-run-km" oninput="updateSport()">
                     </div>
                     
                     <div class="flex gap-4">
-                        <div class="w-1/2">
-                            <label class="text-[10px] font-bold text-gray-400 uppercase">Ritmo</label>
-                            <input type="range" min="3" max="8" step="0.1" value="5.5" id="range-run-pace" oninput="updateSport()" class="mt-2">
-                            <div class="text-center text-xs font-bold text-slate-600 mt-1"><span id="val-run-pace">5:30</span> /km</div>
+                        <div class="w-1/2 p-3 bg-gray-50 rounded-xl text-center">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase block mb-2">Ritmo (min/km)</label>
+                            <input type="range" min="3" max="8" step="0.1" value="5.5" id="range-run-pace" oninput="updateSport()">
+                            <div class="text-sm font-black text-slate-700 mt-1"><span id="val-run-pace">5:30</span></div>
                         </div>
-                        <div class="w-1/2">
-                            <label class="text-[10px] font-bold text-gray-400 uppercase">Intensidad</label>
-                            <input type="range" min="1" max="3" step="1" value="2" id="range-run-int" oninput="updateSport()" class="mt-2">
-                            <div class="text-center text-xs font-bold text-slate-600 mt-1" id="val-run-int-text">Normal</div>
+                        <div class="w-1/2 p-3 bg-gray-50 rounded-xl text-center">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase block mb-2">Intensidad</label>
+                            <input type="range" min="1" max="3" step="1" value="2" id="range-run-int" oninput="updateSport()">
+                            <div class="text-sm font-black text-slate-700 mt-1" id="val-run-int-text">Normal</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card p-5 border-l-4 border-indigo-500">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i class="fas fa-bicycle text-xl"></i></div>
+            <div class="card p-6 border-l-4 border-indigo-500 mb-24">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="bg-indigo-100 p-3 rounded-xl text-indigo-600 shadow-sm"><i class="fas fa-bicycle text-2xl"></i></div>
                     <div>
-                        <h3 class="font-bold text-slate-700">Ciclismo</h3>
-                        <p class="text-[10px] text-gray-400">Resistencia Muscular</p>
+                        <h3 class="font-bold text-slate-700 text-lg">Ciclismo</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase">Resistencia / Pierna</p>
                     </div>
                 </div>
                 <div class="space-y-6">
                     <div>
                         <div class="flex justify-between text-xs font-bold text-gray-500 mb-2">
                             <span>Distancia</span>
-                            <span class="text-indigo-600"><span id="val-bike-km">0</span> km</span>
+                            <span class="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded"><span id="val-bike-km">0</span> km</span>
                         </div>
                         <input type="range" min="0" max="100" step="1" value="0" id="range-bike-km" oninput="updateSport()">
-                    </div>
-                     <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Nivel Esfuerzo</label>
-                        <input type="range" min="1" max="3" step="1" value="2" id="range-bike-int" oninput="updateSport()" class="mt-2">
-                        <div class="flex justify-between text-[10px] text-gray-400 mt-1 px-1">
-                            <span>Paseo</span>
-                            <span>Ruta</span>
-                            <span>Competición</span>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="registro" class="page-section">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800">Historial Médico</h2>
-            <div id="historyList" class="space-y-4 pb-12"></div>
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">Historial de Informes</h2>
+            <div id="historyList" class="space-y-4 pb-24"></div>
         </div>
 
     </main>
 
-    <div id="info-modal" class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm modal-overlay items-center justify-center p-4" onclick="closeModal(event)">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl modal-content" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="modal-title" class="text-lg font-bold text-slate-800">Detalles</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+    <div id="info-modal" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm modal-overlay items-center justify-center p-5" onclick="closeModal(event)">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl modal-content overflow-hidden" onclick="event.stopPropagation()">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 id="modal-title" class="text-lg font-black text-slate-800">Detalles</h3>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-red-500 shadow-sm flex items-center justify-center transition"><i class="fas fa-times"></i></button>
             </div>
-            <div id="modal-body" class="space-y-3">
+            <div id="modal-body" class="p-6 max-h-[70vh] overflow-y-auto space-y-4">
                 </div>
         </div>
     </div>
 
-    <nav class="fixed bottom-0 w-full bg-white border-t border-gray-100 py-3 px-2 flex justify-between items-center z-50 shadow-lg pb-safe">
-        <button onclick="navigateTo('inicio')" class="nav-item active flex flex-col items-center w-1/5" id="nav-inicio">
-            <i class="fas fa-home text-xl mb-1"></i><span class="text-[10px] font-bold">Inicio</span>
+    <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-lg border-t border-gray-100 py-3 px-2 flex justify-between items-center z-50 pb-safe">
+        <button onclick="navigateTo('inicio')" class="nav-item active flex flex-col items-center w-1/5 group" id="nav-inicio">
+            <i class="fas fa-home text-xl mb-1 group-active:scale-90 transition"></i><span class="text-[10px] font-bold">Inicio</span>
         </button>
-        <button onclick="navigateTo('comida')" class="nav-item flex flex-col items-center w-1/5" id="nav-comida">
-            <i class="fas fa-apple-whole text-xl mb-1"></i><span class="text-[10px] font-bold">Dieta</span>
+        <button onclick="navigateTo('comida')" class="nav-item flex flex-col items-center w-1/5 group" id="nav-comida">
+            <i class="fas fa-apple-whole text-xl mb-1 group-active:scale-90 transition"></i><span class="text-[10px] font-bold">Dieta</span>
         </button>
-        <button onclick="navigateTo('agua')" class="nav-item flex flex-col items-center w-1/5" id="nav-agua">
-            <i class="fas fa-droplet text-xl mb-1"></i><span class="text-[10px] font-bold">Agua</span>
+        <button onclick="navigateTo('agua')" class="nav-item flex flex-col items-center w-1/5 group" id="nav-agua">
+            <i class="fas fa-droplet text-xl mb-1 group-active:scale-90 transition"></i><span class="text-[10px] font-bold">Agua</span>
         </button>
-        <button onclick="navigateTo('estudio')" class="nav-item flex flex-col items-center w-1/5" id="nav-estudio">
-            <i class="fas fa-book-open text-xl mb-1"></i><span class="text-[10px] font-bold">Estudio</span>
+        <button onclick="navigateTo('estudio')" class="nav-item flex flex-col items-center w-1/5 group" id="nav-estudio">
+            <i class="fas fa-book-open text-xl mb-1 group-active:scale-90 transition"></i><span class="text-[10px] font-bold">Estudio</span>
         </button>
-        <button onclick="navigateTo('deporte')" class="nav-item flex flex-col items-center w-1/5" id="nav-deporte">
-            <i class="fas fa-dumbbell text-xl mb-1"></i><span class="text-[10px] font-bold">Gym</span>
+        <button onclick="navigateTo('deporte')" class="nav-item flex flex-col items-center w-1/5 group" id="nav-deporte">
+            <i class="fas fa-dumbbell text-xl mb-1 group-active:scale-90 transition"></i><span class="text-[10px] font-bold">Gym</span>
         </button>
     </nav>
 
     <script>
-        // --- 1. CONFIGURACIÓN ---
+        // --- 1. BASE DE DATOS & ESTADO ---
         
-        // Base de Datos (Muestra)
         const foodDatabase = {
             'Desayuno': [
                 { name: 'Tortilla (3 claras + 1 yema)', cal: 145, prot: 16, fat: 5, sat: 1.5, carb: 1, weight: 150 },
                 { name: 'Avena con Leche', cal: 220, prot: 10, fat: 4, sat: 1, carb: 35, weight: 250 },
+                { name: 'Tostada Aguacate', cal: 280, prot: 6, fat: 15, sat: 2, carb: 20, weight: 120 },
                 { name: 'Café solo', cal: 2, prot: 0, fat: 0, sat: 0, carb: 0.5, weight: 100 }
             ],
             'Almuerzo': [
                  { name: 'Bocadillo Pavo', cal: 350, prot: 20, fat: 8, sat: 2, carb: 45, weight: 150 },
-                 { name: 'Plátano', cal: 89, prot: 1.1, fat: 0.3, sat: 0.1, carb: 23, weight: 100 }
+                 { name: 'Batido Proteína', cal: 120, prot: 24, fat: 1, sat: 0, carb: 3, weight: 300 },
+                 { name: 'Plátano', cal: 89, prot: 1.1, fat: 0.3, sat: 0.1, carb: 23, weight: 100 },
+                 { name: 'Nueces (puñado)', cal: 180, prot: 4, fat: 18, sat: 1.5, carb: 4, weight: 30 }
             ],
             'Comida': [
                 { name: 'Pechuga Pollo', cal: 165, prot: 31, fat: 3.6, sat: 1, carb: 0, weight: 150 },
+                { name: 'Ternera Magra', cal: 250, prot: 26, fat: 15, sat: 6, carb: 0, weight: 150 },
                 { name: 'Arroz Blanco', cal: 200, prot: 4, fat: 0.5, sat: 0, carb: 44, weight: 150 },
-                { name: 'Pasta Integral', cal: 350, prot: 12, fat: 2, sat: 0, carb: 70, weight: 100 }
+                { name: 'Pasta Integral', cal: 350, prot: 12, fat: 2, sat: 0, carb: 70, weight: 100 },
+                { name: 'Brócoli', cal: 55, prot: 3.7, fat: 0.6, sat: 0, carb: 11, weight: 150 }
             ],
             'Cena': [
                  { name: 'Merluza', cal: 94, prot: 20, fat: 1, sat: 0.2, carb: 0, weight: 300 },
-                 { name: 'Ensalada Completa', cal: 200, prot: 8, fat: 12, sat: 2, carb: 15, weight: 300 }
+                 { name: 'Salmón', cal: 400, prot: 40, fat: 26, sat: 6, carb: 0, weight: 200 },
+                 { name: 'Ensalada Completa', cal: 200, prot: 8, fat: 12, sat: 2, carb: 15, weight: 300 },
+                 { name: 'Yogur Griego', cal: 120, prot: 10, fat: 0, sat: 0, carb: 6, weight: 125 }
             ]
         };
 
@@ -417,19 +423,19 @@
             foodLog: []
         };
 
+        // Estado Global
         let todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
-        
-        // OBJETIVOS LEAN BULK (18 años, 60kg, 1.68m)
-        // Proteína alta (2.2g/kg) para construir músculo limpio.
-        // Grasas controladas. Carbohidratos como fuente de energía principal.
-        const BASE_GOALS = { cals: 2200, prot: 135, fat: 65, sat: 20, carbs: 280, water: 2500 };
-        
+        let BASE_GOALS = { cals: 2000, prot: 140, fat: 70, sat: 20, carbs: 250, water: 2500 };
         let currentGoals = { ...BASE_GOALS };
         let currentSeason = 'Winter';
-        let history = JSON.parse(localStorage.getItem('fitTrackerHistory_v4')) || [];
-        let stressDetails = []; // Para el modal
+        let history = JSON.parse(localStorage.getItem('fitTrackerHistory_MD')) || [];
+        
+        // Detalles para modales
+        let stressDetails = []; 
+        let waterDetails = [];
+        let nutritionAdvice = "";
 
-        // --- 2. STARTUP ---
+        // --- 2. INICIALIZACIÓN ---
         window.onload = function() {
             detectSeason();
             loadDay();
@@ -441,15 +447,15 @@
         function detectSeason() {
             const m = new Date().getMonth();
             const el = document.getElementById('season-indicator');
-            if (m >= 5 && m <= 8) { currentSeason = 'Summer'; el.innerText = 'VERANO'; }
-            else if (m >= 9 && m <= 10) { currentSeason = 'Autumn'; el.innerText = 'OTOÑO'; }
-            else if (m >= 2 && m <= 4) { currentSeason = 'Spring'; el.innerText = 'PRIMAVERA'; }
-            else { currentSeason = 'Winter'; el.innerText = 'INVIERNO'; }
+            if (m >= 5 && m <= 8) { currentSeason = 'Summer'; el.innerText = 'Modo Verano ☀️'; }
+            else if (m >= 9 && m <= 10) { currentSeason = 'Autumn'; el.innerText = 'Modo Otoño 🍂'; }
+            else if (m >= 2 && m <= 4) { currentSeason = 'Spring'; el.innerText = 'Modo Primavera 🌸'; }
+            else { currentSeason = 'Winter'; el.innerText = 'Modo Invierno ❄️'; }
         }
 
-        // --- 3. LÓGICA CORE ---
+        // --- 3. LOGICA "MÉDICA" DEL SISTEMA ---
         function updateDay() {
-            // Recoger inputs visuales
+            // 1. Capturar Inputs Visuales
             const wakeEl = document.getElementById('wakeTime');
             if(wakeEl) todayData.wakeTime = wakeEl.value;
             
@@ -459,33 +465,66 @@
             const sleepQEl = document.getElementById('sleepQuality');
             if(sleepQEl) todayData.sleepQuality = Number(sleepQEl.value);
 
+            // 2. Ejecutar Cálculos Médicos
             calculateDynamicGoals();
             calculateStressBar();
+            
+            // 3. Guardar y Pintar
             saveDay();
             updateUI();
         }
 
         function calculateDynamicGoals() {
             let g = { ...BASE_GOALS };
-            
-            // Ajuste Agua por Clima
-            if (currentSeason === 'Summer') g.water += 500;
-            
-            // Ajuste Correr (Alto impacto metabólico)
-            if (todayData.runKm > 0) {
-                let intensityFactor = 1;
-                // Si el ritmo es rápido (< 5 min/km)
-                if(todayData.runPace < 5) intensityFactor = 1.3;
-                
-                g.cals += todayData.runKm * 65 * intensityFactor; 
-                g.carbs += todayData.runKm * 15 * intensityFactor; // Glucógeno
-                g.water += todayData.runKm * (currentSeason === 'Summer' ? 250 : 150);
+            waterDetails = []; // Reiniciar explicación
+            nutritionAdvice = "";
+
+            // Base Agua
+            waterDetails.push({ txt: "Base Hidratación", val: "+2500ml" });
+
+            // A. Clima
+            if (currentSeason === 'Summer') {
+                g.water += 500;
+                waterDetails.push({ txt: "Calor (Verano)", val: "+500ml" });
             }
 
-            // Ajuste Bici
+            // B. Running (Alto impacto)
+            if (todayData.runKm > 0) {
+                let intensityFactor = 1;
+                if(todayData.runPace < 5) intensityFactor = 1.3;
+                
+                const runCals = todayData.runKm * 65 * intensityFactor;
+                g.cals += runCals;
+                g.carbs += todayData.runKm * 15 * intensityFactor; // Reponer glucógeno
+                
+                const runWater = todayData.runKm * (currentSeason === 'Summer' ? 200 : 150);
+                g.water += runWater;
+                
+                waterDetails.push({ txt: `Running (${todayData.runKm}km)`, val: `+${Math.round(runWater)}ml` });
+                nutritionAdvice += `<li>🏃‍♂️ <b>Running:</b> Has quemado ~${Math.round(runCals)}kcal. Sube los carbohidratos (pasta/arroz) para recuperar piernas.</li>`;
+            }
+
+            // C. Bici (Resistencia)
             if (todayData.bikeKm > 0) {
-                g.cals += todayData.bikeKm * 30;
-                g.water += todayData.bikeKm * 100;
+                const bikeCals = todayData.bikeKm * 28;
+                g.cals += bikeCals;
+                const bikeWater = todayData.bikeKm * 80;
+                g.water += bikeWater;
+                
+                waterDetails.push({ txt: `Ciclismo (${todayData.bikeKm}km)`, val: `+${Math.round(bikeWater)}ml` });
+            }
+
+            // D. Estudio (Gasto Cerebral)
+            if (todayData.studyHours > 2) {
+                // El cerebro consume glucosa, pero no tantas calorías extra físicas
+                // Sin embargo, aumenta la necesidad de agua y grasas saludables
+                const studyWater = todayData.studyHours * 100;
+                g.water += studyWater;
+                waterDetails.push({ txt: `Estudio intenso (${todayData.studyHours}h)`, val: `+${Math.round(studyWater)}ml` });
+                
+                if(todayData.studyFocus === 3) {
+                    nutritionAdvice += `<li>🧠 <b>Deep Work:</b> Tu cerebro necesita Omega-3. Añade nueces, salmón o aguacate a tu próxima comida.</li>`;
+                }
             }
 
             currentGoals = g;
@@ -495,52 +534,52 @@
             let stress = 0;
             stressDetails = [];
 
-            // 1. Sueño (Base 0)
-            if (todayData.sleepHours > 0 && todayData.sleepHours < 7.5) {
-                let val = (7.5 - todayData.sleepHours) * 12;
-                stress += val;
-                stressDetails.push({ text: "Déficit de sueño", val: `+${Math.round(val)}%` });
-            }
-            if (todayData.wakeTime) {
-                const h = parseInt(todayData.wakeTime.split(':')[0]);
-                if (h >= 11) {
-                    stress += 10;
-                    stressDetails.push({ text: "Despertar tardío", val: "+10%" });
+            // 1. Déficit de Sueño (Muy penalizante)
+            if (todayData.sleepHours > 0) {
+                if(todayData.sleepHours < 7) {
+                    let val = (7 - todayData.sleepHours) * 15;
+                    stress += val;
+                    stressDetails.push({ text: "Falta de sueño", val: `+${Math.round(val)}%`, type: 'bad' });
+                } else {
+                    stress -= 10; // Buen descanso resta estrés
+                    stressDetails.push({ text: "Buen descanso", val: "-10%", type: 'good' });
                 }
             }
 
-            // 2. Estudio (Mental)
+            // 2. Carga Cognitiva (Estudio)
             if (todayData.studyHours > 0) {
-                let sVal = todayData.studyHours * 3;
-                if(todayData.studyFocus === 1) sVal += 10; // Distraído estresa
-                if(todayData.studyFocus === 3) sVal -= 5; // Deep work fluye
+                let sVal = todayData.studyHours * 4;
+                if(todayData.studyFocus === 1) sVal += 10; // Distraído estresa más
                 stress += sVal;
-                stressDetails.push({ text: "Carga cognitiva (Estudio)", val: `+${Math.round(sVal)}%` });
+                stressDetails.push({ text: "Fatiga Mental (Estudio)", val: `+${Math.round(sVal)}%`, type: 'neutral' });
             }
 
-            // 3. Deporte (Físico)
-            let physLoad = (todayData.runKm * 2) + (todayData.bikeKm * 0.5);
+            // 3. Carga Física (Deporte)
+            let physLoad = (todayData.runKm * 3) + (todayData.bikeKm * 1);
+            if(todayData.runPace < 5) physLoad *= 1.2; // Ritmo rápido cansa más
+            
             if(physLoad > 0) {
                 stress += physLoad;
-                stressDetails.push({ text: "Fatiga Muscular", val: `+${Math.round(physLoad)}%` });
+                stressDetails.push({ text: "Impacto Muscular (Gym/Run)", val: `+${Math.round(physLoad)}%`, type: 'neutral' });
             }
 
-            // 4. Recuperadores (Restan estrés)
-            if (todayData.water >= currentGoals.water) {
-                stress -= 10;
-                stressDetails.push({ text: "Hidratación óptima", val: "-10%" });
+            // 4. Mitigadores (Comida y Agua)
+            const waterP = (todayData.water / currentGoals.water);
+            if (waterP >= 0.8) {
+                stress -= 15;
+                stressDetails.push({ text: "Buena Hidratación", val: "-15%", type: 'good' });
             }
             
-            // Comida limpia
-            let totalCals = todayData.foodLog.reduce((a,b)=>a+b.cal,0);
-            if(totalCals >= currentGoals.cals * 0.9) {
-                 stress -= 5;
-                 stressDetails.push({ text: "Nutrición cumplida", val: "-5%" });
+            // Si comes suficiente proteína, recuperas músculo = menos estrés fisiológico
+            let totalProt = todayData.foodLog.reduce((a,b)=>a+b.prot,0);
+            if(totalProt > currentGoals.prot * 0.8) {
+                 stress -= 10;
+                 stressDetails.push({ text: "Proteína adecuada", val: "-10%", type: 'good' });
             }
 
             stress = Math.min(100, Math.max(0, stress));
 
-            // UI Bar
+            // Actualizar UI Barra
             const bar = document.getElementById('stress-bar');
             const txt = document.getElementById('stress-score');
             const msg = document.getElementById('stress-msg');
@@ -548,71 +587,104 @@
             bar.style.width = stress + '%';
             txt.innerText = Math.round(stress) + '%';
             
-            if (stress < 30) {
+            if (stress < 40) {
                 bar.className = 'stress-bar bg-green-500';
                 txt.className = 'text-3xl font-black text-green-500';
-                msg.innerText = "Estado: Fresco & Anabólico";
-            } else if (stress < 70) {
+                msg.innerHTML = "<i class='fas fa-battery-full text-green-500'></i> Estado: Óptimo para entrenar";
+            } else if (stress < 80) {
                 bar.className = 'stress-bar bg-yellow-400';
                 txt.className = 'text-3xl font-black text-yellow-500';
-                msg.innerText = "Estado: Carga Normal";
+                msg.innerHTML = "<i class='fas fa-battery-half text-yellow-500'></i> Estado: Carga Moderada";
             } else {
                 bar.className = 'stress-bar bg-red-500';
                 txt.className = 'text-3xl font-black text-red-500';
-                msg.innerText = "Estado: Necesitas descanso";
+                msg.innerHTML = "<i class='fas fa-battery-empty text-red-500'></i> Estado: PELIGRO - Descansa ya";
             }
         }
 
-        // --- 4. MODALS INTERACTIVOS ---
+        // --- 4. MODALS (Visualización de Datos) ---
         function showDetails(type) {
             const modal = document.getElementById('info-modal');
             const title = document.getElementById('modal-title');
             const body = document.getElementById('modal-body');
             
             if(type === 'stress') {
-                title.innerText = "Desglose de Carga";
+                title.innerText = "Análisis de Carga";
                 if(stressDetails.length === 0) {
-                    body.innerHTML = '<p class="text-gray-500 text-center">Sin datos suficientes aún.</p>';
+                    body.innerHTML = '<p class="text-gray-400 text-center italic">Introduce datos de sueño y deporte para ver el cálculo.</p>';
                 } else {
-                    body.innerHTML = stressDetails.map(d => `
-                        <div class="flex justify-between items-center border-b border-gray-100 py-2">
-                            <span class="text-gray-600 font-medium">${d.text}</span>
-                            <span class="font-bold ${d.val.includes('-') ? 'text-green-500' : 'text-red-500'}">${d.val}</span>
+                    body.innerHTML = `
+                        <div class="bg-slate-50 p-4 rounded-2xl mb-4">
+                            <p class="text-sm text-gray-500 mb-2">Este índice mide el desgaste total de tu sistema nervioso y muscular.</p>
                         </div>
-                    `).join('');
+                        <div class="space-y-3">
+                            ${stressDetails.map(d => `
+                                <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                                    <span class="font-medium text-slate-700">${d.text}</span>
+                                    <span class="font-bold ${d.type==='good'?'text-green-500':(d.type==='bad'?'text-red-500':'text-orange-400')}">${d.val}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
                 }
             } else if (type === 'water') {
-                title.innerText = "Hidratación";
-                const p = Math.round((todayData.water / currentGoals.water)*100);
+                title.innerText = "Cálculo Hidratación";
                 body.innerHTML = `
-                    <div class="text-center py-4">
-                        <div class="text-4xl font-black text-blue-500 mb-2">${p}%</div>
-                        <p class="text-sm text-gray-500">de tu objetivo dinámico.</p>
-                        <hr class="my-3">
-                        <p class="text-xs text-slate-400">Beber suficiente agua es crucial para transportar nutrientes a tus músculos (12% grasa corporal).</p>
+                    <div class="bg-blue-50 p-4 rounded-2xl text-center mb-4">
+                        <span class="text-4xl font-black text-blue-500 block mb-1">${Math.round(currentGoals.water)} ml</span>
+                        <span class="text-xs font-bold text-blue-300 uppercase">Objetivo Hoy</span>
+                    </div>
+                    <p class="text-xs font-bold text-gray-400 uppercase mb-3">¿Por qué esta cantidad?</p>
+                    <div class="space-y-2">
+                         ${waterDetails.map(d => `
+                            <div class="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl">
+                                <span class="text-sm text-slate-600">${d.txt}</span>
+                                <span class="text-sm font-bold text-blue-500">${d.val}</span>
+                            </div>
+                        `).join('')}
                     </div>
                 `;
             } else if (type === 'nutrition') {
-                title.innerText = "Combustible Muscular";
-                let proP = Math.round(todayData.foodLog.reduce((a,b)=>a+b.prot,0));
+                title.innerText = "Informe Nutricional";
                 body.innerHTML = `
-                    <div class="space-y-3">
-                        <div class="bg-gray-50 p-3 rounded-lg">
-                            <p class="text-xs text-gray-400 font-bold uppercase">Proteína Consumida</p>
-                            <p class="text-xl font-bold text-green-600">${proP}g / ${Math.round(currentGoals.prot)}g</p>
-                            <p class="text-[10px] text-gray-400">Necesaria para hipertrofia limpia.</p>
-                        </div>
-                         <p class="text-xs text-center text-gray-400">Tus macros se ajustan si entrenas fuerte.</p>
+                    <div class="mb-4">
+                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">Consejo Médico (IA)</p>
+                        <ul class="text-sm text-slate-600 space-y-2 bg-yellow-50 p-4 rounded-2xl border border-yellow-100">
+                            ${nutritionAdvice || "<li>🥗 Mantén una dieta equilibrada. Tu actividad hoy es normal.</li>"}
+                        </ul>
+                    </div>
+                    
+                    <p class="text-xs font-bold text-gray-400 uppercase mb-2">Desglose Total</p>
+                    <div class="grid grid-cols-2 gap-2">
+                         <div class="bg-gray-50 p-3 rounded-xl text-center">
+                            <div class="text-xs text-green-500 font-bold">Proteína</div>
+                            <div class="font-bold text-slate-700">${Math.round(todayData.foodLog.reduce((a,b)=>a+b.prot,0))} / ${Math.round(currentGoals.prot)}g</div>
+                         </div>
+                         <div class="bg-gray-50 p-3 rounded-xl text-center">
+                            <div class="text-xs text-yellow-500 font-bold">Grasas</div>
+                            <div class="font-bold text-slate-700">${Math.round(todayData.foodLog.reduce((a,b)=>a+b.fat,0))} / ${Math.round(currentGoals.fat)}g</div>
+                         </div>
+                         <div class="bg-gray-50 p-3 rounded-xl text-center">
+                            <div class="text-xs text-red-500 font-bold">Carbos</div>
+                            <div class="font-bold text-slate-700">${Math.round(todayData.foodLog.reduce((a,b)=>a+b.carb,0))} / ${Math.round(currentGoals.carbs)}g</div>
+                         </div>
+                         <div class="bg-gray-50 p-3 rounded-xl text-center">
+                            <div class="text-xs text-slate-500 font-bold">Total Kcal</div>
+                            <div class="font-bold text-slate-700">${Math.round(todayData.foodLog.reduce((a,b)=>a+b.cal,0))}</div>
+                         </div>
                     </div>
                 `;
             } else if (type === 'study') {
                 title.innerText = "Productividad";
-                const focusLabels = ['N/A', 'Bajo', 'Medio', 'Deep Work'];
+                const focusLabels = ['N/A', 'Bajo (Distraído)', 'Medio (Normal)', 'Deep Work (Alto Rendimiento)'];
                 body.innerHTML = `
-                    <div class="text-center">
-                        <i class="fas fa-brain text-4xl text-study mb-2"></i>
-                        <p class="font-bold text-slate-700">Foco: ${focusLabels[todayData.studyFocus] || 'Sin definir'}</p>
-                        <p class="text-sm text-gray-500 mt-2">El estrés mental también agota las reservas de glucógeno.</p>
+                    <div class="text-center py-4">
+                        <i class="fas fa-brain text-5xl text-study mb-4 animate-pulse"></i>
+                        <h4 class="text-xl font-bold text-slate-800">${todayData.studyHours} Horas</h4>
+                        <p class="text-study font-medium bg-purple-50 inline-block px-3 py-1 rounded-lg mt-2">${focusLabels[todayData.studyFocus] || 'Sin definir'}</p>
+                    </div>
+                    <div class="text-sm text-slate-500 text-center px-4">
+                        "Recuerda que el trabajo profundo consume glucosa. Si te sientes nublado, come una fruta."
                     </div>
                 `;
             }
@@ -625,71 +697,84 @@
             document.getElementById('info-modal').classList.remove('open');
         }
 
-        // --- 5. UI UPDATES ---
+        // --- 5. UI UPDATES (Pintar en pantalla) ---
         function updateUI() {
-            // Nutrición Log sumas
+            // Nutrición Totales
             let sum = { cal:0, prot:0, fat:0, carb:0 };
             todayData.foodLog.forEach(f => {
                 sum.cal+=f.cal; sum.prot+=f.prot; sum.fat+=f.fat; sum.carb+=f.carb;
             });
 
-            // Barras Home
+            // Actualizar Barras de Progreso
             const setBar = (id, val, max) => {
                 const p = Math.min((val/max)*100, 100);
-                document.getElementById(`bar-${id}`).style.width = p+'%';
-                document.getElementById(`val-${id}`).innerText = Math.round(val);
-                if(document.getElementById(`goal-${id}`)) document.getElementById(`goal-${id}`).innerText = Math.round(max);
+                const el = document.getElementById(`bar-${id}`);
+                if(el) el.style.width = p+'%';
+                
+                const valEl = document.getElementById(`val-${id}`);
+                if(valEl) valEl.innerText = Math.round(val);
+                
+                const goalEl = document.getElementById(`goal-${id}`);
+                if(goalEl) goalEl.innerText = Math.round(max);
             };
+            
             setBar('cals', sum.cal, currentGoals.cals);
             setBar('prot', sum.prot, currentGoals.prot);
             setBar('fat', sum.fat, currentGoals.fat);
             setBar('carbs', sum.carb, currentGoals.carbs);
+
+            // Texto total comida
+            document.getElementById('total-consumed-kcal').innerText = Math.round(sum.cal) + ' kcal';
 
             // Agua Home
             document.getElementById('home-water').innerText = todayData.water;
             document.getElementById('home-water-goal').innerText = Math.round(currentGoals.water);
             document.getElementById('mini-bar-water').style.width = Math.min((todayData.water/currentGoals.water)*100, 100) + '%';
             
-            // Agua Sección
+            // Agua Sección Grande
             const wp = Math.min(todayData.water / currentGoals.water, 1);
-            document.getElementById('water-circle').style.strokeDashoffset = 565 - (wp * 565);
+            // 628 es la circunferencia aprox de r=100
+            document.getElementById('water-circle').style.strokeDashoffset = 628 - (wp * 628);
             document.getElementById('water-display-lg').innerText = todayData.water;
-            document.getElementById('water-goal-text').innerText = `Meta: ${Math.round(currentGoals.water)} ml`;
+            document.getElementById('water-goal-text').innerText = `Meta dinámica: ${Math.round(currentGoals.water)} ml`;
 
             // Listado Comidas
             document.getElementById('addedFoodsList').innerHTML = todayData.foodLog.map((f, i) => `
-                <div class="flex justify-between items-center text-sm py-2 border-b border-gray-100 last:border-0">
-                    <span class="text-slate-600 font-medium">${f.name}</span>
+                <div class="flex justify-between items-center text-sm py-3 border-b border-gray-100 last:border-0 bg-white p-3 rounded-xl mb-2 shadow-sm">
+                    <div>
+                        <div class="text-slate-700 font-bold">${f.name}</div>
+                        <div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g</div>
+                    </div>
                     <div class="flex items-center gap-3">
-                        <span class="font-bold text-xs text-slate-400">${Math.round(f.cal)} kcal</span>
-                        <button onclick="removeFood(${i})" class="text-red-300 hover:text-red-500"><i class="fas fa-times"></i></button>
+                        <span class="font-bold text-xs text-slate-500 bg-gray-100 px-2 py-1 rounded">${Math.round(f.cal)} kcal</span>
+                        <button onclick="removeFood(${i})" class="text-red-300 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 transition"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
-            `).join('');
+            `).join('') || '<p class="text-center text-gray-300 text-xs py-4">No has añadido comidas aún.</p>';
 
             // Estudio Home
             document.getElementById('home-study').innerText = todayData.studyHours;
-            const focusL = ['Sin dato', 'Distraído', 'Medio', 'Deep Work'];
+            const focusL = ['Sin dato', 'Bajo', 'Medio', 'Deep Work'];
             const fl = document.getElementById('home-focus-label');
             fl.innerText = focusL[todayData.studyFocus] || 'Sin dato';
-            fl.className = `text-[10px] font-bold text-right px-1 rounded ${todayData.studyFocus === 3 ? 'text-green-600 bg-green-50' : 'text-study bg-purple-50'}`;
+            fl.className = `text-[10px] font-bold text-right px-2 py-1 rounded ${todayData.studyFocus === 3 ? 'text-green-600 bg-green-50' : 'text-study bg-purple-50'}`;
         }
 
-        // --- 6. ACTIONS ---
+        // --- 6. FUNCIONES DE ACCIÓN (Inputs) ---
         function updateSport() {
             todayData.runKm = parseFloat(document.getElementById('range-run-km').value);
             todayData.runPace = parseFloat(document.getElementById('range-run-pace').value);
             todayData.runInt = parseFloat(document.getElementById('range-run-int').value);
             todayData.bikeKm = parseFloat(document.getElementById('range-bike-km').value);
-            todayData.bikeInt = parseFloat(document.getElementById('range-bike-int').value);
             
-            // UI Texts
+            // Textos
             document.getElementById('val-run-km').innerText = todayData.runKm;
             let min = Math.floor(todayData.runPace);
             let sec = Math.round((todayData.runPace - min) * 60);
             document.getElementById('val-run-pace').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+            
             const ints = ['--', 'Suave', 'Normal', 'Alta'];
-            document.getElementById('val-run-int-text').innerText = ints[todayData.runInt];
+            document.getElementById('val-run-int-text').innerText = ints[todayData.runInt] || '--';
             document.getElementById('val-bike-km').innerText = todayData.bikeKm;
 
             updateDay();
@@ -705,52 +790,42 @@
 
         function setFocusLevel(l) {
             todayData.studyFocus = l;
-            [1,2,3].forEach(i => document.getElementById(`focus-btn-${i}`).classList.remove('border-study', 'bg-purple-50', 'text-study'));
-            document.getElementById(`focus-btn-${l}`).classList.add('border-study', 'bg-purple-50', 'text-study');
-            document.getElementById('focus-desc').innerText = l===3 ? "Modo Alto Rendimiento Activado" : "Nivel registrado";
+            [1,2,3].forEach(i => {
+                const btn = document.getElementById(`focus-btn-${i}`);
+                if(i === l) {
+                    btn.classList.add('border-study', 'bg-purple-50', 'text-study');
+                    btn.classList.remove('bg-gray-50', 'text-gray-500');
+                } else {
+                    btn.classList.remove('border-study', 'bg-purple-50', 'text-study');
+                    btn.classList.add('bg-gray-50', 'text-gray-500');
+                }
+            });
+            document.getElementById('focus-desc').innerText = l===3 ? "🔥 Modo Alto Rendimiento (Mayor consumo de glucosa)" : "Nivel de concentración registrado";
             updateDay();
         }
 
-        // Comida Functions
+        // Comida
         function renderFoodCategories() {
             const c = document.getElementById('foodCategoriesContainer');
             c.innerHTML = Object.keys(foodDatabase).map(cat => `
-                <div class="border rounded-xl bg-white overflow-hidden mb-2 shadow-sm">
-                    <div class="p-4 bg-gray-50 font-bold text-slate-700 cursor-pointer flex justify-between items-center" onclick="this.nextElementSibling.classList.toggle('open')">
-                        <span>${cat}</span> <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                <div class="border border-gray-100 rounded-2xl bg-white overflow-hidden mb-2 shadow-sm transition hover:shadow-md">
+                    <div class="p-4 bg-white font-bold text-slate-700 cursor-pointer flex justify-between items-center" onclick="this.nextElementSibling.classList.toggle('open')">
+                        <span class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-primary"></div> ${cat}</span> 
+                        <i class="fas fa-chevron-down text-xs text-gray-300"></i>
                     </div>
-                    <div class="meal-content">
+                    <div class="meal-content bg-slate-50">
                         ${foodDatabase[cat].map((f, i) => `
-                            <div class="p-3 border-t border-gray-100 flex justify-between items-center hover:bg-blue-50/50 transition">
+                            <div class="p-3 border-t border-gray-100 flex justify-between items-center hover:bg-blue-50/30 transition px-4">
                                 <div>
                                     <div class="font-bold text-sm text-slate-700">${f.name}</div>
-                                    <div class="text-[10px] text-gray-400">${f.cal} kcal / ${f.weight}g / <span class="text-green-500">${f.prot}g prot</span></div>
+                                    <div class="text-[10px] text-gray-400 font-mono mt-0.5">${f.cal} kcal <span class="text-green-500 ml-1">P:${f.prot}</span></div>
                                 </div>
-                                <div class="flex gap-2">
-                                    <button onclick="viewFoodDetails('${cat}', ${i})" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-blue-500 transition flex items-center justify-center"><i class="fas fa-search text-xs"></i></button>
-                                    <button onclick="addFood('${cat}', ${i})" class="w-8 h-8 rounded-full bg-primary text-white shadow-md active:scale-90 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button>
-                                </div>
+                                <button onclick="addFood('${cat}', ${i})" class="w-8 h-8 rounded-full bg-white border border-gray-200 text-primary shadow-sm active:scale-90 transition flex items-center justify-center"><i class="fas fa-plus text-xs"></i></button>
                             </div>
                         `).join('')}
                     </div>
                 </div>
             `).join('');
-        }
-
-        function viewFoodDetails(cat, idx) {
-            const f = foodDatabase[cat][idx];
-            Swal.fire({
-                title: f.name,
-                html: `<div class="grid grid-cols-2 gap-2 text-left bg-slate-50 p-4 rounded-xl">
-                    <div class="text-center"><p class="text-xs text-gray-500">Kcal</p><p class="font-bold text-lg">${f.cal}</p></div>
-                    <div class="text-center"><p class="text-xs text-green-500">Prot</p><p class="font-bold text-lg text-green-600">${f.prot}g</p></div>
-                    <div class="text-center"><p class="text-xs text-yellow-500">Grasa</p><p class="font-bold text-lg text-yellow-600">${f.fat}g</p></div>
-                    <div class="text-center"><p class="text-xs text-red-500">Carb</p><p class="font-bold text-lg text-red-600">${f.carb}g</p></div>
-                </div>`,
-                confirmButtonText: 'Añadir',
-                showCancelButton: true,
-                confirmButtonColor: '#3b82f6'
-            }).then(r => { if(r.isConfirmed) addFood(cat, idx); });
         }
 
         function addFood(cat, idx) {
@@ -759,52 +834,86 @@
             const toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1000 });
             toast.fire({ icon: 'success', title: 'Añadido' });
         }
+        
         function openCustomFoodModal() {
             Swal.fire({
                 title: 'Crear Alimento',
-                html: '<input id="swal-n" class="swal2-input" placeholder="Nombre"><input id="swal-k" type="number" class="swal2-input" placeholder="Kcal"><input id="swal-p" type="number" class="swal2-input" placeholder="Proteína">',
-                preConfirm: () => ({ name: document.getElementById('swal-n').value, cal: Number(document.getElementById('swal-k').value), prot: Number(document.getElementById('swal-p').value), fat: 0, carb: 0, weight: 100 })
+                html: `
+                    <input id="swal-n" class="swal2-input" placeholder="Nombre (ej: Manzana)">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input id="swal-k" type="number" class="swal2-input" placeholder="Kcal">
+                        <input id="swal-p" type="number" class="swal2-input" placeholder="Proteína (g)">
+                        <input id="swal-c" type="number" class="swal2-input" placeholder="Carbos (g)">
+                        <input id="swal-f" type="number" class="swal2-input" placeholder="Grasa (g)">
+                    </div>
+                `,
+                confirmButtonColor: '#1e293b',
+                confirmButtonText: 'Guardar',
+                preConfirm: () => ({ 
+                    name: document.getElementById('swal-n').value, 
+                    cal: Number(document.getElementById('swal-k').value), 
+                    prot: Number(document.getElementById('swal-p').value), 
+                    fat: Number(document.getElementById('swal-f').value), 
+                    carb: Number(document.getElementById('swal-c').value), 
+                    weight: 100 
+                })
             }).then(r => { if(r.value) { todayData.foodLog.push(r.value); updateDay(); } });
         }
+
         function removeFood(i) { todayData.foodLog.splice(i, 1); updateDay(); }
         function addWater(ml) { todayData.water += ml; updateDay(); }
 
-        // --- SYSTEM ---
-        function saveDay() { localStorage.setItem('fitTrackerToday_v4', JSON.stringify(todayData)); }
+        // --- 7. SISTEMA (Guardar, Cargar, Historial) ---
+        function saveDay() { localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData)); }
+        
         function loadDay() {
-            const s = localStorage.getItem('fitTrackerToday_v4');
+            const s = localStorage.getItem('fitTrackerToday_MD');
             if(s) {
                 todayData = JSON.parse(s);
-                document.getElementById('wakeTime').value = todayData.wakeTime;
-                document.getElementById('sleepHours').value = todayData.sleepHours || '';
-                document.getElementById('sleepQuality').value = todayData.sleepQuality || '';
-                document.getElementById('range-run-km').value = todayData.runKm;
-                document.getElementById('range-run-pace').value = todayData.runPace;
-                document.getElementById('range-run-int').value = todayData.runInt;
-                document.getElementById('range-bike-km').value = todayData.bikeKm;
-                document.getElementById('range-study-hours').value = todayData.studyHours;
+                // Restaurar UI Inputs
+                if(document.getElementById('wakeTime')) document.getElementById('wakeTime').value = todayData.wakeTime;
+                if(document.getElementById('sleepHours')) document.getElementById('sleepHours').value = todayData.sleepHours || '';
+                if(document.getElementById('sleepQuality')) document.getElementById('sleepQuality').value = todayData.sleepQuality || '';
+                if(document.getElementById('range-run-km')) document.getElementById('range-run-km').value = todayData.runKm;
+                if(document.getElementById('range-run-pace')) document.getElementById('range-run-pace').value = todayData.runPace;
+                if(document.getElementById('range-run-int')) document.getElementById('range-run-int').value = todayData.runInt;
+                if(document.getElementById('range-bike-km')) document.getElementById('range-bike-km').value = todayData.bikeKm;
+                if(document.getElementById('range-study-hours')) document.getElementById('range-study-hours').value = todayData.studyHours;
                 if(todayData.studyFocus) setFocusLevel(todayData.studyFocus);
+                
                 // Refrescar textos deporte
                 let min = Math.floor(todayData.runPace);
                 let sec = Math.round((todayData.runPace - min) * 60);
-                document.getElementById('val-run-pace').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+                if(document.getElementById('val-run-pace')) document.getElementById('val-run-pace').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
             }
         }
 
         function finishDay() {
             Swal.fire({
-                title: 'Cerrar Día',
-                text: "Se guardará el progreso y empezará un nuevo día.",
-                icon: 'question',
-                confirmButtonText: 'Sí, Guardar',
-                showCancelButton: true
-            }).then(r => {
-                if(r.isConfirmed) {
-                    history.unshift({ date: new Date().toLocaleDateString(), data: { ...todayData }, goals: { ...currentGoals } });
-                    localStorage.setItem('fitTrackerHistory_v4', JSON.stringify(history));
+                title: '¿Finalizar el día?',
+                text: "Se guardarán tus estadísticas en el historial y se reseteará el contador.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, guardar día'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    history.unshift({ 
+                        date: new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 
+                        simpleDate: new Date().toLocaleDateString(),
+                        data: { ...todayData }, 
+                        goals: { ...currentGoals } 
+                    });
+                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
+                    
+                    // Reset
                     todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
                     saveDay();
-                    window.location.reload();
+                    
+                    Swal.fire('¡Guardado!', 'Tu día ha sido registrado con éxito.', 'success').then(() => {
+                         window.location.reload();
+                    });
                 }
             });
         }
@@ -814,53 +923,155 @@
             document.getElementById(id).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
             document.getElementById('nav-'+id).classList.add('active');
+            window.scrollTo(0,0);
         }
 
-        // Historial + PDF IOS FIX
         function updateHistoryUI() {
-            document.getElementById('historyList').innerHTML = history.map((h, i) => `
-                <div class="card p-4 flex justify-between items-center">
+            const list = document.getElementById('historyList');
+            if(history.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-400 mt-10"><i class="fas fa-history text-4xl mb-3 opacity-30"></i><p>Sin historial</p></div>';
+                return;
+            }
+            
+            list.innerHTML = history.map((h, i) => `
+                <div class="card p-5 flex justify-between items-center shadow-sm hover:shadow-md transition">
                     <div>
-                        <div class="font-bold text-slate-700">${h.date}</div>
-                        <div class="text-[10px] text-gray-400">Prot: ${Math.round(h.data.foodLog.reduce((a,b)=>a+b.prot,0))}g | Agua: ${h.data.water}ml</div>
+                        <div class="font-bold text-slate-800 capitalize text-sm">${h.date}</div>
+                        <div class="text-[10px] text-gray-400 mt-1 flex gap-2">
+                             <span class="bg-green-50 text-green-600 px-2 py-0.5 rounded">Pro: ${Math.round(h.data.foodLog.reduce((a,b)=>a+b.prot,0))}g</span>
+                             <span class="bg-blue-50 text-blue-500 px-2 py-0.5 rounded">💧 ${h.data.water}ml</span>
+                        </div>
                     </div>
-                    <button onclick="exportPDF(${i})" class="text-red-400 hover:text-red-600"><i class="fas fa-file-pdf text-xl"></i></button>
+                    <button onclick="generateBeautifulPDF(${i})" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition">
+                        <i class="fas fa-file-pdf text-sm"></i>
+                    </button>
                 </div>
             `).join('');
         }
-        
-        function exportPDF(i) {
-             const rec = history[i];
-             const { jsPDF } = window.jspdf;
-             const doc = new jsPDF();
-             doc.setFontSize(18);
-             doc.text(`Informe FitTracker: ${rec.date}`, 10, 20);
-             doc.setFontSize(12);
-             doc.text(`Calorías: ${Math.round(rec.data.foodLog.reduce((a,b)=>a+b.cal,0))} | Meta: ${Math.round(rec.goals.cals)}`, 10, 30);
-             doc.text(`Proteína: ${Math.round(rec.data.foodLog.reduce((a,b)=>a+b.prot,0))}g | Meta: ${Math.round(rec.goals.prot)}g`, 10, 40);
-             
-             // iOS Safari Fix
-             if (navigator.userAgent.match(/(iPhone|iPod|iPad)/i)) {
+
+        // --- 8. PDF GENERATOR PRO (Graficas y Colores) ---
+        function generateBeautifulPDF(index) {
+            const rec = history[index];
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Configuración de colores
+            const dark = [30, 41, 59];
+            const blue = [59, 130, 246];
+            const green = [16, 185, 129];
+            const orange = [249, 115, 22];
+            
+            // --- HEADER ---
+            doc.setFillColor(...dark);
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont("helvetica", "bold");
+            doc.text("INFORME MÉDICO / DIARIO", 105, 20, null, null, "center");
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text(rec.date.toUpperCase(), 105, 30, null, null, "center");
+
+            // --- ESTADÍSTICAS (Gráficas dibujadas a mano) ---
+            let y = 55;
+            
+            // 1. Título Sección
+            doc.setTextColor(...dark);
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text("Resumen de Actividad", 14, y);
+            y += 10;
+
+            // Bloques de datos (Dibujamos cajas de colores)
+            
+            // Caja Sueño
+            doc.setFillColor(241, 245, 249); // Gris claro
+            doc.roundedRect(14, y, 55, 30, 3, 3, 'F');
+            doc.setFontSize(10);
+            doc.text("Sueño", 20, y+8);
+            doc.setFontSize(16);
+            doc.text(rec.data.sleepHours + "h", 20, y+20);
+            
+            // Caja Estudio
+            doc.setFillColor(243, 232, 255); // Morado claro
+            doc.roundedRect(77, y, 55, 30, 3, 3, 'F');
+            doc.setFontSize(10);
+            doc.setTextColor(100, 50, 200);
+            doc.text("Estudio", 83, y+8);
+            doc.setFontSize(16);
+            doc.text(rec.data.studyHours + "h", 83, y+20);
+            
+            // Caja Running
+            doc.setFillColor(255, 237, 213); // Naranja claro
+            doc.roundedRect(140, y, 55, 30, 3, 3, 'F');
+            doc.setFontSize(10);
+            doc.setTextColor(200, 80, 0);
+            doc.text("Running", 146, y+8);
+            doc.setFontSize(16);
+            doc.text(rec.data.runKm + " km", 146, y+20);
+            
+            y += 40;
+
+            // --- NUTRICIÓN (Gráficas de Barras) ---
+            doc.setTextColor(...dark);
+            doc.setFontSize(14);
+            doc.text("Análisis Nutricional", 14, y);
+            y += 10;
+
+            // Calcular porcentajes
+            const totalCal = rec.data.foodLog.reduce((a,b)=>a+b.cal,0);
+            const totalProt = rec.data.foodLog.reduce((a,b)=>a+b.prot,0);
+            const totalCarb = rec.data.foodLog.reduce((a,b)=>a+b.carb,0);
+            
+            // Función para dibujar barra
+            const drawBar = (label, val, max, color, posY) => {
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text(label, 14, posY);
+                doc.text(`${Math.round(val)} / ${Math.round(max)}`, 180, posY, null, null, "right");
+                
+                // Fondo barra
+                doc.setFillColor(230, 230, 230);
+                doc.roundedRect(14, posY + 3, 170, 4, 1, 1, 'F');
+                
+                // Progreso barra
+                doc.setFillColor(...color);
+                const w = Math.min((val/max)*170, 170);
+                if(w > 0) doc.roundedRect(14, posY + 3, w, 4, 1, 1, 'F');
+            };
+
+            drawBar("Calorías (Energía)", totalCal, rec.goals.cals, dark, y);
+            y += 15;
+            drawBar("Proteína (Músculo)", totalProt, rec.goals.prot, green, y);
+            y += 15;
+            drawBar("Carbohidratos (Combustible)", totalCarb, rec.goals.carbs, orange, y);
+            y += 15;
+            drawBar("Agua (Hidratación)", rec.data.water, rec.goals.water, blue, y);
+
+            y += 20;
+
+            // --- TABLA DE COMIDAS ---
+            doc.autoTable({
+                startY: y,
+                head: [['Alimento', 'Kcal', 'Prot (g)', 'Grasa (g)', 'Carb (g)']],
+                body: rec.data.foodLog.map(f => [f.name, f.cal, f.prot, f.fat, f.carb]),
+                theme: 'grid',
+                headStyles: { fillColor: dark, fontStyle: 'bold' },
+                styles: { fontSize: 9, cellPadding: 3 },
+                alternateRowStyles: { fillColor: [248, 250, 252] }
+            });
+
+            // Guardar PDF
+            if (navigator.userAgent.match(/(iPhone|iPod|iPad)/i)) {
                  const blob = doc.output('bloburl');
                  window.open(blob);
-             } else {
-                 doc.save(`Registro_Tracker_${rec.date.replace(/\//g,'-')}.pdf`);
-             }
-        }
-        
-        function searchGlobal(q) {
-             const r = document.getElementById('searchResults');
-             if(!q.trim()) { r.classList.add('hidden'); return; }
-             let m = [];
-             const clean = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-             for(const [c, fs] of Object.entries(foodDatabase)) {
-                 fs.forEach((f, idx) => { if(f.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(clean)) m.push({...f, c, idx}); });
-             }
-             r.innerHTML = m.map(f => `<div class="p-3 border-b hover:bg-gray-50 cursor-pointer flex justify-between" onclick="viewFoodDetails('${f.c}', ${f.idx})"><span>${f.name}</span> <span class="text-xs text-gray-400">${f.cal} kcal</span></div>`).join('');
-             r.classList.remove('hidden');
+            } else {
+                 doc.save(`Informe_Medico_${rec.simpleDate.replace(/\//g,'-')}.pdf`);
+            }
         }
     </script>
 </body>
 </html>
 
-</html>
