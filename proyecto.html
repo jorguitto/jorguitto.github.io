@@ -87,6 +87,40 @@
             50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
+
+        /* Estilos para el selector de músculos y SVG */
+        .muscle-btn { border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; transition: all 0.2s; }
+        .muscle-btn.selected { background-color: #3b82f6; color: white; border-color: #3b82f6; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); transform: translateY(-1px); }
+        .body-part { transition: fill 0.5s ease; }
+        .body-green { fill: #10b981; }
+        .body-orange { fill: #f59e0b; }
+        .body-red { fill: #ef4444; }
+        
+        /* Estilos para el cuerpo muscular detallado */
+        .muscle-base { 
+            fill: #e2e8f0; /* Color base (Gris apagado) */
+            stroke: #ffffff; 
+            stroke-width: 0.5px; 
+            transition: all 0.4s ease; 
+        }
+        .muscle-active-low { fill: #10b981; }   /* Verde (Suave / Recuperación) */
+        .muscle-active-mid { fill: #f59e0b; }   /* Amarillo (Músculo Secundario) */
+        .muscle-active-max { fill: #ef4444; filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.4)); } /* Rojo (Músculo Primario / Fallo) */
+        .label-text { font-size: 6px; fill: #64748b; font-weight: 800; text-anchor: middle; letter-spacing: 1px; }
+
+        /* --- NUEVO ESTILO ANATOMÍA PRO --- */
+        .human-body-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding-top: 20px;
+        }
+
+        .anatomy-svg {
+            height: 300px;
+            width: auto;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));
+        }
     </style>
 </head>
 <body>
@@ -130,7 +164,7 @@
                 </div>
             </div>
 
-            <div class="card p-5 mb-5 border-b-4 border-slate-400 card-clickable cursor-pointer" onclick="showDetails('stress')">
+            <div class="card p-5 mb-5 border-b-4 border-slate-400 card-clickable cursor-pointer" onclick="showDetails('stress')" id="stress-card">
                 <div class="flex justify-between mb-4">
                     <p class="text-[10px] text-gray-400 font-bold uppercase">Estado Fisiológico</p>
                     <i class="fas fa-heart-pulse text-slate-400 text-xs"></i>
@@ -164,6 +198,115 @@
                     <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
                         <div id="bar-fatigue" class="bg-teal-500 h-full w-0 transition-all duration-700 rounded-full"></div>
                     </div>
+                </div>
+
+                <!-- SVG Body Map Insertado -->
+                <div class="mt-4 flex flex-col items-center border-t border-gray-100 pt-4">
+                    <div id="body-analysis-text" class="text-xs text-center font-bold text-slate-600 mb-2 bg-slate-100 px-3 py-1 rounded-full w-full">
+                        Analizando composición...
+                    </div>
+                    <svg width="100%" height="280" viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg" class="mx-auto">
+                        
+                        <g transform="translate(0, 0)">
+                            <!-- VISTA FRONTAL (Mejorada) -->
+                            <g transform="translate(0, 10)">
+                                <text x="50" y="-2" class="label-text">FRONTAL</text>
+                                
+                                <!-- Cabeza -->
+                                <path d="M50,2 C44,2 40,8 40,16 C40,24 44,28 50,28 C56,28 60,24 60,16 C60,8 56,2 50,2 Z" class="muscle-base" />
+                                <path d="M50,3 C45,3 41,8 41,15 C41,22 45,26 50,26 C55,26 59,22 59,15 C59,8 55,3 50,3 Z" class="muscle-base" />
+                                
+                                <!-- Trapecios -->
+                                <path id="front-traps" d="M40,18 Q30,22 24,28 L32,32 L42,26 Z M60,18 Q70,22 76,28 L68,32 L58,26 Z" class="muscle-base" />
+                                <path id="front-traps" d="M43,16 Q33,19 26,26 L33,29 L44,23 Z M57,16 Q67,19 74,26 L67,29 L56,23 Z" class="muscle-base" />
+                                
+                                <!-- Hombros (Deltoides) -->
+                                <path id="front-delts" d="M24,28 Q12,32 12,42 Q14,52 20,50 L28,38 Z M76,28 Q88,32 88,42 Q86,52 80,50 L72,38 Z" class="muscle-base" />
+                                <path id="front-delts" d="M26,26 Q13,29 13,39 Q15,49 23,47 L31,35 Z M74,26 Q87,29 87,39 Q85,49 77,47 L69,35 Z" class="muscle-base" />
+                                
+                                <!-- Pectorales -->
+                                <path id="front-pecs" d="M28,38 Q50,42 72,38 L68,58 Q50,65 32,58 Z" class="muscle-base" />
+                                <path id="front-pecs" d="M31,35 Q50,39 69,35 L66,55 Q50,63 34,55 Z" class="muscle-base" />
+                                
+                                <!-- Bíceps -->
+                                <path id="front-biceps" d="M20,50 Q16,60 18,68 L26,65 L28,50 Z M80,50 Q84,60 82,68 L74,65 L72,50 Z" class="muscle-base" />
+                                <path id="front-biceps" d="M23,47 Q19,57 21,64 L29,61 L31,47 Z M77,47 Q81,57 79,64 L71,61 L69,47 Z" class="muscle-base" />
+                                
+                                <!-- Antebrazos -->
+                                <path id="front-forearms" d="M18,68 Q14,80 16,90 L22,88 L26,65 Z M82,68 Q86,80 84,90 L78,88 L74,65 Z" class="muscle-base" />
+                                <path id="front-forearms" d="M21,64 Q16,76 19,86 L25,84 L29,61 Z M79,64 Q84,76 81,86 L75,84 L71,61 Z" class="muscle-base" />
+                                
+                                <!-- Abdominales -->
+                                <path id="front-abs" d="M32,58 L68,58 L64,85 Q50,90 36,85 Z" class="muscle-base" />
+                                <path id="front-abs" d="M34,55 L66,55 L63,82 Q50,88 37,82 Z" class="muscle-base" />
+                                
+                                <!-- Oblicuos -->
+                                <path id="front-obliques" d="M28,58 L32,58 L36,85 L26,80 Z M72,58 L68,58 L64,85 L74,80 Z" class="muscle-base" />
+                                <path id="front-obliques" d="M29,55 L34,55 L37,82 L27,77 Z M71,55 L66,55 L63,82 L73,77 Z" class="muscle-base" />
+                                
+                                <!-- Cuádriceps -->
+                                <path id="front-quads" d="M26,85 L50,85 L48,145 Q35,155 22,135 Z M74,85 L50,85 L52,145 Q65,155 78,135 Z" class="muscle-base" />
+                                <path id="front-quads" d="M27,82 L50,82 L48,140 Q35,150 22,130 Z M73,82 L50,82 L52,140 Q65,150 78,130 Z" class="muscle-base" />
+                                
+                                <!-- Gemelos -->
+                                <path id="front-calves" d="M24,140 L48,145 L46,190 L28,185 Z M76,140 L52,145 L54,190 L72,185 Z" class="muscle-base" />
+                                <path id="front-calves" d="M24,135 L48,140 L46,185 L26,180 Z M76,135 L52,140 L54,185 L74,180 Z" class="muscle-base" />
+                                
+                                <!-- Pies -->
+                                <path d="M28,185 L46,190 L46,200 L26,200 Z M72,185 L54,190 L54,200 L74,200 Z" class="muscle-base" />
+                                <path d="M26,180 L46,185 L46,195 L24,195 Z M74,180 L54,185 L54,195 L76,195 Z" class="muscle-base" />
+                            </g>
+
+                            <!-- VISTA DORSAL (Mejorada) -->
+                            <g transform="translate(100, 10)">
+                                <text x="50" y="-2" class="label-text">DORSAL</text>
+                                
+                                <!-- Cabeza -->
+                                <path d="M50,2 C44,2 40,8 40,16 C40,24 44,28 50,28 C56,28 60,24 60,16 C60,8 56,2 50,2 Z" class="muscle-base" />
+                                <path d="M50,3 C45,3 41,8 41,15 C41,22 45,26 50,26 C55,26 59,22 59,15 C59,8 55,3 50,3 Z" class="muscle-base" />
+                                
+                                <!-- Trapecios -->
+                                <path id="back-traps" d="M40,18 L60,18 L68,30 L50,55 L32,30 Z" class="muscle-base" />
+                                <path id="back-traps" d="M42,16 L58,16 L66,28 L50,52 L34,28 Z" class="muscle-base" />
+                                
+                                <!-- Hombros Traseros -->
+                                <path id="back-delts" d="M32,30 L16,32 L18,45 L32,40 Z M68,30 L84,32 L82,45 L68,40 Z" class="muscle-base" />
+                                <path id="back-delts" d="M34,28 L18,30 L20,43 L34,38 Z M66,28 L82,30 L80,43 L66,38 Z" class="muscle-base" />
+                                
+                                <!-- Tríceps -->
+                                <path id="back-triceps" d="M18,45 L28,42 L26,60 L20,58 Z M82,45 L72,42 L74,60 L80,58 Z" class="muscle-base" />
+                                <path id="back-triceps" d="M20,43 L30,40 L28,58 L22,56 Z M80,43 L70,40 L72,58 L78,56 Z" class="muscle-base" />
+                                
+                                <!-- Antebrazos -->
+                                <path id="back-forearms" d="M20,58 L26,60 L24,85 L18,82 Z M80,58 L74,60 L76,85 L82,82 Z" class="muscle-base" />
+                                <path id="back-forearms" d="M22,56 L28,58 L26,83 L20,80 Z M78,56 L72,58 L74,83 L80,80 Z" class="muscle-base" />
+                                
+                                <!-- Dorsales (Lats) -->
+                                <path id="back-lats" d="M32,40 L68,40 L62,75 L38,75 Z" class="muscle-base" />
+                                <path id="back-lats" d="M34,38 L66,38 L60,72 L40,72 Z" class="muscle-base" />
+                                
+                                <!-- Lumbares -->
+                                <path id="back-lower" d="M38,75 L62,75 L58,85 L42,85 Z" class="muscle-base" />
+                                <path id="back-lower" d="M40,72 L60,72 L56,82 L44,82 Z" class="muscle-base" />
+                                
+                                <!-- Glúteos -->
+                                <path id="back-glutes" d="M26,85 L74,85 L70,110 L50,115 L30,110 Z" class="muscle-base" />
+                                <path id="back-glutes" d="M28,82 L72,82 L68,107 L50,112 L32,107 Z" class="muscle-base" />
+                                
+                                <!-- Femorales -->
+                                <path id="back-hams" d="M30,110 L50,115 L48,150 L28,145 Z M70,110 L50,115 L52,150 L72,145 Z" class="muscle-base" />
+                                <path id="back-hams" d="M32,107 L50,112 L48,147 L28,142 Z M68,107 L50,112 L52,147 L72,142 Z" class="muscle-base" />
+                                
+                                <!-- Gemelos -->
+                                <path id="back-calves" d="M28,145 L48,150 L46,190 L32,185 Z M72,145 L52,150 L54,190 L68,185 Z" class="muscle-base" />
+                                <path id="back-calves" d="M28,142 L48,147 L46,187 L32,182 Z M72,142 L52,147 L54,187 L68,182 Z" class="muscle-base" />
+                                
+                                <!-- Pies -->
+                                <path d="M32,185 L46,190 L46,200 L32,200 Z M68,185 L54,190 L54,200 L68,200 Z" class="muscle-base" />
+                                <path d="M32,182 L46,187 L46,197 L32,197 Z M68,182 L54,187 L54,197 L68,197 Z" class="muscle-base" />
+                            </g>
+                        </g>
+                    </svg>
                 </div>
             </div>
 
@@ -464,26 +607,46 @@
 
             <div class="card p-6 mb-24 border-l-4 border-slate-800">
                 <div class="flex items-center gap-4 mb-6">
-                    <div class="bg-slate-100 p-3 rounded-xl text-slate-700 shadow-sm"><i class="fas fa-dumbbell text-2xl"></i></div>
+                    <div class="bg-slate-800 p-3 rounded-xl text-white shadow-sm"><i class="fas fa-dumbbell text-2xl"></i></div>
                     <div>
-                        <h3 class="font-bold text-slate-700 text-lg">Jim</h3>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase">Pesas / Hipertrofia</p>
+                        <h3 class="font-bold text-slate-700 text-lg">Sesiones de Gym</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase">Hipertrofia & Fuerza</p>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Kcal (Apple Watch)</label>
-                        <input type="number" id="gym-cals" placeholder="ej: 350" oninput="updateSport()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 font-bold text-slate-700 outline-none focus:border-slate-500">
+                
+                <!-- Formulario Nueva Sesión Gym -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-2">Añadir Ejercicio</label>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <select id="gym-muscle-select" class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs font-bold text-slate-700">
+                            <option value="pecho">Pectoral</option>
+                            <option value="espalda">Espalda</option>
+                            <option value="pierna">Pierna</option>
+                            <option value="brazos">Brazos (Bíceps/Tríceps)</option>
+                            <option value="hombro">Hombro</option>
+                            <option value="abs">Abdomen</option>
+                            <option value="cardio">Cardio Gym</option>
+                        </select>
+                        <input type="number" id="gym-session-time" placeholder="Minutos" class="w-full bg-white border border-gray-200 rounded-lg p-2 text-xs font-bold text-slate-700">
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Tiempo (min)</label>
-                        <input type="number" id="gym-time" placeholder="ej: 60" oninput="updateSport()" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 font-bold text-slate-700 outline-none focus:border-slate-500">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Intensidad</label>
+                        <input type="range" min="1" max="3" step="1" value="2" id="gym-session-int" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-gray-400 px-1"><span>Suave</span><span>Media</span><span>Fallo</span></div>
                     </div>
+                    <button onclick="addGymSession()" class="w-full mt-3 bg-slate-800 text-white text-xs font-bold py-2 rounded-lg hover:bg-slate-700 transition">+ Añadir Sesión</button>
                 </div>
-                <div class="p-3 bg-gray-50 rounded-xl text-center">
-                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-2">Intensidad</label>
-                    <input type="range" min="1" max="3" step="1" value="2" id="range-gym-int" oninput="updateSport()">
-                    <div class="text-sm font-black text-slate-700 mt-1" id="val-gym-int-text">Media</div>
+
+                <!-- Lista de Sesiones -->
+                <div id="gymSessionsList" class="space-y-2"></div>
+                
+                <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
+                    <span class="text-xs font-bold text-gray-500">Total Tiempo:</span>
+                    <span class="text-sm font-black text-slate-800" id="total-gym-time-display">0 min</span>
+                </div>
+                <div class="mt-1 flex justify-between items-center">
+                    <span class="text-xs font-bold text-gray-500">Kcal Aprox:</span>
+                    <input type="number" id="gym-cals" placeholder="Manual" oninput="updateSport()" class="w-20 text-right bg-transparent border-b border-gray-300 text-xs font-bold text-slate-700 focus:outline-none">
                 </div>
             </div>
 
@@ -534,14 +697,17 @@
         // ==========================================================================================
         
         let USER_BIO = JSON.parse(localStorage.getItem('user_bio_config')) || {
-            nombre: "Usuario",
+            nombre: "Atleta",
             genero: "hombre",
             edad: 18,
             altura: 168,
             peso: 60,
             grasa: 12,
             masaMuscular: 50,
-            ubicacion: "Petrer"  
+            ubicacion: "Petrer",
+            maxRunKm: 5,     // Personal Record Running
+            maxGymTime: 60,  // Personal Record Gym Time
+            maxBikeKm: 25    // Personal Record Bike
         };
 
         const MONTH_NAMES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
@@ -576,6 +742,19 @@
                 };
             }
 
+            recalculateBiologicalProfile() {
+                // Efecto Mariposa: La edad y composición cambian las reglas del juego
+                let sleepNeed = 8;
+                if (USER_BIO.edad > 50) sleepNeed = 7; // Mayores duermen menos
+                if (USER_BIO.edad < 20) sleepNeed = 9; // Adolescentes necesitan más
+                
+                // Factor de recuperación (0.5 lento - 1.5 rápido)
+                let recoveryFactor = (100 - USER_BIO.edad) / 80; 
+                if (USER_BIO.masaMuscular > 40) recoveryFactor += 0.2; // Más músculo ayuda metabólicamente
+                
+                return { sleepNeed, recoveryFactor };
+            }
+
             getBMR() {
                 let base = (10 * USER_BIO.peso) + (6.25 * USER_BIO.altura) - (5 * USER_BIO.edad);
                 if (USER_BIO.genero === "hombre") base += 5;
@@ -604,6 +783,117 @@
                 return { waterFactor, termogenesisKcal: termogenesis, temp: data.t, thermalFatigue, icon: data.icon };
             }
 
+            analyzeBodyComposition() {
+                // Análisis físico basado en datos del usuario
+                const { peso, altura, grasa, masaMuscular, edad, genero, maxRunKm, maxGymTime, maxBikeKm } = USER_BIO;
+                const heightM = altura / 100;
+                const bmi = peso / (heightM * heightM);
+                
+                // 1. Calcular Nivel Atlético (Ignorando valores a 0)
+                let performanceScore = 0;
+                let activeStats = 0;
+                
+                // Running: >10km es avanzado
+                if (maxRunKm > 0) { 
+                    activeStats++; 
+                    performanceScore += Math.min(maxRunKm / 10, 1.5); 
+                }
+                // Gym: >90min es volumen alto
+                if (maxGymTime > 0) { 
+                    activeStats++; 
+                    performanceScore += Math.min(maxGymTime / 90, 1.5); 
+                }
+                // Bici: >40km es avanzado
+                if (maxBikeKm > 0) { 
+                    activeStats++; 
+                    performanceScore += Math.min(maxBikeKm / 40, 1.5); 
+                }
+
+                const fitnessLevel = activeStats > 0 ? (performanceScore / activeStats) : 0; // 0 a 1.5
+
+                let status = "Normal";
+                let advice = "Mantén tu rutina.";
+                let colorClass = "text-slate-600";
+
+                // Límites de grasa según género
+                const fatLimitHigh = genero === 'hombre' ? 25 : 32;
+                const fatLimitMid = genero === 'hombre' ? 20 : 28;
+                const fatAthletic = genero === 'hombre' ? 15 : 22;
+                const muscleRatio = masaMuscular / peso; // % de peso que es músculo
+
+                // --- LÓGICA DE DIAGNÓSTICO ---
+
+                // 1. OBESIDAD / SOBREPESO (Prioridad Alta)
+                if (bmi > 30 && grasa > fatLimitHigh) {
+                    status = "⚠️ OBESIDAD (Nivel Alto)";
+                    colorClass = "text-red-600";
+                    advice = "ALERTA: Riesgo cardiovascular. Prioridad absoluta: Déficit calórico agresivo y caminar (evita correr por impacto).";
+                } 
+                else if (bmi > 27 && grasa > fatLimitHigh) {
+                    status = "⚠️ OBESIDAD (Nivel Medio)";
+                    colorClass = "text-red-500";
+                    advice = "Necesitas perder grasa urgentemente. Reduce carbohidratos y elimina azúcares ya.";
+                }
+                else if ((bmi > 25 || grasa > fatLimitMid) && muscleRatio < 0.35) {
+                    status = "🟠 SOBREPESO / SEDENTARIO";
+                    colorClass = "text-orange-500";
+                    advice = "Tienes exceso de energía acumulada. Aumenta el cardio y reduce la cena.";
+                }
+                // 2. FALSO DELGADO (Peso normal, pero mucha grasa y poco músculo)
+                else if (bmi < 25 && grasa > fatLimitMid && muscleRatio < 0.35) {
+                    status = "🟡 FALSO DELGADO (Skinny Fat)";
+                    colorClass = "text-yellow-600";
+                    advice = "Tu peso está bien, pero te falta tono muscular y te sobra grasa. Haz pesas y come proteína.";
+                }
+                // 3. DELGADO / ECTOMORFO
+                else if (bmi < 19 || (grasa < 10 && muscleRatio < 0.4)) {
+                    status = "🔵 ECTOMORFO / DELGADO";
+                    colorClass = "text-blue-500";
+                    advice = "Metabolismo muy rápido. Necesitas superávit calórico (comer más) y levantar pesado para crecer.";
+                }
+                // 4. FUERTE PERO CON GRASA (Endomorfo fuerte / Powerlifter)
+                else if (muscleRatio > 0.4 && grasa > fatAthletic) {
+                    status = "🟤 ENDOMORFO FUERTE";
+                    colorClass = "text-amber-700";
+                    advice = `Tienes mucha fuerza (Nivel Fit: ${(fitnessLevel*100).toFixed(0)}%), pero la grasa tapa tu definición. Haz cardio post-pesas.`;
+                }
+                // 5. ATLÉTICO / ESTÉTICO
+                else if (muscleRatio > 0.42 && grasa <= fatAthletic) {
+                    status = "🟢 CUERPO ESTÉTICO / ATLÉTICO";
+                    colorClass = "text-green-600";
+                    advice = `Excelente composición (${edad} años). Estás en el top físico. Mantén rendimiento y define detalles.`;
+                }
+                // 6. NORMAL
+                else {
+                    status = "⚖️ COMPOSICIÓN NORMAL";
+                    colorClass = "text-slate-600";
+                    advice = "Estás saludable. Para verte mejor, sube ligeramente la proteína y entrena fuerza.";
+                }
+                
+                // Ajuste por edad
+                if (edad > 50 && status.includes("NORMAL")) {
+                    advice += " A tu edad, prioriza la masa muscular para proteger huesos.";
+                }
+                
+                return { status, advice, bmi: bmi.toFixed(1), colorClass };
+            }
+
+            calculateSleepScore(hours) {
+                // Lógica Parabólica
+                const bio = this.recalculateBiologicalProfile();
+                const optimalMin = bio.sleepNeed - 0.5;
+                const optimalMax = bio.sleepNeed + 1;
+
+                if (hours < optimalMin) {
+                    // Falta de sueño (Penalización exponencial)
+                    return Math.max(0, 100 - ((optimalMin - hours) * 20)); 
+                } else if (hours > optimalMax + 1) {
+                    // Letargo (Dormir demasiado atonta)
+                    return Math.max(50, 100 - ((hours - optimalMax) * 15));
+                }
+                return 100; // Zona Óptima
+            }
+
             analyzeHormones(fatIntake, sleepHours) {
                 const minFat = USER_BIO.peso * 0.8;
                 if (fatIntake < minFat) {
@@ -613,10 +903,13 @@
             }
 
             predictTomorrow(lastDayData, climateData) {
+                const bio = this.recalculateBiologicalProfile();
                 const scores = lastDayData.stressScores || { physical: 50, mental: 30 };
                 const lastMood = lastDayData.subjective ? lastDayData.subjective.mood : 'NEUTRAL';
-                const physicalPenalty = scores.physical * 0.5 * this.weights.fatigueSensitivity;
-                const mentalPenalty = scores.mental * 0.25;
+                
+                // Recuperación basada en edad y músculo
+                const physicalPenalty = (scores.physical * 0.6 * this.weights.fatigueSensitivity) / bio.recoveryFactor;
+                const mentalPenalty = (scores.mental * 0.3) / bio.recoveryFactor;
                 const sleepRecovery = (lastDayData.sleepHours / 8) * 100;
                 
                 let moodPenalty = 0;
@@ -630,6 +923,8 @@
                 battery -= (climateData.thermalFatigue || 0);
 
                 return Math.min(Math.max(Math.round(battery), 10), 100);
+                const result = Math.min(Math.max(Math.round(battery), 10), 100);
+                return isNaN(result) ? 50 : result; // Evitar NaN
             }
 
             predictMentalPerformance(lastDayData) {
@@ -664,6 +959,27 @@
                 if (error < -20) this.weights.fatigueSensitivity += 0.1;
                 else if (error > 20) this.weights.fatigueSensitivity -= 0.05;
                 localStorage.setItem('bio_weights', JSON.stringify(this.weights));
+            }
+
+            generateDailyAdvice(history) {
+                if (!history || history.length === 0) return "Bienvenido. Registra tu primer día para calibrar el motor.";
+                
+                const yesterday = history[0];
+                const sessions = yesterday.data.gymSessions || [];
+                const runIntensity = (yesterday.data.runKm / USER_BIO.maxRunKm) * 100;
+                const bio = this.recalculateBiologicalProfile();
+
+                let advice = `Tu perfil de ${USER_BIO.edad} años recupera al ${Math.round(bio.recoveryFactor * 100)}%. `;
+                const hasLegs = sessions.some(s => s.muscle === 'pierna');
+
+                if (hasLegs && runIntensity > 80) {
+                    advice += "Ayer machacaste piernas y corriste fuerte. Hoy el tren inferior está en zona roja. Descanso activo o tren superior.";
+                } else if (yesterday.stressScores.mental > 80) {
+                    advice += "Detectada alta carga cognitiva ayer. Hoy prioriza sueño y grasas saludables.";
+                } else {
+                    advice += "Sistemas estables. Puedes buscar un PR hoy.";
+                }
+                return advice;
             }
         }
 
@@ -711,7 +1027,8 @@
             runKm: 0, runPace: 5.5, runInt: 2,
             bikeKm: 0, bikeInt: 2, 
             gymCals: 0, gymTime: 0, gymInt: 2,
-            foodLog: []
+            foodLog: [],
+            gymSessions: [] // Array de objetos {muscle, time, int}
         };
 
         let todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
@@ -747,6 +1064,7 @@
             startRealTimeClock();
             startSmartMonitor();
             calculateDailyPrediction();
+            updateBodyMap(); // Inicializar SVG
         };
 
         function startRealTimeClock() {
@@ -777,6 +1095,11 @@
                 if (climate.temp < 10) {
                     predictedMental -= 5;
                 }
+
+                // Inyectar consejo natural
+                const advice = ENGINE.generateDailyAdvice(history);
+                // Lo mostramos sutilmente en el header o consola por ahora, o en un alert al inicio
+                console.log("Consejo Bio-Motor:", advice);
             }
         }
 
@@ -820,6 +1143,11 @@
             
             if (totalProt < currentGoals.prot * 0.5) {
                 todayAlerts.push({ type: 'nutrition', severity: 'prot', message: 'Proteína baja. Tus músculos necesitan recuperarse.' });
+            }
+
+            // ALERTA DE GIMNASIO
+            if (todayData.gymTime > USER_BIO.maxGymTime * 1.5) {
+                todayAlerts.push({ type: 'physical', severity: 'high', message: 'Volumen de entreno excesivo. Riesgo de sobreentrenamiento.' });
             }
 
             // ALERTAS COGNITIVAS
@@ -940,6 +1268,18 @@
                             <label class="text-xs font-bold text-gray-500">Músculo (kg)</label>
                             <input id="swal-user-m" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.masaMuscular}">
                         </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Max Run (km)</label>
+                            <input id="swal-user-maxrun" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.maxRunKm}">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Max Gym (min)</label>
+                            <input id="swal-user-maxgym" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.maxGymTime}">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Max Bici (km)</label>
+                            <input id="swal-user-maxbike" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.maxBikeKm}">
+                        </div>
                     </div>
                 `,
                 confirmButtonText: 'Guardar y Recalcular',
@@ -950,7 +1290,10 @@
                         peso: Number(document.getElementById('swal-user-w').value),
                         altura: Number(document.getElementById('swal-user-h').value),
                         grasa: Number(document.getElementById('swal-user-f').value),
-                        masaMuscular: Number(document.getElementById('swal-user-m').value)
+                        masaMuscular: Number(document.getElementById('swal-user-m').value),
+                        maxRunKm: Number(document.getElementById('swal-user-maxrun').value),
+                        maxGymTime: Number(document.getElementById('swal-user-maxgym').value),
+                        maxBikeKm: Number(document.getElementById('swal-user-maxbike').value)
                     }
                 }
             }).then((result) => {
@@ -972,7 +1315,7 @@
                 const lastDay = history[0];
                 const climate = ENGINE.getClimateStress();
                 
-                const predictedEnergy = ENGINE.predictTomorrow(lastDay, climate);
+                const predictedEnergy = ENGINE.predictTomorrow(lastDay, climate, sleep);
                 const mentalPrediction = ENGINE.predictMentalPerformance(lastDay);
                 const physicalPrediction = ENGINE.predictPhysicalPerformance(lastDay);
                 
@@ -1013,6 +1356,7 @@
             calculateDynamicGoals();
             calculateStressBar(); 
             saveDay();
+            updateBodyMap();
             updateUI();
             checkAlerts();
         }
@@ -1105,14 +1449,17 @@
 
         function calculatePhysicalStressScore() {
             let score = 0;
-            // Running: 3 puntos por km base + intensidad
-            score += todayData.runKm * (todayData.runInt === 3 ? 5 : todayData.runInt === 2 ? 3.5 : 2);
-            // Gym: 0.8 puntos por minuto * intensidad
-            score += (todayData.gymTime / 60) * (todayData.gymInt == 3 ? 50 : todayData.gymInt == 2 ? 35 : 20);
+            // Esfuerzo Relativo (Porcentaje de Capacidad)
+            const runLoad = (todayData.runKm / USER_BIO.maxRunKm) * 100; // Si corro mi maximo = 100 puntos base
+            score += runLoad * (todayData.runInt === 3 ? 1.2 : 1.0); // Multiplicador de intensidad
+            
+            const gymLoad = (todayData.gymTime / (USER_BIO.maxGymTime || 60)) * 100;
+            score += gymLoad * (todayData.gymInt === 3 ? 1.2 : 1.0);
             // Pasos: 1 punto por cada 1000 pasos
             score += (todayData.steps / 1000) * 1.5;
-            // Ciclismo: 1.5 puntos por km
-            score += todayData.bikeKm * 1.5;
+            // Ciclismo: Relativo al maximo
+            const bikeLoad = (todayData.bikeKm / (USER_BIO.maxBikeKm || 25)) * 100;
+            score += bikeLoad * (todayData.bikeInt === 3 ? 1.2 : 1.0);
             
             return score;
         }
@@ -1122,13 +1469,14 @@
             
             // CÁLCULO DE CARGA MENTAL
             let mLoad = 0;
+            const bio = ENGINE.recalculateBiologicalProfile();
             
-            // Deuda de sueño (máximo 40 puntos)
-            const sleepDeficit = Math.max(8 - todayData.sleepHours, 0);
-            mLoad += sleepDeficit * 10;
-            if(sleepDeficit > 0) {
-                stressDetails.push({cat:'mental', text: `Deuda Sueño (${sleepDeficit}h)`, type:'bad'});
-                mentalExplanation = `Has dormido ${todayData.sleepHours}h. Necesitas 8h para rendir al 100%.`;
+            // Sueño Parabólico
+            const sleepScore = ENGINE.calculateSleepScore(todayData.sleepHours);
+            if(sleepScore < 100) {
+                mLoad += (100 - sleepScore);
+                stressDetails.push({cat:'mental', text: `Sueño Ineficiente`, type:'bad'});
+                mentalExplanation = `Has dormido ${todayData.sleepHours}h. Puntuación: ${Math.round(sleepScore)}/100.`;
             } else {
                 mentalExplanation = `Has dormido ${todayData.sleepHours}h. ¡Perfecto!`;
             }
@@ -1161,14 +1509,14 @@
             // CÁLCULO DE CARGA FÍSICA
             let pLoad = calculatePhysicalStressScore();
             
-            if(todayData.runKm > 20) {
-                stressDetails.push({cat:'physical', text: `Ultra running (${todayData.runKm}km)`, type:'bad'});
-                physicalExplanation = `Has corrido ${todayData.runKm}km. Carga EXTREMA (${Math.round(pLoad)} puntos).`;
-            } else if(todayData.runKm > 10) {
-                stressDetails.push({cat:'physical', text: `Media maratón (${todayData.runKm}km)`, type:'bad'});
-                physicalExplanation = `Has corrido ${todayData.runKm}km. Carga muy alta.`;
-            } else if(todayData.runKm > 5) {
-                stressDetails.push({cat:'physical', text: `Running (${todayData.runKm}km)`, type:'neutral'});
+            // Ajuste por edad y músculo (Menos músculo = más daño relativo)
+            if (USER_BIO.masaMuscular < 40) pLoad *= 1.1;
+            
+            if(pLoad > 100) {
+                stressDetails.push({cat:'physical', text: `Sobrecarga (${Math.round(pLoad)}%)`, type:'bad'});
+                physicalExplanation = `Has superado tu capacidad máxima teórica. Riesgo de lesión.`;
+            } else if(todayData.runKm > 0) {
+                stressDetails.push({cat:'physical', text: `Running (${Math.round((todayData.runKm/USER_BIO.maxRunKm)*100)}% Max)`, type:'neutral'});
                 physicalExplanation = `Has corrido ${todayData.runKm}km. Carga moderada-alta.`;
             } else {
                 physicalExplanation = `Actividad física: ${Math.round(pLoad)} puntos.`;
@@ -1190,6 +1538,103 @@
             updateBar('mental', mentalLoad);
             updateBar('physical', physicalLoad);
             updateBar('fatigue', fatigue7d);
+        }
+
+        function updateBodyMap() {
+            // 1. Mostrar texto de análisis
+            const comp = ENGINE.analyzeBodyComposition();
+            const analysisDiv = document.getElementById('body-analysis-text');
+            if(analysisDiv) {
+                analysisDiv.innerHTML = `${comp.status} <span class="text-gray-300">|</span> <span class="text-[10px] font-normal text-gray-500">${comp.advice}</span>`;
+                analysisDiv.innerHTML = `<span class="${comp.colorClass} font-black uppercase tracking-tight">${comp.status}</span><br><span class="text-[10px] font-medium text-slate-500 leading-tight block mt-1">${comp.advice}</span>`;
+            }
+
+            // 2. Resetear todos los músculos a gris
+            const allMuscles = [
+                'front-traps', 'front-delts', 'front-pecs', 'front-biceps', 'front-forearms', 'front-abs', 'front-obliques', 'front-quads', 'front-calves',
+                'back-traps', 'back-delts', 'back-triceps', 'back-forearms', 'back-lats', 'back-lower', 'back-glutes', 'back-hams', 'back-calves'
+            ];
+            
+            allMuscles.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.setAttribute('class', 'muscle-base');
+            });
+
+            // Función auxiliar para pintar
+            // Nivel 3 = Rojo (Primario), Nivel 2 = Amarillo (Secundario), Nivel 1 = Verde
+            const paint = (id, level) => {
+                const el = document.getElementById(id);
+                if(!el) return;
+                
+                let cls = 'muscle-base';
+                if (level >= 3) cls = 'muscle-active-max';      // Rojo
+                else if (level === 2) cls = 'muscle-active-mid'; // Amarillo
+                else if (level === 1) cls = 'muscle-active-low'; // Verde
+                
+                // No sobrescribir si ya tiene un color más intenso
+                const current = el.getAttribute('class');
+                if (current.includes('max')) return; 
+                if (current.includes('mid') && level < 3) return;
+
+                el.setAttribute('class', `muscle-base ${cls}`);
+            };
+
+            // --- LÓGICA DE MAPEO (Igualando la imagen de referencia) ---
+
+            // 1. Running / Bici (Impacto en piernas)
+            if (todayData.runKm > 0 || todayData.bikeKm > 0) {
+                const int = Math.max(todayData.runInt, todayData.bikeInt);
+                // Cuádriceps y Gemelos como primarios
+                paint('front-quads', int >= 2 ? 3 : 2);
+                paint('back-calves', int >= 2 ? 3 : 2);
+                paint('front-calves', int >= 2 ? 3 : 2);
+                // Femorales y Glúteos como secundarios (estabilidad)
+                paint('back-hams', 2);
+                paint('back-glutes', 2);
+            }
+
+            // 2. Gym Sessions
+            if (todayData.gymSessions) {
+                todayData.gymSessions.forEach(s => {
+                    const int = s.int; // 1 (Suave), 2 (Media), 3 (Fallo)
+                    const primaryColor = int === 3 ? 3 : (int === 2 ? 3 : 2); // Si es media/alta, ponlo rojo
+                    const secondaryColor = 2; // Amarillo
+
+                    if (s.muscle === 'pecho') { 
+                        paint('front-pecs', primaryColor); 
+                        paint('front-delts', secondaryColor); // Hombro frontal asiste
+                        paint('back-triceps', secondaryColor); // Tríceps asiste empuje
+                    }
+                    if (s.muscle === 'espalda') { 
+                        paint('back-lats', primaryColor); 
+                        paint('back-traps', primaryColor);
+                        paint('back-lower', secondaryColor);
+                        paint('front-biceps', secondaryColor); // Bíceps asiste tracción
+                        paint('back-delts', secondaryColor);
+                    }
+                    if (s.muscle === 'pierna') { 
+                        paint('front-quads', primaryColor); 
+                        paint('back-hams', primaryColor); 
+                        paint('back-glutes', primaryColor); 
+                        paint('back-calves', primaryColor);
+                    }
+                    if (s.muscle === 'brazos') { 
+                        paint('front-biceps', primaryColor); 
+                        paint('back-triceps', primaryColor); 
+                        paint('front-forearms', secondaryColor);
+                    }
+                    if (s.muscle === 'hombro') { 
+                        paint('front-delts', primaryColor); 
+                        paint('back-delts', primaryColor);
+                        paint('front-traps', secondaryColor);
+                        paint('back-traps', secondaryColor);
+                    }
+                    if (s.muscle === 'abs') { 
+                        paint('front-abs', primaryColor); 
+                        paint('front-obliques', primaryColor); 
+                    }
+                });
+            }
         }
 
         function finishDay() {
@@ -1336,6 +1781,8 @@
             document.getElementById('range-standing').value = todayData.standingHours; 
             document.getElementById('val-standing').innerText = todayData.standingHours; 
             
+            renderGymSessions();
+
             let sum = { cal:0, prot:0, fat:0, sat:0, carb:0 }; 
             todayData.foodLog.forEach(f => { 
                 sum.cal+=f.cal; 
@@ -1377,6 +1824,46 @@
             document.getElementById('addedFoodsList').innerHTML = todayData.foodLog.map((f, i) => `<div class="flex justify-between items-center text-sm py-3 border-b border-gray-100 last:border-0 bg-white p-3 rounded-xl mb-2 shadow-sm"><div><div class="text-slate-700 font-bold">${f.name} <span class="text-xs text-gray-400 font-normal">(${f.weight}g)</span></div><div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g | S: ${f.sat ? f.sat.toFixed(1) : 0}g</div></div><div class="flex items-center gap-3"><span class="font-bold text-xs text-slate-500 bg-gray-100 px-2 py-1 rounded">${Math.round(f.cal)} kcal</span><button onclick="removeFood(${i})" class="text-red-300 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 transition"><i class="fas fa-times"></i></button></div></div>`).join('') || '<p class="text-center text-gray-300 text-xs py-4">No has añadido comidas aún.</p>'; 
         }
         
+        function addGymSession() {
+            const muscle = document.getElementById('gym-muscle-select').value;
+            const time = parseFloat(document.getElementById('gym-session-time').value);
+            const int = parseInt(document.getElementById('gym-session-int').value);
+            
+            if(!time || time <= 0) { Swal.fire('Error', 'Indica el tiempo', 'error'); return; }
+            
+            if(!todayData.gymSessions) todayData.gymSessions = [];
+            todayData.gymSessions.push({ muscle, time, int });
+            
+            document.getElementById('gym-session-time').value = '';
+            updateSport(); // Recalcula totales
+        }
+
+        function removeGymSession(index) {
+            todayData.gymSessions.splice(index, 1);
+            updateSport();
+        }
+
+        function renderGymSessions() {
+            const list = document.getElementById('gymSessionsList');
+            if(!todayData.gymSessions || todayData.gymSessions.length === 0) {
+                list.innerHTML = '<p class="text-xs text-gray-400 text-center italic">Sin sesiones hoy.</p>';
+                return;
+            }
+            
+            const intLabels = {1: 'Suave', 2: 'Media', 3: 'Fallo'};
+            const intColors = {1: 'text-green-500', 2: 'text-yellow-600', 3: 'text-red-600'};
+            
+            list.innerHTML = todayData.gymSessions.map((s, i) => `
+                <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
+                    <div>
+                        <span class="block text-xs font-bold text-slate-700 capitalize">${s.muscle}</span>
+                        <span class="text-[10px] text-gray-400">${s.time} min - <span class="${intColors[s.int]} font-bold">${intLabels[s.int]}</span></span>
+                    </div>
+                    <button onclick="removeGymSession(${i})" class="text-red-300 hover:text-red-500"><i class="fas fa-times"></i></button>
+                </div>
+            `).join('');
+        }
+
         function updateSport() { 
             todayData.runKm = parseFloat(document.getElementById('range-run-km').value) || 0; 
             todayData.runPace = parseFloat(document.getElementById('range-run-pace').value) || 5.5; 
@@ -1385,9 +1872,17 @@
             todayData.bikeInt = parseInt(document.getElementById('range-bike-int').value) || 2; 
             todayData.steps = parseInt(document.getElementById('range-steps').value) || 0; 
             todayData.standingHours = parseFloat(document.getElementById('range-standing').value) || 0; 
+            
+            // Calcular Gym Time desde sesiones
+            let totalGymTime = 0;
+            let maxInt = 1;
+            if(todayData.gymSessions) {
+                todayData.gymSessions.forEach(s => { totalGymTime += s.time; if(s.int > maxInt) maxInt = s.int; });
+            }
+            todayData.gymTime = totalGymTime;
+            todayData.gymInt = maxInt;
+            
             todayData.gymCals = parseFloat(document.getElementById('gym-cals').value) || 0; 
-            todayData.gymTime = parseFloat(document.getElementById('gym-time').value) || 0; 
-            todayData.gymInt = parseInt(document.getElementById('range-gym-int').value) || 2; 
             
             document.getElementById('val-run-km').innerText = todayData.runKm; 
             let min = Math.floor(todayData.runPace); 
@@ -1398,7 +1893,7 @@
             document.getElementById('val-run-int-text').innerText = ints[todayData.runInt] || '--'; 
             document.getElementById('val-bike-km').innerText = todayData.bikeKm; 
             document.getElementById('val-bike-int-text').innerText = ints[todayData.bikeInt] || '--'; 
-            document.getElementById('val-gym-int-text').innerText = ints[todayData.gymInt] || '--'; 
+            document.getElementById('total-gym-time-display').innerText = todayData.gymTime + ' min';
             
             updateDay(); 
         }
@@ -1720,11 +2215,10 @@
                 document.getElementById('range-bike-km').value = todayData.bikeKm || 0; 
                 document.getElementById('range-bike-int').value = todayData.bikeInt || 2; 
                 document.getElementById('gym-cals').value = todayData.gymCals || ''; 
-                document.getElementById('gym-time').value = todayData.gymTime || ''; 
-                document.getElementById('range-gym-int').value = todayData.gymInt || 2; 
                 document.getElementById('range-mobile').value = todayData.mobileHours || 0; 
                 document.getElementById('range-steps').value = todayData.steps || 0; 
                 document.getElementById('range-standing').value = todayData.standingHours || 0; 
+                if (!todayData.gymSessions) todayData.gymSessions = [];
             } 
         }
         
@@ -1959,5 +2453,3 @@
     </script>
 </body>
 </html>
-
-
