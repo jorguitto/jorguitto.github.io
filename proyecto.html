@@ -731,6 +731,37 @@
         ];
 
         // ==========================================================================================
+        // 🧬 MATRIZ BIOLÓGICA DE ALTA PRECISIÓN (DR. AI)
+        // ==========================================================================================
+        const BIO_DATABASE = {
+            hombre: [
+                { min: 18, max: 20, sleep: [8.5, 10], water: 45, meta: 1.15, mobileTol: 'dopamine', msg: "Sensibilidad Dopamina: MAX. Móvil >3h destroza la motivación." },
+                { min: 21, max: 23, sleep: [8, 9],    water: 42, meta: 1.10, mobileTol: 'insomnia', msg: "Corteza Prefrontal cerrándose. Móvil nocturno causa insomnio severo." },
+                { min: 24, max: 26, sleep: [7.5, 9],  water: 40, meta: 1.05, mobileTol: 'focus',    msg: "Foco máximo. El Deep Work consume mucha glucosa." },
+                { min: 27, max: 29, sleep: [7.5, 8.5],water: 38, meta: 0.97, mobileTol: 'stress',   msg: "Estrés laboral inicia. Cortisol sube. Desconexión necesaria." },
+                { min: 30, max: 33, sleep: [7, 8],    water: 35, meta: 0.95, mobileTol: 'blue',     msg: "Recuperación lenta. Luz azul afecta más al sueño profundo." },
+                { min: 34, max: 37, sleep: [7, 8],    water: 35, meta: 0.95, mobileTol: 'sedentary',msg: "Si duermes mal, testosterona cae 15%. Sedentarismo mata cerebro." },
+                { min: 38, max: 41, sleep: [7, 8],    water: 33, meta: 0.92, mobileTol: 'memory',   msg: "Riesgo apnea. Memoria corto plazo falla con estrés." },
+                { min: 42, max: 45, sleep: [7, 7.5],  water: 33, meta: 0.90, mobileTol: 'vision',   msg: "Visión cansada. El móvil cansa la vista el triple." },
+                { min: 46, max: 50, sleep: [7, 7.5],  water: 33, meta: 0.88, mobileTol: 'rigidity', msg: "Alerta Muscular. Si no entrenas fuerza, pierdes 0.5kg músculo/año." },
+                { min: 50, max: 60, sleep: [6.5, 7.5],water: 30, meta: 0.85, mobileTol: 'prostate', msg: "Menor sed. Beber por horario. Prioridad salud ósea." },
+                { min: 60, max: 120,sleep: [6, 7],    water: 30, meta: 0.80, mobileTol: 'confusion',msg: "Deshidratación causa confusión mental inmediata." }
+            ],
+            mujer: [
+                { min: 18, max: 20, sleep: [9, 10],   water: 40, meta: 1.10, mobileTol: 'social',   msg: "Alta necesidad sueño. Ansiedad social por RRSS afecta ciclo." },
+                { min: 21, max: 23, sleep: [8, 9],    water: 38, meta: 1.08, mobileTol: 'migraine', msg: "Pico fertilidad. Hidratación clave para migrañas." },
+                { min: 24, max: 26, sleep: [8, 9],    water: 36, meta: 1.05, mobileTol: 'skin',     msg: "Estrés afecta piel/pelo inmediatamente. Vigila B12." },
+                { min: 27, max: 29, sleep: [7.5, 8.5],water: 35, meta: 0.98, mobileTol: 'pms',      msg: "Sensibilidad emocional PMS. Metabolismo desciende levemente." },
+                { min: 30, max: 33, sleep: [7.5, 8.5],water: 33, meta: 0.95, mobileTol: 'collagen', msg: "Calidad sueño vital para colágeno. Masa muscular difícil de ganar." },
+                { min: 34, max: 37, sleep: [7, 8],    water: 33, meta: 0.92, mobileTol: 'adrenal',  msg: "Riesgo hipotiroidismo si sueño <6h. Fatiga suprarrenal." },
+                { min: 38, max: 41, sleep: [7, 8],    water: 31, meta: 0.90, mobileTol: 'fog',      msg: "Niebla mental por progesterona. Cardio solo no funciona." },
+                { min: 42, max: 45, sleep: [7, 7.5],  water: 31, meta: 0.88, mobileTol: 'anxiety',  msg: "Perimenopausia posible. Móvil noche empeora ansiedad." },
+                { min: 46, max: 50, sleep: [7, 7.5],  water: 31, meta: 0.85, mobileTol: 'estrogen', msg: "Bajada estrógenos. Colesterol puede subir solo." },
+                { min: 50, max: 60, sleep: [6.5, 7.5],water: 30, meta: 0.82, mobileTol: 'dry',      msg: "Piel seca indica falta agua. Riesgo Alzheimer > hombres." },
+                { min: 60, max: 120,sleep: [6, 7],    water: 30, meta: 0.78, mobileTol: 'thirst',   msg: "La sed desaparece. Programar alarmas para beber." }
+            ]
+        };
+
         // 🧠 BIO-ENGINE
         // ==========================================================================================
         class BioEngine {
@@ -742,17 +773,21 @@
                 };
             }
 
+            getBioProfile(age, gender) {
+                const g = gender.toLowerCase() === 'mujer' ? 'mujer' : 'hombre';
+                const list = BIO_DATABASE[g];
+                // Buscar rango exacto o devolver el último (más viejo) por defecto
+                return list.find(r => age >= r.min && age <= r.max) || list[list.length - 1];
+            }
+
             recalculateBiologicalProfile() {
-                // Efecto Mariposa: La edad y composición cambian las reglas del juego
-                let sleepNeed = 8;
-                if (USER_BIO.edad > 50) sleepNeed = 7; // Mayores duermen menos
-                if (USER_BIO.edad < 20) sleepNeed = 9; // Adolescentes necesitan más
+                const profile = this.getBioProfile(USER_BIO.edad, USER_BIO.genero);
                 
                 // Factor de recuperación (0.5 lento - 1.5 rápido)
                 let recoveryFactor = (100 - USER_BIO.edad) / 80; 
                 if (USER_BIO.masaMuscular > 40) recoveryFactor += 0.2; // Más músculo ayuda metabólicamente
                 
-                return { sleepNeed, recoveryFactor };
+                return { sleepNeed: profile.sleep, recoveryFactor, profileData: profile };
             }
 
             getBMR() {
@@ -761,10 +796,11 @@
                 else base -= 161;
                 
                 if(USER_BIO.masaMuscular > 0 && USER_BIO.grasa < 15) {
-                    base *= 1.1;
+                    base *= 1.1; // Bonus muscular
                 }
                 
-                return base;
+                const profile = this.getBioProfile(USER_BIO.edad, USER_BIO.genero);
+                return base * profile.meta; // Ajuste metabólico por edad
             }
 
             getClimateStress() {
@@ -878,18 +914,23 @@
                 return { status, advice, bmi: bmi.toFixed(1), colorClass };
             }
 
-            calculateSleepScore(hours) {
-                // Lógica Parabólica
-                const bio = this.recalculateBiologicalProfile();
-                const optimalMin = bio.sleepNeed - 0.5;
-                const optimalMax = bio.sleepNeed + 1;
+            calculateSleepScore(hours, quality = 100) {
+                const profile = this.getBioProfile(USER_BIO.edad, USER_BIO.genero);
+                const [minSleep, maxSleep] = profile.sleep;
+                
+                // Corrección Dr. AI: Sueño Real = Horas * (Calidad/100)
+                // Si no hay dato de calidad (0), asumimos 80% por defecto para no penalizar tanto
+                const qFactor = quality > 0 ? (quality / 100) : 0.85;
+                const realSleep = hours * qFactor;
 
-                if (hours < optimalMin) {
+                if (realSleep < minSleep) {
                     // Falta de sueño (Penalización exponencial)
-                    return Math.max(0, 100 - ((optimalMin - hours) * 20)); 
-                } else if (hours > optimalMax + 1) {
-                    // Letargo (Dormir demasiado atonta)
-                    return Math.max(50, 100 - ((hours - optimalMax) * 15));
+                    // Ejemplo: Necesita 8, duerme 6 reales -> deficit 2 -> -40 pts
+                    return Math.max(0, 100 - ((minSleep - realSleep) * 20)); 
+                } else if (realSleep > maxSleep + 1.5) {
+                    // Letargo
+                    const optimalMax = maxSleep;
+                    return Math.max(50, 100 - ((realSleep - optimalMax) * 15));
                 }
                 return 100; // Zona Óptima
             }
@@ -903,13 +944,13 @@
             }
 
             predictTomorrow(lastDayData, climateData) {
-                const bio = this.recalculateBiologicalProfile();
+                const { recoveryFactor } = this.recalculateBiologicalProfile();
                 const scores = lastDayData.stressScores || { physical: 50, mental: 30 };
                 const lastMood = lastDayData.subjective ? lastDayData.subjective.mood : 'NEUTRAL';
                 
                 // Recuperación basada en edad y músculo
-                const physicalPenalty = (scores.physical * 0.6 * this.weights.fatigueSensitivity) / bio.recoveryFactor;
-                const mentalPenalty = (scores.mental * 0.3) / bio.recoveryFactor;
+                const physicalPenalty = (scores.physical * 0.6 * this.weights.fatigueSensitivity) / recoveryFactor;
+                const mentalPenalty = (scores.mental * 0.3) / recoveryFactor;
                 const sleepRecovery = (lastDayData.sleepHours / 8) * 100;
                 
                 let moodPenalty = 0;
@@ -922,7 +963,6 @@
                 battery -= moodPenalty;
                 battery -= (climateData.thermalFatigue || 0);
 
-                return Math.min(Math.max(Math.round(battery), 10), 100);
                 const result = Math.min(Math.max(Math.round(battery), 10), 100);
                 return isNaN(result) ? 50 : result; // Evitar NaN
             }
@@ -967,9 +1007,9 @@
                 const yesterday = history[0];
                 const sessions = yesterday.data.gymSessions || [];
                 const runIntensity = (yesterday.data.runKm / USER_BIO.maxRunKm) * 100;
-                const bio = this.recalculateBiologicalProfile();
+                const { recoveryFactor, profileData } = this.recalculateBiologicalProfile();
 
-                let advice = `Tu perfil de ${USER_BIO.edad} años recupera al ${Math.round(bio.recoveryFactor * 100)}%. `;
+                let advice = `<b>${profileData.msg}</b> `;
                 const hasLegs = sessions.some(s => s.muscle === 'pierna');
 
                 if (hasLegs && runIntensity > 80) {
@@ -1371,6 +1411,7 @@
         function calculateDynamicGoals() {
             const BMR = ENGINE.getBMR();
             const climate = ENGINE.getClimateStress();
+            const profile = ENGINE.getBioProfile(USER_BIO.edad, USER_BIO.genero) || { water: 35, min: 18, max: 99 };
             
             let g = { 
                 cals: BMR + climate.termogenesisKcal, 
@@ -1378,8 +1419,14 @@
                 fat: 0.9 * USER_BIO.peso, 
                 sat: 25, 
                 carbs: 0, 
-                water: (USER_BIO.peso * 35) * climate.waterFactor 
+                // BUG FIX: Usar ml/kg específico de la tabla médica
+                water: (USER_BIO.peso * (profile.water || 35)) 
             };
+
+            // Ajuste por temperatura > 25°C (Dr. AI Rule)
+            if (climate.temp > 25) {
+                g.water = g.water * 1.15;
+            }
 
             if(USER_BIO.genero === 'mujer') {
                 g.fat = 1.0 * USER_BIO.peso;
@@ -1388,7 +1435,7 @@
 
             waterDetails = [];
             waterDetails.push({ txt: `Base (${USER_BIO.peso}kg)`, val: `${Math.round(USER_BIO.peso * 35)}ml` });
-            
+            waterDetails.push({ txt: `Bio-Rango (${profile.min}-${profile.max})`, val: `${profile.water} ml/kg` });
             if(climate.waterFactor > 1) waterDetails.push({ txt: `Calor (${climate.temp}°C)`, val: `+${Math.round((climate.waterFactor-1)*100)}%` });
 
             if (todayData.steps > 0) {
@@ -1409,6 +1456,22 @@
                 g.water += (todayData.gymTime * 10);
                 waterDetails.push({ txt: `Gym (${todayData.gymTime}min)`, val: `${todayData.gymTime * 10}ml` });
             }
+
+            // Ajuste Neuro (Carga Cognitiva)
+            let studyWaterNeed = 0;
+            if (todayData.studySessions) {
+                todayData.studySessions.forEach(s => {
+                    // Foco 1: 50ml/h, Foco 2: 100ml/h, Foco 3: 150ml/h
+                    studyWaterNeed += s.hours * (s.focus * 50);
+                });
+            }
+
+            if (studyWaterNeed > 0) {
+                g.water += studyWaterNeed;
+                const totalHours = todayData.studySessions.reduce((a,b)=>a+b.hours, 0);
+                waterDetails.push({ txt: `Estudio (${totalHours}h)`, val: `+${Math.round(studyWaterNeed)}ml` });
+            }
+
             g.cals += activityCals;
 
             const remainingCals = g.cals - ((g.prot * 4) + (g.fat * 9));
@@ -1469,14 +1532,14 @@
             
             // CÁLCULO DE CARGA MENTAL
             let mLoad = 0;
-            const bio = ENGINE.recalculateBiologicalProfile();
+            const profile = ENGINE.getBioProfile(USER_BIO.edad, USER_BIO.genero);
             
             // Sueño Parabólico
-            const sleepScore = ENGINE.calculateSleepScore(todayData.sleepHours);
+            const sleepScore = ENGINE.calculateSleepScore(todayData.sleepHours, todayData.sleepQuality);
             if(sleepScore < 100) {
                 mLoad += (100 - sleepScore);
                 stressDetails.push({cat:'mental', text: `Sueño Ineficiente`, type:'bad'});
-                mentalExplanation = `Has dormido ${todayData.sleepHours}h. Puntuación: ${Math.round(sleepScore)}/100.`;
+                mentalExplanation = `Sueño Real: ${(todayData.sleepHours * (todayData.sleepQuality/100 || 0.85)).toFixed(1)}h (Meta: ${profile.sleep[0]}h).`;
             } else {
                 mentalExplanation = `Has dormido ${todayData.sleepHours}h. ¡Perfecto!`;
             }
@@ -1488,12 +1551,20 @@
                 mentalExplanation += ` Has estudiado ${todayData.studySessions.reduce((a,b)=>a+b.hours,0)}h (${Math.round(studyLoad)} puntos).`;
             }
             
-            // Móvil: 4 puntos por hora
-            const mobileLoad = todayData.mobileHours * 4;
+            // Móvil: Penalización dinámica según edad (Dr. AI)
+            let mobilePenaltyFactor = 4;
+            if (profile.mobileTol === 'dopamine' || profile.mobileTol === 'social') mobilePenaltyFactor = 6; // Jóvenes
+            if (profile.mobileTol === 'vision' || profile.mobileTol === 'blue') mobilePenaltyFactor = 5; // Mayores
+            
+            const mobileLoad = todayData.mobileHours * mobilePenaltyFactor;
             mLoad += mobileLoad;
+
             if(todayData.mobileHours > 3) {
-                stressDetails.push({cat:'mental', text: `Uso excesivo móvil (${todayData.mobileHours}h)`, type:'bad'});
-                mentalExplanation += ` Móvil: ${todayData.mobileHours}h.`;
+                let msg = `Uso excesivo móvil (${todayData.mobileHours}h)`;
+                if (profile.mobileTol === 'dopamine') msg += " - Dopamina agotada";
+                if (profile.mobileTol === 'insomnia') msg += " - Riesgo insomnio";
+                stressDetails.push({cat:'mental', text: msg, type:'bad'});
+                mentalExplanation += ` Móvil: ${todayData.mobileHours}h (Factor: x${mobilePenaltyFactor}).`;
             }
             
             // Grasa saturada baja afecta al cerebro
@@ -1556,27 +1627,31 @@
             ];
             
             allMuscles.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.setAttribute('class', 'muscle-base');
+                // FIX: Usar querySelectorAll para manejar IDs duplicados en el SVG (izquierda/derecha)
+                const elements = document.querySelectorAll(`[id="${id}"]`);
+                elements.forEach(el => el.setAttribute('class', 'muscle-base'));
             });
 
             // Función auxiliar para pintar
             // Nivel 3 = Rojo (Primario), Nivel 2 = Amarillo (Secundario), Nivel 1 = Verde
             const paint = (id, level) => {
-                const el = document.getElementById(id);
-                if(!el) return;
+                // FIX: Usar querySelectorAll para pintar ambos lados
+                const elements = document.querySelectorAll(`[id="${id}"]`);
+                if(elements.length === 0) return;
                 
                 let cls = 'muscle-base';
                 if (level >= 3) cls = 'muscle-active-max';      // Rojo
                 else if (level === 2) cls = 'muscle-active-mid'; // Amarillo
                 else if (level === 1) cls = 'muscle-active-low'; // Verde
                 
-                // No sobrescribir si ya tiene un color más intenso
-                const current = el.getAttribute('class');
-                if (current.includes('max')) return; 
-                if (current.includes('mid') && level < 3) return;
+                elements.forEach(el => {
+                    const current = el.getAttribute('class');
+                    // No sobrescribir si ya tiene un color más intenso
+                    if (current.includes('max')) return; 
+                    if (current.includes('mid') && level < 3) return;
 
-                el.setAttribute('class', `muscle-base ${cls}`);
+                    el.setAttribute('class', `muscle-base ${cls}`);
+                });
             };
 
             // --- LÓGICA DE MAPEO (Igualando la imagen de referencia) ---
