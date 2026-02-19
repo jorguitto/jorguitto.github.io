@@ -365,10 +365,11 @@
             
             <div class="card p-6 card-clickable cursor-pointer" onclick="showDetails('nutrition')" id="food-home-card">
                 <div class="flex justify-between items-center mb-5">
-                    <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fas fa-fire text-orange-500"></i> Combustible (<span id="profile-weight-display">60</span>kg)</h3>
-                    <span class="text-[10px] bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-bold">Meta: <span id="goal-cals">2400</span> kcal</span>
                     <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fas fa-fire text-orange-500"></i> Combustible</h3>
-                    <button onclick="event.stopPropagation(); showMicros()" class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-plus text-xs"></i></button>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-bold">Meta: <span id="goal-cals">2400</span> kcal</span>
+                        <button onclick="event.stopPropagation(); showMicros()" class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-plus text-xs"></i></button>
+                    </div>
                 </div>
 
                 <div class="space-y-5">
@@ -730,7 +731,8 @@
             ubicacion: "Petrer",
             maxRunKm: 5,     // Personal Record Running
             maxGymTime: 60,  // Personal Record Gym Time
-            maxBikeKm: 25    // Personal Record Bike
+            maxBikeKm: 25,   // Personal Record Bike
+            goal: 'maintenance' // 'fat_loss', 'muscle_gain', 'maintenance'
         };
 
         const MONTH_NAMES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
@@ -2805,6 +2807,14 @@
                             <label class="text-xs font-bold text-gray-500">Max Bici (km)</label>
                             <input id="swal-user-maxbike" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.maxBikeKm}">
                         </div>
+                        <div class="col-span-2">
+                            <label class="text-xs font-bold text-gray-500">Objetivo Principal</label>
+                            <select id="swal-user-goal" class="w-full border p-2 rounded mb-2 font-bold text-slate-700">
+                                <option value="fat_loss" ${USER_BIO.goal === 'fat_loss' ? 'selected' : ''}>📉 Perder Grasa (Definición)</option>
+                                <option value="maintenance" ${(!USER_BIO.goal || USER_BIO.goal === 'maintenance') ? 'selected' : ''}>⚖️ Mantenimiento / Salud</option>
+                                <option value="muscle_gain" ${USER_BIO.goal === 'muscle_gain' ? 'selected' : ''}>💪 Ganar Masa Muscular (Volumen)</option>
+                            </select>
+                        </div>
                     </div>
                 `,
                 confirmButtonText: 'Guardar y Recalcular',
@@ -2818,7 +2828,8 @@
                         masaMuscular: Number(document.getElementById('swal-user-m').value),
                         maxRunKm: Number(document.getElementById('swal-user-maxrun').value),
                         maxGymTime: Number(document.getElementById('swal-user-maxgym').value),
-                        maxBikeKm: Number(document.getElementById('swal-user-maxbike').value)
+                        maxBikeKm: Number(document.getElementById('swal-user-maxbike').value),
+                        goal: document.getElementById('swal-user-goal').value
                     }
                 }
             }).then((result) => {
@@ -2923,6 +2934,17 @@
             if(USER_BIO.genero === 'mujer') {
                 g.fat = 1.0 * USER_BIO.peso;
                 g.prot = 1.8 * USER_BIO.peso;
+            }
+
+            // AJUSTE POR OBJETIVO BIOLÓGICO
+            if (USER_BIO.goal === 'fat_loss') {
+                g.cals -= 400; // Déficit calórico
+                g.prot = 2.4 * USER_BIO.peso; // Proteína alta para proteger músculo
+                g.fat = 0.7 * USER_BIO.peso; // Grasa moderada-baja
+            } else if (USER_BIO.goal === 'muscle_gain') {
+                g.cals += 300; // Superávit calórico
+                g.prot = 2.0 * USER_BIO.peso; // Proteína óptima
+                g.carbs += 50; // Extra energía para entrenar
             }
 
             waterDetails = [];
@@ -3242,15 +3264,18 @@
         }
 
         function finishDay() {
+            const today = new Date().toISOString().split('T')[0];
             Swal.fire({
                 title: 'Informe Realidad',
                 html: `
-                    <label class="block text-xs font-bold uppercase mb-1">Energía Real (1-10)</label>
+                    <label class="block text-xs font-bold uppercase mb-1 text-left">Fecha del Registro</label>
+                    <input type="date" id="swal-date" class="w-full p-2 border rounded mb-4 font-bold text-slate-600" value="${today}">
+                    <label class="block text-xs font-bold uppercase mb-1 text-left">Energía Real (1-10)</label>
                     <div class="flex items-center gap-3">
                         <input type="range" id="swal-energy" min="1" max="10" value="5" class="w-full" oninput="document.getElementById('energy-val-disp').innerText = this.value">
                         <span id="energy-val-disp" class="font-bold text-2xl text-blue-600">5</span>
                     </div>
-                    <label class="block text-xs font-bold uppercase mb-1 mt-4">Estado Anímico</label>
+                    <label class="block text-xs font-bold uppercase mb-1 mt-4 text-left">Estado Anímico</label>
                     <select id="swal-mood" class="w-full p-2 border rounded mb-2">
                         <option value="NEUTRAL">Normal</option>
                         <option value="MOTIVATED">Motivado / Bestia</option>
@@ -3260,11 +3285,16 @@
                     </select>
                 `,
                 confirmButtonText: 'Aprender y Guardar',
-                preConfirm: () => ({ energy: parseInt(document.getElementById('swal-energy').value), mood: document.getElementById('swal-mood').value })
+                preConfirm: () => ({ 
+                    energy: parseInt(document.getElementById('swal-energy').value), 
+                    mood: document.getElementById('swal-mood').value,
+                    date: document.getElementById('swal-date').value
+                })
             }).then((result) => {
                 if (result.isConfirmed) {
                     const actualScore = result.value.energy * 10;
                     const predicted = parseFloat(localStorage.getItem('today_prediction_score')) || 50;
+                    const dateStr = result.value.date;
                     
                     if (Math.abs(actualScore - predicted) > 25) {
                         Swal.fire({
@@ -3275,18 +3305,25 @@
                             confirmButtonText: 'Corregir IA'
                         }).then((cause) => {
                             if(cause.value) ENGINE.learn(predicted, actualScore, cause.value);
-                            saveAndClose(actualScore, result.value.mood);
+                            saveAndClose(actualScore, result.value.mood, dateStr);
                         });
                     } else {
-                        saveAndClose(actualScore, result.value.mood);
+                        saveAndClose(actualScore, result.value.mood, dateStr);
                     }
                 }
             });
         }
 
-        function saveAndClose(actualEnergy, mood) {
+        function saveAndClose(actualEnergy, mood, dateStr) {
+            let recordDate;
+            if (dateStr) {
+                recordDate = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            } else {
+                recordDate = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            }
+            
             const record = { 
-                date: new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 
+                date: recordDate, 
                 data: { ...todayData }, 
                 goals: { ...currentGoals },
                 stress: Math.round((mentalLoad + physicalLoad) / 2),
@@ -3423,8 +3460,6 @@
             document.getElementById('home-sport-km').innerText = todayData.runKm + todayData.bikeKm; 
             const sportProgress = Math.min(((todayData.runKm + (todayData.bikeKm*0.4)) / 10) * 100, 100); 
             document.getElementById('bar-sport-home').style.width = sportProgress + '%'; 
-            document.getElementById('profile-weight-display').innerText = Math.round(USER_BIO.peso); 
-            // Eliminado profile-weight-display
             
             document.getElementById('addedFoodsList').innerHTML = todayData.foodLog.map((f, i) => `<div class="flex justify-between items-center text-sm py-3 border-b border-gray-100 last:border-0 bg-white p-3 rounded-xl mb-2 shadow-sm"><div><div class="text-slate-700 font-bold">${f.name} <span class="text-xs text-gray-400 font-normal">(${f.weight}g)</span></div><div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g | S: ${f.sat ? f.sat.toFixed(1) : 0}g</div></div><div class="flex items-center gap-3"><span class="font-bold text-xs text-slate-500 bg-gray-100 px-2 py-1 rounded">${Math.round(f.cal)} kcal</span><button onclick="removeFood(${i})" class="text-red-300 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 transition"><i class="fas fa-times"></i></button></div></div>`).join('') || '<p class="text-center text-gray-300 text-xs py-4">No has añadido comidas aún.</p>'; 
         }
@@ -3553,40 +3588,78 @@
                 body.innerHTML = content; 
             } else if (type === 'nutrition') { 
                 title.innerText = "Control de Dieta"; 
-                body.innerHTML = `<p class="text-xs font-bold text-gray-400 uppercase mb-2">Recomendaciones</p><div class="bg-orange-50 p-4 rounded-2xl border border-orange-100 text-sm text-slate-600 mb-4"><ul class="list-disc pl-4 space-y-1">${nutritionAdvice || "<li>Mantén una alimentación equilibrada.</li>"}</ul></div>`; 
                 
                 // GENERACIÓN DE CONSEJOS INTELIGENTES
-                let smartAdvice = `<ul class="space-y-2">`;
+                let adviceList = [];
+                const micros = calculateMicros();
+
+                // 1. CONSEJOS POR OBJETIVO
+                if (USER_BIO.goal === 'fat_loss') {
+                    adviceList.push({ icon: 'fa-fire', color: 'text-red-500', text: "<b>Modo Quema-Grasa:</b> Estás en déficit (-400kcal). Prioriza alimentos de baja densidad calórica (verduras, sopas) para saciarte sin pasarte." });
+                    if (todayData.foodLog.some(f => f.cal > 300 && f.weight < 100)) {
+                        adviceList.push({ icon: 'fa-exclamation-triangle', color: 'text-orange-500', text: "<b>Alerta Densidad:</b> Has comido algo muy calórico hoy. Compensa en la cena con proteína magra y vegetales." });
+                    }
+                } else if (USER_BIO.goal === 'muscle_gain') {
+                    adviceList.push({ icon: 'fa-dumbbell', color: 'text-blue-600', text: "<b>Modo Volumen:</b> Necesitas superávit. No te saltes comidas. Añade carbohidratos complejos (arroz, avena) alrededor del entreno." });
+                }
                 
-                // 1. Análisis Muscular
+                // 2. ANÁLISIS DE ACTIVIDAD (AYER Y HOY)
+                let yesterday = history.length > 0 ? history[0] : null;
+                if (yesterday && (yesterday.data.runKm > 8 || yesterday.data.gymTime > 70)) {
+                    adviceList.push({ icon: 'fa-battery-half', color: 'text-purple-500', text: "<b>Recuperación Profunda:</b> Ayer entrenaste duro. Hoy tu cuerpo pide <b>Omega-3</b> (Nueces, Salmón) para reducir la inflamación muscular." });
+                }
+
                 if (todayData.gymSessions && todayData.gymSessions.length > 0) {
                     const muscles = todayData.gymSessions.map(s => s.muscle);
                     if (muscles.includes('pierna') || todayData.runKm > 5) {
-                        smartAdvice += `<li class="flex gap-2 items-start"><i class="fas fa-bone text-orange-500 mt-1"></i><span><b>Piernas/Run:</b> Necesitas <b>Magnesio</b> y <b>Potasio</b> para evitar calambres. <br><span class="text-xs text-gray-500">Tip: Plátano, aguacate o chocolate negro.</span></span></li>`;
+                        adviceList.push({ icon: 'fa-bolt', color: 'text-yellow-500', text: "<b>Desgaste Piernas:</b> Alto consumo de electrolitos. Necesitas <b>Magnesio</b> y <b>Potasio</b>. <br><span class='text-xs text-gray-500'>Tip: Plátano, aguacate o patata cocida.</span>" });
                     }
                     if (muscles.includes('espalda') || muscles.includes('pecho')) {
-                        smartAdvice += `<li class="flex gap-2 items-start"><i class="fas fa-dumbbell text-blue-500 mt-1"></i><span><b>Torso Intenso:</b> Alta demanda de <b>Proteína</b> y <b>Zinc</b> para reparación tisular.</span></li>`;
+                        adviceList.push({ icon: 'fa-layer-group', color: 'text-indigo-500', text: "<b>Reparación Torso:</b> Alta demanda de aminoácidos. Asegura tu batido o ración de carne/pescado en la próxima comida." });
                     }
                 }
 
-                // 2. Análisis Sueño/Estrés
+                // 3. ANÁLISIS DE MICRONUTRIENTES (VITAMINAS)
+                if (micros.vitC < MICRO_DEFS.vitC.base * 0.4) {
+                    adviceList.push({ icon: 'fa-lemon', color: 'text-yellow-400', text: "<b>Vitamina C Baja:</b> Tu sistema inmune y cortisol sufren. <br><b>Come ya:</b> Kiwi, Pimiento Rojo, Naranja o Fresas." });
+                }
+                if (micros.iron < MICRO_DEFS.iron.base * 0.4 && USER_BIO.genero === 'mujer') {
+                    adviceList.push({ icon: 'fa-tint', color: 'text-red-700', text: "<b>Hierro Bajo:</b> Riesgo de fatiga. Cena Lentejas, Berberechos o Espinacas (con limón para absorberlo)." });
+                }
+                if (micros.magnesium < MICRO_DEFS.magnesium.base * 0.4) {
+                    adviceList.push({ icon: 'fa-brain', color: 'text-slate-500', text: "<b>Falta Magnesio:</b> Clave para dormir y relajar músculos. <br><b>Tip:</b> Un puñado de almendras o chocolate negro puro." });
+                }
+
+                // 4. CONTEXTO EDAD Y SUEÑO
                 if (todayData.sleepHours < 7) {
-                    smartAdvice += `<li class="flex gap-2 items-start"><i class="fas fa-bed text-indigo-500 mt-1"></i><span><b>Poco sueño:</b> Tu sistema nervioso sufre. Prioriza <b>Vit B6</b> y <b>B12</b> (Pollo, huevos, lácteos).</span></li>`;
+                    adviceList.push({ icon: 'fa-bed', color: 'text-indigo-400', text: "<b>Deuda de Sueño:</b> Tu sensibilidad a la insulina empeora hoy. Evita azúcares simples y picos de glucosa." });
                 }
                 if (mentalLoad > 70) {
-                    smartAdvice += `<li class="flex gap-2 items-start"><i class="fas fa-brain text-purple-500 mt-1"></i><span><b>Estrés Alto:</b> El cortisol consume <b>Vit C</b> y <b>Omega-3</b>. Come cítricos o nueces hoy.</span></li>`;
+                    adviceList.push({ icon: 'fa-brain', color: 'text-pink-500', text: "<b>Estrés Cognitivo:</b> El cerebro consume mucha glucosa y Vitamina B. No hagas ayuno hoy." });
+                }
+                if (USER_BIO.edad > 50) {
+                    adviceList.push({ icon: 'fa-shield-heart', color: 'text-green-600', text: "<b>Salud Ósea (+50):</b> Vigila tu Calcio y Vitamina D. Lácteos o sardinas son obligatorios hoy." });
                 }
 
-                // 3. Análisis General
+                // 5. HIDRATACIÓN
                 if (todayData.water < currentGoals.water * 0.5) {
-                    smartAdvice += `<li class="flex gap-2 items-start"><i class="fas fa-tint text-blue-400 mt-1"></i><span><b>Hidratación baja:</b> Sin agua, no transportas nutrientes. Bebe 2 vasos ahora.</span></li>`;
+                    adviceList.push({ icon: 'fa-glass-water', color: 'text-blue-400', text: "<b>Hidratación Crítica:</b> Sin agua, no transportas nutrientes a los músculos. Bebe 2 vasos grandes ahora." });
                 }
 
+                // CONSTRUIR HTML
+                let smartAdvice = `<ul class="space-y-3">`;
+                if (adviceList.length === 0) {
+                    smartAdvice += `<li class="flex gap-3 items-start"><div class="mt-0.5 w-5 flex-shrink-0 text-center"><i class="fas fa-check-circle text-green-500"></i></div><span class="text-xs text-slate-600">Todo parece en orden. Sigue así.</span></li>`;
+                } else {
+                    adviceList.forEach(item => {
+                        smartAdvice += `<li class="flex gap-3 items-start"><div class="mt-0.5 w-5 flex-shrink-0 text-center"><i class="fas ${item.icon} ${item.color} text-sm"></i></div><span class="text-xs text-slate-600 leading-snug">${item.text}</span></li>`;
+                    });
+                }
                 smartAdvice += `</ul>`;
 
                 body.innerHTML = `
                     <div class="bg-orange-50 p-4 rounded-2xl border border-orange-100 text-sm text-slate-700 mb-4 shadow-sm">
-                        <h4 class="font-bold text-orange-800 mb-2 uppercase text-xs tracking-wider">Consejos Bio-Individuales</h4>
+                        <h4 class="font-bold text-orange-800 mb-3 uppercase text-xs tracking-wider border-b border-orange-200 pb-2">Plan de Acción Hoy</h4>
                         ${smartAdvice}
                     </div>
                     <p class="text-xs font-bold text-gray-400 uppercase mb-2">Estado Macros</p>
@@ -4164,3 +4237,4 @@
     </script>
 </body>
 </html>
+
