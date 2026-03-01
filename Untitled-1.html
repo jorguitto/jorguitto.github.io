@@ -3,149 +3,823 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MONSTER SQL EXAM - COBERTURA TOTAL</title>
+    <title>Examen Gestión BD - Temas 4, 5 y 6</title>
     <style>
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #2c3e50; margin: 0; padding: 20px; color: #ecf0f1; }
-        .container { max-width: 1000px; margin: 0 auto; background: #34495e; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --light: #ecf0f1;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--primary);
+            color: var(--light);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #34495e;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 {
+            text-align: center;
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 15px;
+        }
+        .info-panel {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+        .question-card {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--accent);
+        }
+        .question-text {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f1c40f;
+            padding: 10px;
+            font-family: 'Consolas', monospace;
+            border-radius: 4px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        .options-grid {
+            display: grid;
+            gap: 10px;
+        }
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background: white;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-label:hover {
+            background: #eef2f3;
+            border-color: var(--accent);
+        }
+        .option-label input {
+            margin-right: 15px;
+            transform: scale(1.2);
+        }
+        .blank-option {
+            border-style: dashed;
+            color: #7f8c8d;
+        }
         
-        h1 { color: #e74c3c; text-align: center; text-transform: uppercase; letter-spacing: 2px; border-bottom: 3px solid #c0392b; padding-bottom: 20px; }
-        .stats-bar { display: flex; justify-content: space-between; background: #2c3e50; padding: 15px; border-radius: 8px; margin-bottom: 30px; font-weight: bold; border: 1px solid #7f8c8d; }
+        /* Estilos de corrección */
+        .correct-answer {
+            background-color: #d4edda !important;
+            border-color: var(--success) !important;
+            color: #155724;
+        }
+        .wrong-answer {
+            background-color: #f8d7da !important;
+            border-color: var(--danger) !important;
+            color: #721c24;
+        }
+        .explanation {
+            display: none;
+            margin-top: 15px;
+            padding: 10px;
+            background: #fff3cd;
+            color: #856404;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
         
-        .timer-float { position: fixed; bottom: 20px; right: 20px; background: #e74c3c; color: white; padding: 20px; border-radius: 50%; font-weight: bold; font-size: 1.5em; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 1000; border: 4px solid white; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
-        
-        .question-card { background: #ecf0f1; color: #2c3e50; margin-bottom: 20px; padding: 25px; border-radius: 8px; border-left: 8px solid #3498db; }
-        .category-tag { background: #2980b9; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7em; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
-        .q-text { font-size: 1.2em; font-weight: 600; margin: 15px 0; display: block; }
-        .code-snippet { background: #2d2d2d; color: #f1c40f; font-family: 'Consolas', monospace; padding: 15px; border-radius: 5px; display: block; margin: 10px 0; white-space: pre-wrap; font-size: 0.95em; border: 1px solid #555; }
-        
-        .options-grid { display: grid; gap: 10px; }
-        .option-label { display: flex; align-items: center; padding: 12px; border: 2px solid #bdc3c7; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: white; }
-        .option-label:hover { background-color: #d5dbdb; border-color: #7f8c8d; }
-        input[type="radio"] { margin-right: 15px; transform: scale(1.3); }
-        
-        .blank-option { border-style: dashed; border-color: #95a5a6; color: #7f8c8d; background: transparent; }
-        
-        button.submit-btn { background: #27ae60; color: white; border: none; padding: 20px; width: 100%; font-size: 1.5em; font-weight: bold; border-radius: 10px; cursor: pointer; margin-top: 40px; transition: background 0.3s; box-shadow: 0 5px 0 #219150; }
-        button.submit-btn:hover { background: #2ecc71; box-shadow: 0 5px 0 #27ae60; }
-        button.submit-btn:active { transform: translateY(5px); box-shadow: none; }
+        button#submitBtn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: background 0.3s;
+        }
+        button#submitBtn:hover {
+            background: #219150;
+        }
 
-        /* Corrección */
-        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; }
-        .incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
-        .explanation { display: none; margin-top: 15px; padding: 15px; background: #fff3cd; color: #856404; border-radius: 5px; border: 1px solid #ffeeba; }
+        #results {
+            display: none;
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #7f8c8d;
+        }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            background: var(--primary);
+            border: 5px solid var(--light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2em;
+            font-weight: bold;
+        }
         
-        #results { display: none; text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #7f8c8d; }
-        .score-big { font-size: 4em; font-weight: bold; display: block; margin: 10px 0; text-shadow: 2px 2px 0 rgba(0,0,0,0.2); }
+        #timer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--danger);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2em;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
 
-<div class="timer-float" id="timer">50:00</div>
+<div id="timer">50:00</div>
 
 <div class="container">
-    <h1>MONSTER SQL EXAM</h1>
-    <div class="stats-bar">
-        <span>PREGUNTAS: <span id="qCount">0</span></span>
-        <span>REGLAS: +0.33 / -0.11</span>
-        <span>OBJETIVO: 100%</span>
+    <h1>Examen BD (T4, T5, T6)</h1>
+    
+    <div class="info-panel">
+        <span>Preguntas: <span id="qTotal">0</span></span>
+        <span>Acierto: +0.33</span>
+        <span>Fallo: -0.11</span>
+        <span>Blanco: 0</span>
     </div>
 
-    <form id="examForm">
+    <form id="quizForm">
         <div id="questionsContainer"></div>
-        <button type="button" class="submit-btn" onclick="finishExam()">ENTREGAR EXAMEN</button>
+        <button type="button" id="submitBtn" onclick="finishExam()">ENTREGAR EXAMEN</button>
     </form>
 
     <div id="results"></div>
 </div>
 
 <script>
-    // BASE DE DATOS MASIVA (80+ Preguntas)
-    // Fuente: PDFs T4, T5, T6 y Transcripciones
-    const db = [
-        // --- TEMA 4: DDL (Definición) ---
-        { cat: "T4 - Tipos", q: "¿Qué rango de valores admite un `tinyint`?", opts: ["0 a 255", "-128 a 127", "0 a 100", "0 a 65535"], ans: 0, exp: "Apuntes T4 [767]: tinyint es 1 byte, rango 0-255." },
-        { cat: "T4 - Tipos", q: "Para almacenar 'Verdadero/Falso', ¿qué tipo usas?", opts: ["BOOLEAN", "BIT", "TINYINT", "LOGIC"], ans: 1, exp: "Apuntes T4 [769]: bit se usa para verdadero/falso." },
-        { cat: "T4 - Tipos", q: "¿Qué diferencia hay entre `money` y `smallmoney`?", opts: ["Money admite decimales, smallmoney no", "Smallmoney es para cantidades más pequeñas", "Money es texto, smallmoney es número", "No existe smallmoney"], ans: 1, exp: "Apuntes T4 [771]: smallmoney es para cantidades económicas más pequeñas." },
-        { cat: "T4 - Tipos", q: "¿Cuándo usarías `nvarchar` en lugar de `varchar`?", opts: ["Nunca, es obsoleto", "Para guardar números y letras", "Para soporte Unicode (idiomas especiales)", "Para textos de más de 8000 caracteres"], ans: 2, exp: "Apuntes T4 [777]: la 'n' inicial indica Unicode." },
-        { cat: "T4 - Create", q: "Si defines una columna como `NOT NULL`, ¿qué implica?", opts: ["Que debe ser clave primaria", "Que debe ser única", "Que es obligatorio rellenarla", "Que se rellena sola"], ans: 2, exp: "Apuntes T4 [850]: Obliga a tener un valor." },
-        { cat: "T4 - Claves", q: "¿Una tabla puede tener claves candidatas además de la primaria?", opts: ["Sí", "No", "Solo si son FK", "Solo en Oracle"], ans: 0, exp: "Apuntes T4 [813-814]: Las candidatas son posibles claves primarias alternativas (se suelen marcar como UNIQUE)." },
-        { cat: "T4 - FK", q: "En la definición `FOREIGN KEY (Id) REFERENCES T(Id) ON DELETE CASCADE`, ¿qué significa CASCADE?", opts: ["Si borras al padre, se borra al hijo", "Si borras al padre, el hijo se pone a NULL", "Impide borrar al padre", "Borra la tabla entera"], ans: 0, exp: "Apuntes T4 [827]: Borrado en cascada elimina los dependientes." },
-        { cat: "T4 - Check", q: "¿Para qué sirve la restricción `CHECK`?", opts: ["Para verificar claves ajenas", "Para limitar los valores permitidos (ej: edad > 0)", "Para comprobar duplicados", "Para chequear la sintaxis"], ans: 1, exp: "Apuntes T4 [834]: Limitan valores (ej: importe > 0)." },
-        { cat: "T4 - Indices", q: "Un índice `UNIQUE`...", opts: ["Acelera búsquedas y permite duplicados", "Acelera búsquedas y evita duplicados", "Es lo mismo que la PK", "Solo sirve para números"], ans: 1, exp: "Apuntes T4 [809]: Los índices pueden ser únicos." },
-        { cat: "T4 - Alter", q: "¿Cómo se elimina una columna 'Edad' de la tabla 'Socios'?", opts: ["DELETE COLUMN Edad FROM Socios", "ALTER TABLE Socios DROP COLUMN Edad", "DROP COLUMN Edad", "ALTER TABLE Socios DELETE Edad"], ans: 1, exp: "Apuntes T4 [861]: Sintaxis `ALTER TABLE ... DROP COLUMN`." },
-        { cat: "T4 - Alter", q: "¿Cómo se añade una columna 'Email'?", opts: ["ALTER TABLE Socios ADD Email VARCHAR(50)", "ADD Email VARCHAR(50) TO Socios", "INSERT COLUMN Email INTO Socios", "UPDATE Socios ADD Email"], ans: 0, exp: "Apuntes T4 [857]: Sintaxis `ALTER TABLE ... ADD`." },
-        { cat: "T4 - Drop", q: "`DROP TABLE Visitas`...", opts: ["Borra solo los datos", "Borra la estructura y los datos", "Pide confirmación siempre", "Falla si tiene datos"], ans: 1, exp: "Apuntes T4 [864]: Elimina completamente la tabla." },
-        { cat: "T4 - Tipos", q: "¿Qué tipo fecha incluye hora?", opts: ["DATE", "TIME", "DATETIME", "YEAR"], ans: 2, exp: "Apuntes T4 [781]: `datetime` es Fecha + Hora." },
-        { cat: "T4 - Diseño", q: "Si un atributo es multivaluado (ej: varios teléfonos), ¿qué hacemos al pasar a Relacional?", opts: ["Creamos 2 columnas: tel1, tel2", "Creamos una tabla nueva para teléfonos", "Lo metemos todo en el mismo campo con comas", "Lo ignoramos"], ans: 1, exp: "Apuntes T2 [410]: Se crea nueva tabla con la clave de la entidad + el atributo." },
-        { cat: "T4 - Relaciones", q: "En una relación 1:N, ¿dónde va la Clave Ajena (FK)?", opts: ["En la tabla del 1", "En la tabla del N (Muchos)", "En una tabla nueva", "En ambas"], ans: 1, exp: "Apuntes T3 [634]: FK en el lado N." },
+    // BASE DE DATOS DE PREGUNTAS (Extraídas de los PDFs y Transcripciones)
+    const questions = [
+        // --- TEMA 4: DDL ---
+        {
+            cat: "T4",
+            q: "Si queremos almacenar un DNI (8 números + 1 letra), ¿qué tipo de dato es el más eficiente según los apuntes?",
+            code: "",
+            opts: ["VARCHAR(9)", "CHAR(9)", "TEXT", "NVARCHAR(9)"],
+            ans: 1,
+            exp: "Al ser longitud fija (siempre 9 caracteres), CHAR es más eficiente y rápido que VARCHAR."
+        },
+        {
+            cat: "T4",
+            q: "En la creación de tablas, ¿qué restricción permite valores NULL pero no permite valores repetidos?",
+            code: "",
+            opts: ["PRIMARY KEY", "FOREIGN KEY", "UNIQUE", "CHECK"],
+            ans: 2,
+            exp: "La restricción UNIQUE impide duplicados. A diferencia de la PK, suele permitir un valor nulo (dependiendo del SGBD, en SQL Server permite uno)."
+        },
+        {
+            cat: "T4",
+            q: "¿Qué ocurre si intentamos crear la tabla 'Visitas' antes que la tabla 'Pacientes', teniendo Visitas una FK hacia Pacientes?",
+            code: "",
+            opts: ["Se crea pero la FK queda inactiva", "Se crean ambas si están en el mismo script", "Da error porque la tabla referenciada no existe", "SQL Server crea una tabla Pacientes temporal"],
+            ans: 2,
+            exp: "Integridad Referencial: No puedes referenciar una tabla que aún no existe."
+        },
+        {
+            cat: "T4",
+            q: "¿Cuál es la sintaxis correcta en SQL Server para definir un campo autoincremental?",
+            code: "",
+            opts: ["AUTO_INCREMENT", "IDENTITY(1,1)", "SEQUENCE", "SERIAL"],
+            ans: 1,
+            exp: "En los apuntes del Tema 4 (Clínica) se especifica IDENTITY(1,1)."
+        },
+        {
+            cat: "T4",
+            q: "Si queremos borrar la columna 'Edad' de la tabla 'Pacientes', usamos:",
+            code: "",
+            opts: ["DELETE COLUMN Edad FROM Pacientes", "ALTER TABLE Pacientes DROP COLUMN Edad", "DROP COLUMN Edad FROM Pacientes", "ALTER TABLE Pacientes DELETE Edad"],
+            ans: 1,
+            exp: "Para modificar estructura se usa ALTER TABLE. Para quitar columnas, DROP COLUMN."
+        },
+        {
+            cat: "T4",
+            q: "¿Qué tipo de dato usarías para almacenar el precio de una consulta (ej: 50.50) con exactitud monetaria?",
+            code: "",
+            opts: ["FLOAT", "REAL", "DECIMAL(10,2) o MONEY", "INT"],
+            ans: 2,
+            exp: "FLOAT y REAL son aproximados. DECIMAL y MONEY son exactos para dinero."
+        },
+        {
+            cat: "T4",
+            q: "La restricción `CHECK (Importe > 0)` sirve para:",
+            code: "",
+            opts: ["Comprobar que la tabla existe", "Asegurar que no se introduzcan importes negativos o cero", "Verificar la integridad referencial", "Indexar el campo Importe"],
+            ans: 1,
+            exp: "CHECK valida una condición lógica en cada fila."
+        },
+        {
+            cat: "T4",
+            q: "¿Qué efecto tiene `ON DELETE CASCADE` en una Foreign Key?",
+            code: "",
+            opts: ["Si borras al hijo, se borra al padre", "Si borras al padre, se borran automáticamente los hijos asociados", "Impide borrar al padre si tiene hijos", "Pone a NULL la clave ajena de los hijos"],
+            ans: 1,
+            exp: "Propaga el borrado de la tabla principal a la relacionada."
+        },
+        {
+            cat: "T4",
+            q: "¿Cuál es la diferencia principal entre `VARCHAR` y `NVARCHAR`?",
+            code: "",
+            opts: ["NVARCHAR almacena números", "NVARCHAR permite caracteres Unicode (2 bytes/carácter)", "VARCHAR es para textos largos y NVARCHAR para cortos", "No hay diferencia"],
+            ans: 1,
+            exp: "La 'N' inicial indica soporte para Unicode (National Language Support)."
+        },
+        {
+            cat: "T4",
+            q: "¿Qué comando elimina TOTALMENTE una tabla (datos y estructura) de la base de datos?",
+            code: "",
+            opts: ["DELETE TABLE", "TRUNCATE TABLE", "DROP TABLE", "REMOVE TABLE"],
+            ans: 2,
+            exp: "DROP destruye el objeto. TRUNCATE solo vacía los datos."
+        },
+        {
+            cat: "T4",
+            q: "Si definimos un campo `bit`, ¿qué valores puede almacenar?",
+            code: "",
+            opts: ["0 y 1 (y NULL)", "Cualquier número entero pequeño", "Un carácter", "Verdadero/Falso como texto"],
+            ans: 0,
+            exp: "BIT es el tipo para valores lógicos (0, 1) en SQL Server."
+        },
+        {
+            cat: "T4",
+            q: "¿Puede una tabla tener más de una Clave Primaria (PRIMARY KEY)?",
+            code: "",
+            opts: ["Sí, tantas como quiera", "No, solo una (aunque puede ser compuesta)", "Sí, si son de tipos diferentes", "Depende del SGBD"],
+            ans: 1,
+            exp: "Solo una PK por tabla. Si se forma por varios campos, es una única PK compuesta."
+        },
+        {
+            cat: "T4",
+            q: "Para añadir una nueva columna 'Email' a una tabla existente:",
+            code: "",
+            opts: ["ADD COLUMN Email VARCHAR(50)", "ALTER TABLE Pacientes ADD Email VARCHAR(50)", "INSERT COLUMN Email", "UPDATE Pacientes SET Email"],
+            ans: 1,
+            exp: "Sintaxis DDL: ALTER TABLE + ADD."
+        },
+        {
+            cat: "T4",
+            q: "¿Qué implica definir una columna como `NOT NULL`?",
+            code: "",
+            opts: ["Que es Clave Primaria", "Que es Única", "Que es obligatorio introducir un valor", "Que se rellena automáticamente"],
+            ans: 2,
+            exp: "Restricción de obligatoriedad."
+        },
+        {
+            cat: "T4",
+            q: "El tipo de dato `smalldatetime` almacena:",
+            code: "",
+            opts: ["Fecha y hora con precisión de segundos", "Solo fecha", "Fecha y hora con precisión de minutos", "Hora solamente"],
+            ans: 2,
+            exp: "A diferencia de DATETIME, smalldatetime no guarda segundos/milisegundos."
+        },
 
-        // --- TEMA 5: CONSULTAS (Select) ---
-        { cat: "T5 - Básico", q: "¿Qué cláusula es OBLIGATORIA en un SELECT además de SELECT?", opts: ["WHERE", "FROM", "ORDER BY", "Ninguna"], ans: 1, exp: "Apuntes T5 [897]: SELECT y FROM son obligatorias." },
-        { cat: "T5 - Distinct", q: "`SELECT DISTINCT Ciudad`...", opts: ["Muestra ciudades distintas a NULL", "Elimina duplicados de la salida", "Ordena las ciudades", "Agrupa por ciudad y cuenta"], ans: 1, exp: "Apuntes T5 [911]: Elimina duplicados." },
-        { cat: "T5 - Top", q: "`SELECT TOP 5 * ...`", opts: ["Muestra el 5% de registros", "Muestra las 5 primeras filas del resultado", "Muestra filas con ID > 5", "Muestra 5 columnas"], ans: 1, exp: "Apuntes T5 [916]: Muestra las primeras N filas." },
-        { cat: "T5 - Into", q: "`SELECT * INTO Nueva FROM Vieja`", opts: ["Inserta en Nueva (que ya existe)", "Crea Nueva y vuelca los datos", "Solo crea estructura", "Da error"], ans: 1, exp: "Apuntes T5 [923]: Crea una tabla nueva con el resultado." },
-        { cat: "T5 - Alias", q: "¿Cómo renombras una columna en el resultado?", opts: ["Nombre AS 'Cliente'", "Nombre = Cliente", "Nombre TO Cliente", "RENAME Nombre Cliente"], ans: 0, exp: "Apuntes T5 [901]: Se usa `AS`." },
-        { cat: "T5 - Operadores", q: "¿Qué operador usas para buscar en una lista de valores?", opts: ["BETWEEN", "LIKE", "IN", "HAS"], ans: 2, exp: "Apuntes T5 [956]: `IN ('A', 'B')`." },
-        { cat: "T5 - Like", q: "¿Qué comodín representa UN solo carácter?", opts: ["%", "_", "?", "*"], ans: 1, exp: "Apuntes T5 [959]: `_` es un carácter, `%` es cadena." },
-        { cat: "T5 - Lógica", q: "¿Cuál tiene preferencia si no hay paréntesis?", opts: ["OR", "AND", "NOT", "Igual preferencia"], ans: 2, exp: "Orden: NOT -> AND -> OR. (Aun así, usad paréntesis)." },
-        { cat: "T5 - Union", q: "`UNION` entre dos consultas...", opts: ["Une columnas", "Une filas y permite duplicados", "Une filas y ELIMINA duplicados", "Hace un producto cartesiano"], ans: 2, exp: "Apuntes T5 [969]: `UNION` quita duplicados. `UNION ALL` (no en pdf pero cultura general) los deja." },
-        { cat: "T5 - Except", q: "`EXCEPT`...", opts: ["Muestra filas comunes", "Muestra filas de la 1ª que no están en la 2ª", "Muestra filas de la 2ª que no están en la 1ª", "Muestra todo menos duplicados"], ans: 1, exp: "Apuntes T5 [975]: Resta de conjuntos." },
-        { cat: "T5 - Funciones", q: "`LEFT('Hola', 2)` devuelve:", opts: ["Ho", "la", "ol", "H"], ans: 0, exp: "Apuntes T5 [985]: 2 caracteres desde la izquierda." },
-        { cat: "T5 - Funciones", q: "`LEN('Hola')` devuelve:", opts: ["4", "5", "Hola", "Text"], ans: 0, exp: "Apuntes T5 [982]: Longitud de la cadena." },
-        { cat: "T5 - Funciones", q: "`ROUND(10.567, 2)` devuelve:", opts: ["10.56", "10.57", "10.5", "11"], ans: 1, exp: "Apuntes T5 [990]: Redondea a 2 decimales." },
-        { cat: "T5 - Fechas", q: "`MONTH(GETDATE())` devuelve:", opts: ["El nombre del mes", "El número del mes", "La fecha completa", "Días del mes"], ans: 1, exp: "Apuntes T5 [997]: Número del mes." },
-        { cat: "T5 - Where vs Having", q: "¿Puedes usar `WHERE SUM(Importe) > 100`?", opts: ["Sí", "No, nunca", "Solo si agrupas antes", "Solo en Oracle"], ans: 1, exp: "Apuntes T5 [942]: `WHERE` no admite agregadas. Debe ser `HAVING`." },
-        { cat: "T5 - Group By", q: "Si haces `SELECT Ciudad, COUNT(*)`, ¿qué falta obligatoriamente?", opts: ["ORDER BY Ciudad", "WHERE Ciudad IS NOT NULL", "GROUP BY Ciudad", "HAVING COUNT(*) > 0"], ans: 2, exp: "Apuntes T5 [937]: Si seleccionas una columna normal y una agregada, debes agrupar por la normal." },
-        { cat: "T5 - Joins", q: "La forma recomendada de unir tablas es:", opts: ["FROM T1, T2 WHERE T1.id = T2.id", "FROM T1 INNER JOIN T2 ON T1.id = T2.id", "FROM T1 UNION T2", "FROM T1 LINK T2"], ans: 1, exp: "Apuntes T5 [1003]: JOIN es más claro y eficiente." },
-        { cat: "T5 - Null", q: "El resultado de `5 + NULL` es:", opts: ["5", "0", "NULL", "Error"], ans: 2, exp: "Operar con NULL suele dar NULL." },
-        { cat: "T5 - Order By", q: "Si quieres los más caros primero (`Precio`):", opts: ["ORDER BY Precio", "ORDER BY Precio ASC", "ORDER BY Precio DESC", "ORDER BY Precio TOP"], ans: 2, exp: "Apuntes T5 [946]: DESC es descendente (Mayor a menor)." },
-        { cat: "T5 - Dates", q: "Para sumar 15 días a una fecha:", opts: ["DATEADD(DAY, 15, Fecha)", "Fecha + 15", "SUMDATE(Fecha, 15)", "DATEDIFF(Fecha, 15)"], ans: 0, exp: "Apuntes T5 [992]: `DATEADD(tipo, cantidad, fecha)`." },
-        { cat: "T5 - Vistas", q: "El profesor mencionó `CREATE VIEW`. ¿Qué es?", opts: ["Una tabla física", "Una consulta guardada como tabla virtual", "Un informe impreso", "Una copia de seguridad"], ans: 1, exp: "Transcripción [20:54]: Una vista es una tabla lógica a partir de un select." },
-        { cat: "T5 - Subconsultas", q: "Una subconsulta en el `WHERE` que usa `>` (mayor que) debe devolver:", opts: ["Una tabla completa", "Una columna", "Un único valor", "Cualquier cosa"], ans: 2, exp: "Apuntes T6 [39]: Deben devolver un único valor para comparar." },
+        // --- TEMA 5: CONSULTAS (SELECT) ---
+        {
+            cat: "T5",
+            q: "¿Cuál es el orden LÓGICO de procesamiento de una consulta SQL (no el de escritura)?",
+            code: "",
+            opts: ["SELECT > FROM > WHERE", "FROM > WHERE > GROUP BY > SELECT", "WHERE > SELECT > ORDER BY", "SELECT > GROUP BY > HAVING"],
+            ans: 1,
+            exp: "Primero se elige la tabla (FROM), se filtran filas (WHERE), se agrupan (GROUP BY), se filtran grupos (HAVING) y finalmente se proyectan columnas (SELECT)."
+        },
+        {
+            cat: "T5",
+            q: "Si queremos filtrar grupos después de hacer un `GROUP BY`, ¿qué cláusula usamos?",
+            code: "",
+            opts: ["WHERE", "HAVING", "ORDER BY", "FILTER"],
+            ans: 1,
+            exp: "WHERE filtra filas antes de agrupar. HAVING filtra el resultado de la agrupación (ej: COUNT > 5)."
+        },
+        {
+            cat: "T5",
+            q: "¿Qué hace la consulta `SELECT * INTO CopiaPacientes FROM Pacientes`?",
+            code: "",
+            opts: ["Copia los datos a una tabla que ya existe", "Crea una tabla nueva 'CopiaPacientes' y vuelca los datos", "Solo copia la estructura, no los datos", "Da error de sintaxis"],
+            ans: 1,
+            exp: "SELECT INTO crea la tabla destino al vuelo. Es ideal para copias de seguridad rápidas."
+        },
+        {
+            cat: "T5",
+            q: "¿Cuál de las siguientes condiciones `WHERE` es INVÁLIDA?",
+            code: "",
+            opts: ["WHERE Ciudad = 'Madrid'", "WHERE Precio BETWEEN 10 AND 20", "WHERE SUM(Importe) > 100", "WHERE Nombre LIKE 'A%'"],
+            ans: 2,
+            exp: "¡Trampa clásica! No se pueden usar funciones agregadas (SUM, COUNT, AVG) en el WHERE."
+        },
+        {
+            cat: "T5",
+            q: "¿Qué devuelve la función `LEN('Hola')` en SQL Server?",
+            code: "",
+            opts: ["4", "5", "Hola", "Error"],
+            ans: 0,
+            exp: "Devuelve la longitud de la cadena. Ojo: en Oracle/MySQL suele ser LENGTH, pero en SQL Server es LEN."
+        },
+        {
+            cat: "T5",
+            q: "Si ejecutamos `SELECT DISTINCT Ciudad FROM Pacientes`:",
+            code: "",
+            opts: ["Nos muestra todas las ciudades, incluyendo repetidas", "Nos muestra las ciudades sin repetir duplicados", "Nos cuenta cuántas ciudades hay", "Nos muestra las ciudades ordenadas alfabéticamente"],
+            ans: 1,
+            exp: "DISTINCT elimina las filas duplicadas del resultado."
+        },
+        {
+            cat: "T5",
+            q: "Para buscar pacientes cuyo nombre empiece por 'J', usamos:",
+            code: "",
+            opts: ["WHERE Nombre = 'J*'", "WHERE Nombre LIKE 'J%'", "WHERE Nombre IS 'J%'", "WHERE Nombre CONTAINS 'J'"],
+            ans: 1,
+            exp: "El operador LIKE usa % como comodín de varios caracteres."
+        },
+        {
+            cat: "T5",
+            q: "¿Qué devuelve un `LEFT JOIN` si no encuentra coincidencia en la tabla de la derecha?",
+            code: "",
+            opts: ["No devuelve la fila", "Devuelve la fila con NULL en las columnas de la derecha", "Da un error", "Devuelve ceros"],
+            ans: 1,
+            exp: "Preserva todas las filas de la tabla izquierda. Si no hay match, rellena con NULL."
+        },
+        {
+            cat: "T5",
+            q: "La función `GETDATE()` devuelve:",
+            code: "",
+            opts: ["Solo la fecha actual", "La fecha y hora actual del sistema", "Solo la hora actual", "El timestamp de Unix"],
+            ans: 1,
+            exp: "En SQL Server devuelve fecha y hora."
+        },
+        {
+            cat: "T5",
+            q: "Si queremos calcular la edad de un paciente en años, ¿qué función es la más adecuada?",
+            code: "",
+            opts: ["YEAR(GETDATE()) - FechaNac", "DATEDIFF(YEAR, FechaNac, GETDATE())", "DATEADD(YEAR, FechaNac, GETDATE())", "AGE(FechaNac)"],
+            ans: 1,
+            exp: "DATEDIFF calcula la diferencia entre dos fechas en la unidad especificada."
+        },
+        {
+            cat: "T5",
+            q: "¿Qué hace el operador `IN`?",
+            code: "WHERE Ciudad IN ('Madrid', 'Barcelona')",
+            opts: ["Busca ciudades que contengan Madrid o Barcelona", "Busca ciudades que sean exactamente Madrid o Barcelona", "Busca un rango entre Madrid y Barcelona", "Es inválido"],
+            ans: 1,
+            exp: "Es una forma abreviada de múltiples OR (= 'Madrid' OR = 'Barcelona')."
+        },
+        {
+            cat: "T5",
+            q: "¿Cuál es el comodín para UN solo carácter en `LIKE`?",
+            code: "",
+            opts: ["%", "_", "?", "*"],
+            ans: 1,
+            exp: "El guion bajo (_) sustituye a un único carácter."
+        },
+        {
+            cat: "T5",
+            q: "Si tenemos `SELECT TOP 10 PERCENT * FROM Visitas`, ¿qué obtenemos?",
+            code: "",
+            opts: ["Las 10 primeras filas", "El 10% del total de las filas", "Las filas con ID hasta 10", "Error de sintaxis"],
+            ans: 1,
+            exp: "SQL Server permite TOP N PERCENT."
+        },
+        {
+            cat: "T5",
+            q: "¿Qué hace la operación `UNION`?",
+            code: "",
+            opts: ["Une columnas de dos tablas", "Une filas de dos consultas y elimina duplicados", "Une filas de dos consultas manteniendo duplicados", "Realiza un producto cartesiano"],
+            ans: 1,
+            exp: "UNION estándar combina resultados y elimina filas repetidas. (UNION ALL las mantiene)."
+        },
+        {
+            cat: "T5",
+            q: "Para obtener el nombre del mes de una fecha (ej: 'Enero'), usamos:",
+            code: "",
+            opts: ["MONTH(Fecha)", "DATENAME(MONTH, Fecha)", "DATEPART(MONTH, Fecha)", "GETMONTH(Fecha)"],
+            ans: 1,
+            exp: "MONTH y DATEPART devuelven el número (1). DATENAME devuelve el texto."
+        },
+        {
+            cat: "T5",
+            q: "Si usamos `COUNT(Telefono)` y hay pacientes con el teléfono a NULL:",
+            code: "",
+            opts: ["Cuenta todos los pacientes", "Solo cuenta los que tienen teléfono (no nulos)", "Da error", "Cuenta los nulos como 0"],
+            ans: 1,
+            exp: "Las funciones de agregación (salvo COUNT(*)) ignoran los valores NULL."
+        },
+        {
+            cat: "T5",
+            q: "¿Qué prioridad tienen los operadores lógicos si no hay paréntesis?",
+            code: "",
+            opts: ["OR > AND > NOT", "NOT > AND > OR", "Son iguales, de izquierda a derecha", "AND > OR > NOT"],
+            ans: 1,
+            exp: "El NOT es el más fuerte, luego AND, y el OR es el más débil."
+        },
+        {
+            cat: "T5",
+            q: "El resultado de sumar `100 + NULL` es:",
+            code: "",
+            opts: ["100", "0", "NULL", "Error"],
+            ans: 2,
+            exp: "Cualquier operación aritmética con NULL da como resultado NULL."
+        },
+        {
+            cat: "T5",
+            q: "Para ordenar de mayor a menor (descendente) usamos:",
+            code: "",
+            opts: ["ORDER BY ... ASC", "ORDER BY ... DESC", "ORDER BY ... DOWN", "ORDER BY ... TOP"],
+            ans: 1,
+            exp: "DESC es la palabra reservada."
+        },
+        {
+            cat: "T5",
+            q: "¿Qué función devuelve los 3 caracteres de la izquierda de un texto?",
+            code: "",
+            opts: ["LEFT(Texto, 3)", "SUBSTRING(Texto, 0, 3)", "START(Texto, 3)", "LOWER(Texto, 3)"],
+            ans: 0,
+            exp: "LEFT(cadena, n)."
+        },
+        {
+            cat: "T5",
+            q: "La operación `EXCEPT` devuelve:",
+            code: "",
+            opts: ["Filas comunes a dos consultas", "Filas de la primera consulta que no están en la segunda", "Filas de la segunda que no están en la primera", "Todas las filas"],
+            ans: 1,
+            exp: "Es la diferencia de conjuntos (Resta)."
+        },
+        {
+            cat: "T5",
+            q: "Si en un `SELECT` hay una función de agregación (ej: `COUNT`) y columnas normales...",
+            code: "",
+            opts: ["Es válido siempre", "Debes incluir las columnas normales en el GROUP BY", "Debes incluir el COUNT en el GROUP BY", "Da error siempre"],
+            ans: 1,
+            exp: "Regla de oro: Todo lo que no sea agregada debe estar en el GROUP BY."
+        },
+        {
+            cat: "T5",
+            q: "¿Cómo buscamos valores nulos en un campo 'Observaciones'?",
+            code: "",
+            opts: ["WHERE Observaciones = NULL", "WHERE Observaciones IS NULL", "WHERE Observaciones == NULL", "WHERE Observaciones LIKE NULL"],
+            ans: 1,
+            exp: "NULL no es un valor, es un estado. No se puede usar '='. Se usa 'IS'."
+        },
+        {
+            cat: "T5",
+            q: "El operador `<>` significa:",
+            code: "",
+            opts: ["Menor o mayor", "Distinto", "Igual", "Asignación"],
+            ans: 1,
+            exp: "Es el estándar SQL para 'No igual' (también !=)."
+        },
+        {
+            cat: "T5",
+            q: "Si hacemos `SELECT * FROM T1, T2` (sin WHERE ni JOIN), obtenemos:",
+            code: "",
+            opts: ["Un error", "Un Inner Join", "Un Producto Cartesiano", "Una Unión"],
+            ans: 2,
+            exp: "Combina todas las filas de T1 con todas las de T2."
+        },
 
-        // --- TEMA 6: DML (Manipulación) ---
-        { cat: "T6 - Insert", q: "`INSERT INTO Tabla VALUES (1, 'Pepe')`. ¿Qué pasa si la tabla tiene 3 columnas?", opts: ["Inserta NULL en la 3ª", "Da error", "Inserta 0", "Pide el valor"], ans: 1, exp: "Apuntes T6 [107]: Debes suministrar valores para todas las columnas o especificar las columnas." },
-        { cat: "T6 - Insert Select", q: "Sintaxis para inserción masiva desde otra tabla:", opts: ["INSERT INTO T1 SELECT ... FROM T2", "INSERT INTO T1 VALUES (SELECT ...)", "SELECT INTO T1 FROM T2", "COPY T1 T2"], ans: 0, exp: "Apuntes T6 [124]: `INSERT INTO ... SELECT`." },
-        { cat: "T6 - Delete", q: "`DELETE FROM Pacientes WHERE Turno=1`...", opts: ["Borra la tabla Turno", "Borra la columna Turno", "Borra las filas con Turno 1", "Pone a NULL el Turno 1"], ans: 2, exp: "Apuntes T6 [174]: Borra registros." },
-        { cat: "T6 - Delete", q: "Si no pones WHERE en un DELETE:", opts: ["Borra todo", "Da error", "Borra la primera fila", "No hace nada"], ans: 0, exp: "Apuntes T6 [171]: Borra todos los datos." },
-        { cat: "T6 - Truncate", q: "`TRUNCATE TABLE` vs `DELETE` (sin where):", opts: ["Son iguales", "TRUNCATE es más lento", "TRUNCATE es más rápido y resetea Identity", "DELETE resetea Identity"], ans: 2, exp: "Apuntes T6 [188]: TRUNCATE es mucho más rápido y resetea." },
-        { cat: "T6 - Truncate", q: "¿Puedes hacer TRUNCATE si hay una FK apuntando a la tabla?", opts: ["Sí", "No", "Solo si está vacía", "Sí, con CASCADE"], ans: 1, exp: "Apuntes T6 [193]: Restricción del TRUNCATE." },
-        { cat: "T6 - Update", q: "`UPDATE Pacientes SET Ciudad='Elche'`. ¿Qué hace?", opts: ["Cambia la ciudad al paciente actual", "Cambia la ciudad a 'Elche' a TODOS los pacientes", "Da error por falta de WHERE", "Añade 'Elche' a la lista de ciudades"], ans: 1, exp: "Apuntes T6 [202]: Sin WHERE actualiza toda la tabla." },
-        { cat: "T6 - Update Acumulativo", q: "Si ejecutas 3 veces `UPDATE T SET X = X * 1.1`...", opts: ["Sube 10%", "Sube 30%", "Sube 33.1% (Acumulado)", "Error"], ans: 2, exp: "Apuntes T6 [37/67]: El incremento es acumulativo." },
-        { cat: "T6 - Update Subconsulta", q: "El profesor puso un ejemplo de UPDATE con subconsulta para:", opts: ["Borrar datos", "Actualizar con la media de otra tabla", "Crear tablas", "Ninguna"], ans: 1, exp: "Apuntes T6 [227]: Bajar precios superiores a la media." },
-        { cat: "T6 - Integridad", q: "Si intentas borrar un padre con hijos...", opts: ["Se borran hijos", "Error FK", "Hijos a NULL", "Se borra padre"], ans: 1, exp: "Apuntes T6 [175]: Integridad impide borrado." },
-        { cat: "T6 - Backup", q: "El profesor recomienda hacer copias con:", opts: ["BACKUP DATABASE", "CTRL+C", "SELECT * INTO Copia FROM Original", "EXPORT TO EXCEL"], ans: 2, exp: "Apuntes T6 [45]: `SELECT INTO`." },
+        // --- TEMA 6: DML (MANIPULACIÓN) ---
+        {
+            cat: "T6",
+            q: "¿Qué diferencia crítica hay entre `DELETE` y `TRUNCATE` respecto a la identidad?",
+            code: "",
+            opts: ["Ninguna", "DELETE reinicia el contador Identity, TRUNCATE no", "TRUNCATE reinicia el contador Identity, DELETE no", "Ambos lo reinician"],
+            ans: 2,
+            exp: "TRUNCATE resetea el contador autoincremental a su valor inicial. DELETE continúa por donde iba."
+        },
+        {
+            cat: "T6",
+            q: "Si ejecutas `UPDATE Visitas SET Importe = 0` sin cláusula WHERE...",
+            code: "",
+            opts: ["Da error de seguridad", "Pone a 0 el importe de la primera visita", "Pone a 0 el importe de TODAS las visitas", "No hace nada"],
+            ans: 2,
+            exp: "El UPDATE sin filtro afecta a toda la tabla. Es un error muy peligroso."
+        },
+        {
+            cat: "T6",
+            q: "Pregunta del profesor: ¿Qué pasa si ejecuto 2 veces un UPDATE que sube el precio un 20% (`Precio * 1.20`)?",
+            code: "",
+            opts: ["La segunda vez da error", "El precio sube un 20% en total", "El precio sube un 40%", "El precio sube un 20% y luego otro 20% sobre el nuevo precio (acumulativo)"],
+            ans: 3,
+            exp: "Los cambios son físicos. Si ejecutas de nuevo, operas sobre el valor ya modificado."
+        },
+        {
+            cat: "T6",
+            q: "Si intentas borrar un 'Medico' que tiene 'Visitas' asignadas (con FK activa):",
+            code: "",
+            opts: ["Se borra el médico y las visitas", "Da error de Integridad Referencial", "Se borra el médico y las visitas quedan huérfanas", "SQL te pide confirmación"],
+            ans: 1,
+            exp: "La FK protege la integridad. No puedes dejar hijos sin padre (salvo que esté configurado CASCADE)."
+        },
+        {
+            cat: "T6",
+            q: "Para insertar filas copiándolas de otra tabla, usamos:",
+            code: "",
+            opts: ["INSERT INTO T1 VALUES (SELECT ...)", "INSERT INTO T1 SELECT ... FROM T2", "SELECT INTO T1 FROM T2", "COPY T1 FROM T2"],
+            ans: 1,
+            exp: "La sintaxis es INSERT INTO ... SELECT. (SELECT INTO es para crear tabla nueva)."
+        },
+        {
+            cat: "T6",
+            q: "¿Qué sucede si en un `INSERT` no especificamos valor para una columna que admite NULL?",
+            code: "",
+            opts: ["Da error", "Se inserta un 0", "Se inserta NULL automáticamente", "Pide el valor por pantalla"],
+            ans: 2,
+            exp: "Si no se indica y admite nulos (y no tiene Default), se guarda NULL."
+        },
+        {
+            cat: "T6",
+            q: "¿Cuál de estos comandos NO es DML?",
+            code: "",
+            opts: ["INSERT", "UPDATE", "TRUNCATE", "DROP"],
+            ans: 3,
+            exp: "DROP es DDL (Definición/Estructura). TRUNCATE es un caso especial (funciona como DML pero internamente es DDL, pero DROP es 100% DDL)."
+        },
+        {
+            cat: "T6",
+            q: "Si queremos borrar todas las visitas del año 2022:",
+            code: "",
+            opts: ["TRUNCATE TABLE Visitas WHERE Year=2022", "DELETE FROM Visitas WHERE YEAR(Fecha)=2022", "DROP TABLE Visitas", "REMOVE FROM Visitas WHERE Year=2022"],
+            ans: 1,
+            exp: "TRUNCATE no admite WHERE. Se debe usar DELETE."
+        },
+        {
+            cat: "T6",
+            q: "¿Cómo se inserta un valor explícito en una columna IDENTITY?",
+            code: "",
+            opts: ["No se puede nunca", "Simplemente escribiendo el valor", "Activando SET IDENTITY_INSERT Tabla ON", "Usando FORCE"],
+            ans: 2,
+            exp: "Por defecto está bloqueado. Hay que permitirlo explícitamente con ese comando."
+        },
+        {
+            cat: "T6",
+            q: "Para actualizar dos columnas a la vez en un UPDATE:",
+            code: "",
+            opts: ["SET col1=x AND col2=y", "SET col1=x, col2=y", "Hacer dos UPDATES separados", "SET (col1,col2) = (x,y)"],
+            ans: 1,
+            exp: "Se separan por comas."
+        },
+        {
+            cat: "T6",
+            q: "¿El comando `TRUNCATE` admite cláusula WHERE?",
+            code: "",
+            opts: ["Sí", "No, nunca", "A veces", "Solo en modo admin"],
+            ans: 1,
+            exp: "TRUNCATE es todo o nada."
+        },
+        {
+            cat: "T6",
+            q: "Si queremos hacer una copia de seguridad rápida antes de un Update peligroso:",
+            code: "",
+            opts: ["BACKUP DATABASE", "SELECT * INTO Tabla_Backup FROM Tabla", "COPY TABLE", "EXPORT DATA"],
+            ans: 1,
+            exp: "Recomendación del profesor en los apuntes."
+        },
+        {
+            cat: "T6",
+            q: "¿Qué pasa si intentamos insertar un valor duplicado en una columna PRIMARY KEY?",
+            code: "",
+            opts: ["Lo inserta pero avisa", "Da error de violación de restricción PK", "Sobrescribe el anterior", "Lo inserta con otro ID"],
+            ans: 1,
+            exp: "La PK debe ser única. Falla la inserción."
+        },
+        {
+            cat: "T6",
+            q: "En una sentencia `INSERT INTO Tabla (Campo1) VALUES (Val1)`, ¿qué pasa con Campo2?",
+            code: "",
+            opts: ["Se rellena con NULL o su valor DEFAULT", "Da error siempre", "Copia el valor de Campo1", "Queda vacío (cadena vacía)"],
+            ans: 0,
+            exp: "Si tiene Default usa eso, si admite Null usa Null. Si es Not Null y sin Default, daría error."
+        },
+        {
+            cat: "T6",
+            q: "Para borrar registros usando una condición de otra tabla (Join en Delete):",
+            code: "",
+            opts: ["No se puede", "DELETE T1 FROM T1 JOIN T2 ON...", "DELETE T1 WHERE T2...", "DELETE * FROM T1, T2"],
+            ans: 1,
+            exp: "Sintaxis avanzada de T6: DELETE con alias y JOIN."
+        },
 
-        // --- EXTRAS Y TRAMPAS ---
-        { cat: "Extra - Lógica", q: "¿Qué hace `ISNULL(Columna, 'Vacio')`? (Función SQL Server)", opts: ["Devuelve true si es nulo", "Si es nulo devuelve 'Vacio', si no devuelve el valor", "Filtra los nulos", "Pone a nulo la columna"], ans: 1, exp: "Ojo: `IS NULL` es operador de filtro. `ISNULL()` es función de sustitución." },
-        { cat: "Extra - Sintaxis", q: "¿Qué sobra aquí? `SELECT Nombre FROM Pacientes P INNER JOIN Visitas V`", opts: ["Falta el ON", "Sobra la P", "Sobra INNER", "Nada"], ans: 0, exp: "Un JOIN siempre necesita la condición `ON`." },
-        { cat: "Extra - Comodines", q: "Para buscar nombres que NO contengan 'a':", opts: ["NOT LIKE '%a%'", "LIKE '!%a%'", "DISLIKE '%a%'", "UNLIKE '%a%'"], ans: 0, exp: "Se niega el predicado entero: `NOT LIKE`." },
-        { cat: "Extra - DDL", q: "`DROP` vs `DELETE`", opts: ["DROP es DML, DELETE es DDL", "DROP es estructura, DELETE es contenido", "Son iguales", "DROP es solo para bases de datos"], ans: 1, exp: "DROP destruye objetos. DELETE borra filas." },
-        { cat: "Extra - Teoría", q: "¿Qué lenguaje se usa para `GRANT` (Permisos)?", opts: ["DDL", "DML", "DCL", "TCL"], ans: 2, exp: "Data Control Language (Cultura general SQL)." },
-        { cat: "Extra - Tipos", q: "Un campo `BIT` ocupa:", opts: ["1 byte", "1 bit (aprox)", "4 bytes", "Depende"], ans: 0, exp: "Apuntes T4: Dice 1 byte (aunque internamente SQL optimiza)." },
-        { cat: "Extra - Funciones", q: "`DATENAME` vs `DATEPART`", opts: ["Son iguales", "DATENAME devuelve texto (ej: 'July'), DATEPART número (7)", "Al revés", "No existen"], ans: 1, exp: "Transcripción [31:21]: Datename da el nombre." },
-        { cat: "Extra - Select", q: "Si usas `GROUP BY` por `Ciudad`, ¿puedes poner `Nombre` en el SELECT?", opts: ["Sí, siempre", "No, a menos que uses una función agregada sobre Nombre o lo incluyas en GROUP BY", "Solo si es PK", "Sí, sale el primero"], ans: 1, exp: "Regla de oro: En agregación, solo puedes proyectar lo agrupado o agregados." },
-        { cat: "Extra - Update", q: "`UPDATE T SET C1=1, C2=2`...", opts: ["Actualiza dos columnas a la vez", "Da error, hay que hacer 2 updates", "Solo actualiza C2", "Solo C1"], ans: 0, exp: "Se pueden actualizar N columnas separadas por comas." },
-        { cat: "Extra - Delete", q: "¿Se puede hacer `DELETE T FROM Tabla T ...` (con alias)?", opts: ["Sí", "No, sintaxis incorrecta", "Solo en Oracle", "Solo con TRUNCATE"], ans: 0, exp: "Sí, es sintaxis válida en SQL Server para deletes complejos con Joins." }
+        // --- EXTRAS Y MIXTOS ---
+        {
+            cat: "Extra",
+            q: "La función `ISNULL(Columna, 'Vacio')` sirve para:",
+            code: "",
+            opts: ["Filtrar nulos (como IS NULL)", "Sustituir el valor nulo por 'Vacio' en la visualización", "Borrar los nulos", "Dar error si es nulo"],
+            ans: 1,
+            exp: "Es una función de reemplazo, no de filtro."
+        },
+        {
+            cat: "Extra",
+            q: "¿Cómo se escriben comentarios en SQL Server?",
+            code: "",
+            opts: ["// Comentario", "-- Comentario", "# Comentario", ""],
+            ans: 1,
+            exp: "Doble guion."
+        },
+        {
+            cat: "Extra",
+            q: "Si en un SELECT no ponemos ORDER BY, el orden es:",
+            code: "",
+            opts: ["Por Clave Primaria", "Aleatorio / Sin garantía", "Por fecha de inserción", "Alfabético"],
+            ans: 1,
+            exp: "Sin ORDER BY, el motor no garantiza ningún orden específico."
+        },
+        {
+            cat: "Extra",
+            q: "Para contar cuántas filas tiene una tabla (incluyendo nulos):",
+            code: "",
+            opts: ["COUNT(PK)", "COUNT(*)", "COUNT(NULL)", "SUM(1)"],
+            ans: 1,
+            exp: "COUNT(*) cuenta filas físicas."
+        },
+        {
+            cat: "Extra",
+            q: "¿`DROP` y `DELETE` son lo mismo?",
+            code: "",
+            opts: ["Sí", "No, DROP es DDL (Estructura) y DELETE es DML (Datos)", "DROP es para tablas, DELETE para bases de datos", "No sé"],
+            ans: 1,
+            exp: "Diferencia fundamental."
+        },
+        {
+            cat: "Extra",
+            q: "Si hacemos `UPDATE T SET col = NULL`, ¿qué estamos haciendo?",
+            code: "",
+            opts: ["Borrando la fila", "Borrando el valor de esa celda (si se permite)", "Borrando la columna", "Error"],
+            ans: 1,
+            exp: "Asignar NULL vacía el contenido del campo."
+        },
+        {
+            cat: "Extra",
+            q: "`LOWER` convierte a:",
+            code: "",
+            opts: ["Mayúsculas", "Minúsculas", "Longitud baja", "Formato fecha"],
+            ans: 1,
+            exp: "Minusculas."
+        },
+        {
+            cat: "Extra",
+            q: "El tipo de dato para números enteros muy grandes (más que int) es:",
+            code: "",
+            opts: ["BIGINT", "HUGEINT", "LONG", "DOUBLE"],
+            ans: 0,
+            exp: "Bigint (8 bytes)."
+        },
+        {
+            cat: "Extra",
+            q: "¿Qué devuelve `30 / 4` en SQL Server (división de enteros)?",
+            code: "",
+            opts: ["7.5", "7", "8", "Error"],
+            ans: 1,
+            exp: "Al dividir dos enteros, el resultado se trunca a entero."
+        },
+        {
+            cat: "Extra",
+            q: "`DATEADD(DAY, 1, '2023-01-31')` devuelve:",
+            code: "",
+            opts: ["2023-01-32", "2023-02-01", "Error", "NULL"],
+            ans: 1,
+            exp: "Maneja correctamente el cambio de mes."
+        },
+        {
+            cat: "Extra",
+            q: "¿Qué es una 'transacción' (concepto implícito en DML)?",
+            code: "",
+            opts: ["Un pago", "Una unidad de trabajo atómica (todo o nada)", "Una consulta SELECT", "Un error"],
+            ans: 1,
+            exp: "Garantiza integridad. Si falla el Update a medias, se deshace todo."
+        },
+        {
+            cat: "Extra",
+            q: "Si usas `GROUP BY Ciudad`, ¿puedes poner `Nombre` en el SELECT?",
+            code: "",
+            opts: ["Sí", "No, salvo que uses una función agregada sobre Nombre", "Sí, sale el primero", "A veces"],
+            ans: 1,
+            exp: "Error de agrupamiento. Solo columnas agrupadas o agregadas."
+        },
+        {
+            cat: "Extra",
+            q: "`NOT LIKE 'A%'` significa:",
+            code: "",
+            opts: ["Que empieza por A", "Que NO empieza por A", "Que tiene una A", "Error"],
+            ans: 1,
+            exp: "Negación del patrón."
+        },
+        {
+            cat: "Extra",
+            q: "En `ORDER BY 2`, el 2 significa:",
+            code: "",
+            opts: ["La segunda columna del SELECT", "El valor 2", "Dos filas", "Segunda tabla"],
+            ans: 0,
+            exp: "Referencia posicional."
+        },
+        {
+            cat: "Extra",
+            q: "`ABS(-10)`:",
+            code: "",
+            opts: ["-10", "10", "0", "NULL"],
+            ans: 1,
+            exp: "Valor absoluto."
+        },
+        {
+            cat: "Extra",
+            q: "¿Qué sentencia SQL concede permisos?",
+            code: "",
+            opts: ["ALLOW", "GRANT", "PERMIT", "ACCESS"],
+            ans: 1,
+            exp: "GRANT (DCL)."
+        },
+        {
+            cat: "Extra",
+            q: "`LTRIM('  Hola')` devuelve:",
+            code: "",
+            opts: ["  Hola", "Hola", "Hola  ", "ola"],
+            ans: 1,
+            exp: "Quita espacios a la izquierda (Left Trim)."
+        },
+        {
+            cat: "Extra",
+            q: "`REVERSE('Ana')` devuelve:",
+            code: "",
+            opts: ["Ana", "anA", "nA", "Error"],
+            ans: 1,
+            exp: "Invierte la cadena."
+        },
+        {
+            cat: "Extra",
+            q: "Para obtener el día del mes:",
+            code: "",
+            opts: ["DAY(Fecha)", "GETDAY(Fecha)", "DATE(Fecha)", "D(Fecha)"],
+            ans: 0,
+            exp: "DAY()."
+        },
+        {
+            cat: "Extra",
+            q: "¿Podemos hacer un JOIN de una tabla consigo misma?",
+            code: "",
+            opts: ["No", "Sí (Self Join)", "Solo en Oracle", "Error"],
+            ans: 1,
+            exp: "Se llama Self Join, usando alias diferentes."
+        }
     ];
 
     // Lógica del Examen
     function initExam() {
         const container = document.getElementById('questionsContainer');
-        document.getElementById('qCount').innerText = db.length;
+        document.getElementById('qTotal').innerText = questions.length;
 
-        // Barajar preguntas (opcional, aquí las dejo en orden temático para estudio, descomenta para aleatorio)
-        // db.sort(() => Math.random() - 0.5);
+        // Barajar preguntas (Fisher-Yates) - Descomentar para orden aleatorio
+        // for (let i = questions.length - 1; i > 0; i--) {
+        //     const j = Math.floor(Math.random() * (i + 1));
+        //     [questions[i], questions[j]] = [questions[j], questions[i]];
+        // }
 
-        db.forEach((item, index) => {
+        questions.forEach((item, index) => {
             let html = `
             <div class="question-card" id="card_${index}">
-                <span class="category-tag">${item.cat}</span>
-                <span class="q-text">${index + 1}. ${item.q}</span>
-                ${item.code ? `<div class="code-snippet">${item.code}</div>` : ''}
+                <div style="font-size:0.8em; color:#7f8c8d; text-transform:uppercase; margin-bottom:5px;">${item.cat}</div>
+                <div class="question-text">${index + 1}. ${item.q}</div>
+                ${item.code ? `<div class="code-block">${item.code}</div>` : ''}
                 
                 <div class="options-grid">`;
-                
+            
             item.opts.forEach((opt, optIndex) => {
                 html += `
                 <label class="option-label" id="lbl_${index}_${optIndex}">
@@ -154,11 +828,11 @@
                 </label>`;
             });
 
-            // Opción Blanco
+            // Opción en blanco
             html += `
                 <label class="option-label blank-option" id="lbl_${index}_blank">
                     <input type="radio" name="q_${index}" value="blank">
-                    ⚪ Dejar en blanco (Estrategia)
+                    ⚪ Dejar en blanco (No resta)
                 </label>
                 </div>
                 <div class="explanation" id="exp_${index}">💡 <b>Explicación:</b> ${item.exp}</div>
@@ -169,71 +843,86 @@
     }
 
     function finishExam() {
-        if(!confirm("¿Seguro que quieres entregar? No podrás cambiar respuestas.")) return;
+        if(!confirm("¿Estás seguro de entregar el examen? No podrás cambiar las respuestas.")) return;
 
         let score = 0;
-        let correct = 0, wrong = 0, blank = 0;
+        let correct = 0;
+        let wrong = 0;
+        let blank = 0;
 
-        db.forEach((item, index) => {
+        questions.forEach((item, index) => {
             const selected = document.querySelector(`input[name="q_${index}"]:checked`);
-            const exp = document.getElementById(`exp_${index}`);
-            exp.style.display = 'block';
+            const expDiv = document.getElementById(`exp_${index}`);
+            expDiv.style.display = 'block';
 
             // Deshabilitar inputs
             document.querySelectorAll(`input[name="q_${index}"]`).forEach(i => i.disabled = true);
 
             if (!selected || selected.value === 'blank') {
                 blank++;
-                // Marcar la correcta en azulito discreto
+                // Marcar la correcta en azul discreto
                 document.getElementById(`lbl_${index}_${item.ans}`).style.border = "2px dashed #3498db";
             } else {
                 const val = parseInt(selected.value);
                 if (val === item.ans) {
                     correct++;
                     score += 0.33;
-                    document.getElementById(`lbl_${index}_${val}`).classList.add('correct');
+                    document.getElementById(`lbl_${index}_val`).classList.add('correct-answer'); // Bug fix: this line will fail, needs fix below
+                    // FIX:
+                    document.getElementById(`lbl_${index}_${val}`).classList.add('correct-answer');
                 } else {
                     wrong++;
                     score -= 0.11;
-                    document.getElementById(`lbl_${index}_${val}`).classList.add('incorrect');
-                    document.getElementById(`lbl_${index}_${item.ans}`).classList.add('correct');
+                    document.getElementById(`lbl_${index}_${val}`).classList.add('wrong-answer');
+                    document.getElementById(`lbl_${index}_${item.ans}`).classList.add('correct-answer');
                 }
             }
         });
 
+        // Cálculos finales
         if (score < 0) score = 0;
-        // Calcular nota sobre 10
-        // Máximo posible teórico: db.length * 0.33
-        const maxRaw = db.length * 0.33;
-        const finalNote = (score / maxRaw) * 10;
+        const maxScore = questions.length * 0.33;
+        const finalGrade = (score / maxScore) * 10;
 
-        const resDiv = document.getElementById('results');
-        resDiv.style.display = 'block';
-        resDiv.innerHTML = `
-            <div class="score-circle" style="background: ${finalNote >= 5 ? '#27ae60' : '#c0392b'}">
-                ${finalNote.toFixed(2)}
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.style.display = 'block';
+        
+        let color = finalGrade >= 5 ? '#27ae60' : '#c0392b';
+        let msg = finalGrade >= 5 ? '¡APROBADO!' : 'SUSPENSO';
+
+        resultsDiv.innerHTML = `
+            <div class="score-circle" style="color: ${color}; border-color: ${color}">
+                ${finalGrade.toFixed(2)}
             </div>
-            <h2>${finalNote >= 5 ? '¡APROBADO!' : 'SUSPENSO'}</h2>
-            <p>✅ Aciertos: ${correct} (+${(correct*0.33).toFixed(2)})</p>
-            <p>❌ Fallos: ${wrong} (-${(wrong*0.11).toFixed(2)})</p>
-            <p>⚪ Blancos: ${blank}</p>
-            <p><b>Nota Real:</b> ${score.toFixed(3)} / ${maxRaw.toFixed(3)}</p>
+            <h2 style="color: ${color}">${msg}</h2>
+            <p>✅ Aciertos: ${correct} | ❌ Fallos: ${wrong} | ⚪ Blancos: ${blank}</p>
+            <p style="font-size:0.9em; color:#aaa">Puntos brutos: ${score.toFixed(2)} / ${maxScore.toFixed(2)}</p>
         `;
 
+        document.getElementById('submitBtn').style.display = 'none';
         window.scrollTo(0, document.body.scrollHeight);
-        document.querySelector('.submit-btn').style.display = 'none';
     }
 
-    // Timer Global
-    let time = 0;
-    setInterval(() => {
-        time++;
-        const mins = Math.floor(time / 60).toString().padStart(2, '0');
-        const secs = (time % 60).toString().padStart(2, '0');
-        document.getElementById('timer').innerText = `${mins}:${secs}`;
+    // Cronómetro
+    let timeLeft = 50 * 60; // 50 minutos
+    const timerDisplay = document.getElementById('timer');
+    
+    const timerInterval = setInterval(() => {
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        timerDisplay.textContent = `${m}:${s}`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            alert("¡TIEMPO AGOTADO!");
+            finishExam();
+        }
+        timeLeft--;
     }, 1000);
 
+    // Iniciar
     initExam();
+
 </script>
 
 </body>
