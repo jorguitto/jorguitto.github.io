@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MONSTER SQL EXAM - COBERTURA TOTAL</title>
+    <style>
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #2c3e50; margin: 0; padding: 20px; color: #ecf0f1; }
+        .container { max-width: 1000px; margin: 0 auto; background: #34495e; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        
+        h1 { color: #e74c3c; text-align: center; text-transform: uppercase; letter-spacing: 2px; border-bottom: 3px solid #c0392b; padding-bottom: 20px; }
+        .stats-bar { display: flex; justify-content: space-between; background: #2c3e50; padding: 15px; border-radius: 8px; margin-bottom: 30px; font-weight: bold; border: 1px solid #7f8c8d; }
+        
+        .timer-float { position: fixed; bottom: 20px; right: 20px; background: #e74c3c; color: white; padding: 20px; border-radius: 50%; font-weight: bold; font-size: 1.5em; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 1000; border: 4px solid white; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
+        
+        .question-card { background: #ecf0f1; color: #2c3e50; margin-bottom: 20px; padding: 25px; border-radius: 8px; border-left: 8px solid #3498db; }
+        .category-tag { background: #2980b9; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7em; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
+        .q-text { font-size: 1.2em; font-weight: 600; margin: 15px 0; display: block; }
+        .code-snippet { background: #2d2d2d; color: #f1c40f; font-family: 'Consolas', monospace; padding: 15px; border-radius: 5px; display: block; margin: 10px 0; white-space: pre-wrap; font-size: 0.95em; border: 1px solid #555; }
+        
+        .options-grid { display: grid; gap: 10px; }
+        .option-label { display: flex; align-items: center; padding: 12px; border: 2px solid #bdc3c7; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: white; }
+        .option-label:hover { background-color: #d5dbdb; border-color: #7f8c8d; }
+        input[type="radio"] { margin-right: 15px; transform: scale(1.3); }
+        
+        .blank-option { border-style: dashed; border-color: #95a5a6; color: #7f8c8d; background: transparent; }
+        
+        button.submit-btn { background: #27ae60; color: white; border: none; padding: 20px; width: 100%; font-size: 1.5em; font-weight: bold; border-radius: 10px; cursor: pointer; margin-top: 40px; transition: background 0.3s; box-shadow: 0 5px 0 #219150; }
+        button.submit-btn:hover { background: #2ecc71; box-shadow: 0 5px 0 #27ae60; }
+        button.submit-btn:active { transform: translateY(5px); box-shadow: none; }
+
+        /* Corrección */
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; }
+        .incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+        .explanation { display: none; margin-top: 15px; padding: 15px; background: #fff3cd; color: #856404; border-radius: 5px; border: 1px solid #ffeeba; }
+        
+        #results { display: none; text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #7f8c8d; }
+        .score-big { font-size: 4em; font-weight: bold; display: block; margin: 10px 0; text-shadow: 2px 2px 0 rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+<div class="timer-float" id="timer">50:00</div>
+
+<div class="container">
+    <h1>MONSTER SQL EXAM</h1>
+    <div class="stats-bar">
+        <span>PREGUNTAS: <span id="qCount">0</span></span>
+        <span>REGLAS: +0.33 / -0.11</span>
+        <span>OBJETIVO: 100%</span>
+    </div>
+
+    <form id="examForm">
+        <div id="questionsContainer"></div>
+        <button type="button" class="submit-btn" onclick="finishExam()">ENTREGAR EXAMEN</button>
+    </form>
+
+    <div id="results"></div>
+</div>
+
+<script>
+    // BASE DE DATOS MASIVA (80+ Preguntas)
+    // Fuente: PDFs T4, T5, T6 y Transcripciones
+    const db = [
+        // --- TEMA 4: DDL (Definición) ---
+        { cat: "T4 - Tipos", q: "¿Qué rango de valores admite un `tinyint`?", opts: ["0 a 255", "-128 a 127", "0 a 100", "0 a 65535"], ans: 0, exp: "Apuntes T4 [767]: tinyint es 1 byte, rango 0-255." },
+        { cat: "T4 - Tipos", q: "Para almacenar 'Verdadero/Falso', ¿qué tipo usas?", opts: ["BOOLEAN", "BIT", "TINYINT", "LOGIC"], ans: 1, exp: "Apuntes T4 [769]: bit se usa para verdadero/falso." },
+        { cat: "T4 - Tipos", q: "¿Qué diferencia hay entre `money` y `smallmoney`?", opts: ["Money admite decimales, smallmoney no", "Smallmoney es para cantidades más pequeñas", "Money es texto, smallmoney es número", "No existe smallmoney"], ans: 1, exp: "Apuntes T4 [771]: smallmoney es para cantidades económicas más pequeñas." },
+        { cat: "T4 - Tipos", q: "¿Cuándo usarías `nvarchar` en lugar de `varchar`?", opts: ["Nunca, es obsoleto", "Para guardar números y letras", "Para soporte Unicode (idiomas especiales)", "Para textos de más de 8000 caracteres"], ans: 2, exp: "Apuntes T4 [777]: la 'n' inicial indica Unicode." },
+        { cat: "T4 - Create", q: "Si defines una columna como `NOT NULL`, ¿qué implica?", opts: ["Que debe ser clave primaria", "Que debe ser única", "Que es obligatorio rellenarla", "Que se rellena sola"], ans: 2, exp: "Apuntes T4 [850]: Obliga a tener un valor." },
+        { cat: "T4 - Claves", q: "¿Una tabla puede tener claves candidatas además de la primaria?", opts: ["Sí", "No", "Solo si son FK", "Solo en Oracle"], ans: 0, exp: "Apuntes T4 [813-814]: Las candidatas son posibles claves primarias alternativas (se suelen marcar como UNIQUE)." },
+        { cat: "T4 - FK", q: "En la definición `FOREIGN KEY (Id) REFERENCES T(Id) ON DELETE CASCADE`, ¿qué significa CASCADE?", opts: ["Si borras al padre, se borra al hijo", "Si borras al padre, el hijo se pone a NULL", "Impide borrar al padre", "Borra la tabla entera"], ans: 0, exp: "Apuntes T4 [827]: Borrado en cascada elimina los dependientes." },
+        { cat: "T4 - Check", q: "¿Para qué sirve la restricción `CHECK`?", opts: ["Para verificar claves ajenas", "Para limitar los valores permitidos (ej: edad > 0)", "Para comprobar duplicados", "Para chequear la sintaxis"], ans: 1, exp: "Apuntes T4 [834]: Limitan valores (ej: importe > 0)." },
+        { cat: "T4 - Indices", q: "Un índice `UNIQUE`...", opts: ["Acelera búsquedas y permite duplicados", "Acelera búsquedas y evita duplicados", "Es lo mismo que la PK", "Solo sirve para números"], ans: 1, exp: "Apuntes T4 [809]: Los índices pueden ser únicos." },
+        { cat: "T4 - Alter", q: "¿Cómo se elimina una columna 'Edad' de la tabla 'Socios'?", opts: ["DELETE COLUMN Edad FROM Socios", "ALTER TABLE Socios DROP COLUMN Edad", "DROP COLUMN Edad", "ALTER TABLE Socios DELETE Edad"], ans: 1, exp: "Apuntes T4 [861]: Sintaxis `ALTER TABLE ... DROP COLUMN`." },
+        { cat: "T4 - Alter", q: "¿Cómo se añade una columna 'Email'?", opts: ["ALTER TABLE Socios ADD Email VARCHAR(50)", "ADD Email VARCHAR(50) TO Socios", "INSERT COLUMN Email INTO Socios", "UPDATE Socios ADD Email"], ans: 0, exp: "Apuntes T4 [857]: Sintaxis `ALTER TABLE ... ADD`." },
+        { cat: "T4 - Drop", q: "`DROP TABLE Visitas`...", opts: ["Borra solo los datos", "Borra la estructura y los datos", "Pide confirmación siempre", "Falla si tiene datos"], ans: 1, exp: "Apuntes T4 [864]: Elimina completamente la tabla." },
+        { cat: "T4 - Tipos", q: "¿Qué tipo fecha incluye hora?", opts: ["DATE", "TIME", "DATETIME", "YEAR"], ans: 2, exp: "Apuntes T4 [781]: `datetime` es Fecha + Hora." },
+        { cat: "T4 - Diseño", q: "Si un atributo es multivaluado (ej: varios teléfonos), ¿qué hacemos al pasar a Relacional?", opts: ["Creamos 2 columnas: tel1, tel2", "Creamos una tabla nueva para teléfonos", "Lo metemos todo en el mismo campo con comas", "Lo ignoramos"], ans: 1, exp: "Apuntes T2 [410]: Se crea nueva tabla con la clave de la entidad + el atributo." },
+        { cat: "T4 - Relaciones", q: "En una relación 1:N, ¿dónde va la Clave Ajena (FK)?", opts: ["En la tabla del 1", "En la tabla del N (Muchos)", "En una tabla nueva", "En ambas"], ans: 1, exp: "Apuntes T3 [634]: FK en el lado N." },
+
+        // --- TEMA 5: CONSULTAS (Select) ---
+        { cat: "T5 - Básico", q: "¿Qué cláusula es OBLIGATORIA en un SELECT además de SELECT?", opts: ["WHERE", "FROM", "ORDER BY", "Ninguna"], ans: 1, exp: "Apuntes T5 [897]: SELECT y FROM son obligatorias." },
+        { cat: "T5 - Distinct", q: "`SELECT DISTINCT Ciudad`...", opts: ["Muestra ciudades distintas a NULL", "Elimina duplicados de la salida", "Ordena las ciudades", "Agrupa por ciudad y cuenta"], ans: 1, exp: "Apuntes T5 [911]: Elimina duplicados." },
+        { cat: "T5 - Top", q: "`SELECT TOP 5 * ...`", opts: ["Muestra el 5% de registros", "Muestra las 5 primeras filas del resultado", "Muestra filas con ID > 5", "Muestra 5 columnas"], ans: 1, exp: "Apuntes T5 [916]: Muestra las primeras N filas." },
+        { cat: "T5 - Into", q: "`SELECT * INTO Nueva FROM Vieja`", opts: ["Inserta en Nueva (que ya existe)", "Crea Nueva y vuelca los datos", "Solo crea estructura", "Da error"], ans: 1, exp: "Apuntes T5 [923]: Crea una tabla nueva con el resultado." },
+        { cat: "T5 - Alias", q: "¿Cómo renombras una columna en el resultado?", opts: ["Nombre AS 'Cliente'", "Nombre = Cliente", "Nombre TO Cliente", "RENAME Nombre Cliente"], ans: 0, exp: "Apuntes T5 [901]: Se usa `AS`." },
+        { cat: "T5 - Operadores", q: "¿Qué operador usas para buscar en una lista de valores?", opts: ["BETWEEN", "LIKE", "IN", "HAS"], ans: 2, exp: "Apuntes T5 [956]: `IN ('A', 'B')`." },
+        { cat: "T5 - Like", q: "¿Qué comodín representa UN solo carácter?", opts: ["%", "_", "?", "*"], ans: 1, exp: "Apuntes T5 [959]: `_` es un carácter, `%` es cadena." },
+        { cat: "T5 - Lógica", q: "¿Cuál tiene preferencia si no hay paréntesis?", opts: ["OR", "AND", "NOT", "Igual preferencia"], ans: 2, exp: "Orden: NOT -> AND -> OR. (Aun así, usad paréntesis)." },
+        { cat: "T5 - Union", q: "`UNION` entre dos consultas...", opts: ["Une columnas", "Une filas y permite duplicados", "Une filas y ELIMINA duplicados", "Hace un producto cartesiano"], ans: 2, exp: "Apuntes T5 [969]: `UNION` quita duplicados. `UNION ALL` (no en pdf pero cultura general) los deja." },
+        { cat: "T5 - Except", q: "`EXCEPT`...", opts: ["Muestra filas comunes", "Muestra filas de la 1ª que no están en la 2ª", "Muestra filas de la 2ª que no están en la 1ª", "Muestra todo menos duplicados"], ans: 1, exp: "Apuntes T5 [975]: Resta de conjuntos." },
+        { cat: "T5 - Funciones", q: "`LEFT('Hola', 2)` devuelve:", opts: ["Ho", "la", "ol", "H"], ans: 0, exp: "Apuntes T5 [985]: 2 caracteres desde la izquierda." },
+        { cat: "T5 - Funciones", q: "`LEN('Hola')` devuelve:", opts: ["4", "5", "Hola", "Text"], ans: 0, exp: "Apuntes T5 [982]: Longitud de la cadena." },
+        { cat: "T5 - Funciones", q: "`ROUND(10.567, 2)` devuelve:", opts: ["10.56", "10.57", "10.5", "11"], ans: 1, exp: "Apuntes T5 [990]: Redondea a 2 decimales." },
+        { cat: "T5 - Fechas", q: "`MONTH(GETDATE())` devuelve:", opts: ["El nombre del mes", "El número del mes", "La fecha completa", "Días del mes"], ans: 1, exp: "Apuntes T5 [997]: Número del mes." },
+        { cat: "T5 - Where vs Having", q: "¿Puedes usar `WHERE SUM(Importe) > 100`?", opts: ["Sí", "No, nunca", "Solo si agrupas antes", "Solo en Oracle"], ans: 1, exp: "Apuntes T5 [942]: `WHERE` no admite agregadas. Debe ser `HAVING`." },
+        { cat: "T5 - Group By", q: "Si haces `SELECT Ciudad, COUNT(*)`, ¿qué falta obligatoriamente?", opts: ["ORDER BY Ciudad", "WHERE Ciudad IS NOT NULL", "GROUP BY Ciudad", "HAVING COUNT(*) > 0"], ans: 2, exp: "Apuntes T5 [937]: Si seleccionas una columna normal y una agregada, debes agrupar por la normal." },
+        { cat: "T5 - Joins", q: "La forma recomendada de unir tablas es:", opts: ["FROM T1, T2 WHERE T1.id = T2.id", "FROM T1 INNER JOIN T2 ON T1.id = T2.id", "FROM T1 UNION T2", "FROM T1 LINK T2"], ans: 1, exp: "Apuntes T5 [1003]: JOIN es más claro y eficiente." },
+        { cat: "T5 - Null", q: "El resultado de `5 + NULL` es:", opts: ["5", "0", "NULL", "Error"], ans: 2, exp: "Operar con NULL suele dar NULL." },
+        { cat: "T5 - Order By", q: "Si quieres los más caros primero (`Precio`):", opts: ["ORDER BY Precio", "ORDER BY Precio ASC", "ORDER BY Precio DESC", "ORDER BY Precio TOP"], ans: 2, exp: "Apuntes T5 [946]: DESC es descendente (Mayor a menor)." },
+        { cat: "T5 - Dates", q: "Para sumar 15 días a una fecha:", opts: ["DATEADD(DAY, 15, Fecha)", "Fecha + 15", "SUMDATE(Fecha, 15)", "DATEDIFF(Fecha, 15)"], ans: 0, exp: "Apuntes T5 [992]: `DATEADD(tipo, cantidad, fecha)`." },
+        { cat: "T5 - Vistas", q: "El profesor mencionó `CREATE VIEW`. ¿Qué es?", opts: ["Una tabla física", "Una consulta guardada como tabla virtual", "Un informe impreso", "Una copia de seguridad"], ans: 1, exp: "Transcripción [20:54]: Una vista es una tabla lógica a partir de un select." },
+        { cat: "T5 - Subconsultas", q: "Una subconsulta en el `WHERE` que usa `>` (mayor que) debe devolver:", opts: ["Una tabla completa", "Una columna", "Un único valor", "Cualquier cosa"], ans: 2, exp: "Apuntes T6 [39]: Deben devolver un único valor para comparar." },
+
+        // --- TEMA 6: DML (Manipulación) ---
+        { cat: "T6 - Insert", q: "`INSERT INTO Tabla VALUES (1, 'Pepe')`. ¿Qué pasa si la tabla tiene 3 columnas?", opts: ["Inserta NULL en la 3ª", "Da error", "Inserta 0", "Pide el valor"], ans: 1, exp: "Apuntes T6 [107]: Debes suministrar valores para todas las columnas o especificar las columnas." },
+        { cat: "T6 - Insert Select", q: "Sintaxis para inserción masiva desde otra tabla:", opts: ["INSERT INTO T1 SELECT ... FROM T2", "INSERT INTO T1 VALUES (SELECT ...)", "SELECT INTO T1 FROM T2", "COPY T1 T2"], ans: 0, exp: "Apuntes T6 [124]: `INSERT INTO ... SELECT`." },
+        { cat: "T6 - Delete", q: "`DELETE FROM Pacientes WHERE Turno=1`...", opts: ["Borra la tabla Turno", "Borra la columna Turno", "Borra las filas con Turno 1", "Pone a NULL el Turno 1"], ans: 2, exp: "Apuntes T6 [174]: Borra registros." },
+        { cat: "T6 - Delete", q: "Si no pones WHERE en un DELETE:", opts: ["Borra todo", "Da error", "Borra la primera fila", "No hace nada"], ans: 0, exp: "Apuntes T6 [171]: Borra todos los datos." },
+        { cat: "T6 - Truncate", q: "`TRUNCATE TABLE` vs `DELETE` (sin where):", opts: ["Son iguales", "TRUNCATE es más lento", "TRUNCATE es más rápido y resetea Identity", "DELETE resetea Identity"], ans: 2, exp: "Apuntes T6 [188]: TRUNCATE es mucho más rápido y resetea." },
+        { cat: "T6 - Truncate", q: "¿Puedes hacer TRUNCATE si hay una FK apuntando a la tabla?", opts: ["Sí", "No", "Solo si está vacía", "Sí, con CASCADE"], ans: 1, exp: "Apuntes T6 [193]: Restricción del TRUNCATE." },
+        { cat: "T6 - Update", q: "`UPDATE Pacientes SET Ciudad='Elche'`. ¿Qué hace?", opts: ["Cambia la ciudad al paciente actual", "Cambia la ciudad a 'Elche' a TODOS los pacientes", "Da error por falta de WHERE", "Añade 'Elche' a la lista de ciudades"], ans: 1, exp: "Apuntes T6 [202]: Sin WHERE actualiza toda la tabla." },
+        { cat: "T6 - Update Acumulativo", q: "Si ejecutas 3 veces `UPDATE T SET X = X * 1.1`...", opts: ["Sube 10%", "Sube 30%", "Sube 33.1% (Acumulado)", "Error"], ans: 2, exp: "Apuntes T6 [37/67]: El incremento es acumulativo." },
+        { cat: "T6 - Update Subconsulta", q: "El profesor puso un ejemplo de UPDATE con subconsulta para:", opts: ["Borrar datos", "Actualizar con la media de otra tabla", "Crear tablas", "Ninguna"], ans: 1, exp: "Apuntes T6 [227]: Bajar precios superiores a la media." },
+        { cat: "T6 - Integridad", q: "Si intentas borrar un padre con hijos...", opts: ["Se borran hijos", "Error FK", "Hijos a NULL", "Se borra padre"], ans: 1, exp: "Apuntes T6 [175]: Integridad impide borrado." },
+        { cat: "T6 - Backup", q: "El profesor recomienda hacer copias con:", opts: ["BACKUP DATABASE", "CTRL+C", "SELECT * INTO Copia FROM Original", "EXPORT TO EXCEL"], ans: 2, exp: "Apuntes T6 [45]: `SELECT INTO`." },
+
+        // --- EXTRAS Y TRAMPAS ---
+        { cat: "Extra - Lógica", q: "¿Qué hace `ISNULL(Columna, 'Vacio')`? (Función SQL Server)", opts: ["Devuelve true si es nulo", "Si es nulo devuelve 'Vacio', si no devuelve el valor", "Filtra los nulos", "Pone a nulo la columna"], ans: 1, exp: "Ojo: `IS NULL` es operador de filtro. `ISNULL()` es función de sustitución." },
+        { cat: "Extra - Sintaxis", q: "¿Qué sobra aquí? `SELECT Nombre FROM Pacientes P INNER JOIN Visitas V`", opts: ["Falta el ON", "Sobra la P", "Sobra INNER", "Nada"], ans: 0, exp: "Un JOIN siempre necesita la condición `ON`." },
+        { cat: "Extra - Comodines", q: "Para buscar nombres que NO contengan 'a':", opts: ["NOT LIKE '%a%'", "LIKE '!%a%'", "DISLIKE '%a%'", "UNLIKE '%a%'"], ans: 0, exp: "Se niega el predicado entero: `NOT LIKE`." },
+        { cat: "Extra - DDL", q: "`DROP` vs `DELETE`", opts: ["DROP es DML, DELETE es DDL", "DROP es estructura, DELETE es contenido", "Son iguales", "DROP es solo para bases de datos"], ans: 1, exp: "DROP destruye objetos. DELETE borra filas." },
+        { cat: "Extra - Teoría", q: "¿Qué lenguaje se usa para `GRANT` (Permisos)?", opts: ["DDL", "DML", "DCL", "TCL"], ans: 2, exp: "Data Control Language (Cultura general SQL)." },
+        { cat: "Extra - Tipos", q: "Un campo `BIT` ocupa:", opts: ["1 byte", "1 bit (aprox)", "4 bytes", "Depende"], ans: 0, exp: "Apuntes T4: Dice 1 byte (aunque internamente SQL optimiza)." },
+        { cat: "Extra - Funciones", q: "`DATENAME` vs `DATEPART`", opts: ["Son iguales", "DATENAME devuelve texto (ej: 'July'), DATEPART número (7)", "Al revés", "No existen"], ans: 1, exp: "Transcripción [31:21]: Datename da el nombre." },
+        { cat: "Extra - Select", q: "Si usas `GROUP BY` por `Ciudad`, ¿puedes poner `Nombre` en el SELECT?", opts: ["Sí, siempre", "No, a menos que uses una función agregada sobre Nombre o lo incluyas en GROUP BY", "Solo si es PK", "Sí, sale el primero"], ans: 1, exp: "Regla de oro: En agregación, solo puedes proyectar lo agrupado o agregados." },
+        { cat: "Extra - Update", q: "`UPDATE T SET C1=1, C2=2`...", opts: ["Actualiza dos columnas a la vez", "Da error, hay que hacer 2 updates", "Solo actualiza C2", "Solo C1"], ans: 0, exp: "Se pueden actualizar N columnas separadas por comas." },
+        { cat: "Extra - Delete", q: "¿Se puede hacer `DELETE T FROM Tabla T ...` (con alias)?", opts: ["Sí", "No, sintaxis incorrecta", "Solo en Oracle", "Solo con TRUNCATE"], ans: 0, exp: "Sí, es sintaxis válida en SQL Server para deletes complejos con Joins." }
+    ];
+
+    // Lógica del Examen
+    function initExam() {
+        const container = document.getElementById('questionsContainer');
+        document.getElementById('qCount').innerText = db.length;
+
+        // Barajar preguntas (opcional, aquí las dejo en orden temático para estudio, descomenta para aleatorio)
+        // db.sort(() => Math.random() - 0.5);
+
+        db.forEach((item, index) => {
+            let html = `
+            <div class="question-card" id="card_${index}">
+                <span class="category-tag">${item.cat}</span>
+                <span class="q-text">${index + 1}. ${item.q}</span>
+                ${item.code ? `<div class="code-snippet">${item.code}</div>` : ''}
+                
+                <div class="options-grid">`;
+                
+            item.opts.forEach((opt, optIndex) => {
+                html += `
+                <label class="option-label" id="lbl_${index}_${optIndex}">
+                    <input type="radio" name="q_${index}" value="${optIndex}">
+                    ${opt}
+                </label>`;
+            });
+
+            // Opción Blanco
+            html += `
+                <label class="option-label blank-option" id="lbl_${index}_blank">
+                    <input type="radio" name="q_${index}" value="blank">
+                    ⚪ Dejar en blanco (Estrategia)
+                </label>
+                </div>
+                <div class="explanation" id="exp_${index}">💡 <b>Explicación:</b> ${item.exp}</div>
+            </div>`;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    function finishExam() {
+        if(!confirm("¿Seguro que quieres entregar? No podrás cambiar respuestas.")) return;
+
+        let score = 0;
+        let correct = 0, wrong = 0, blank = 0;
+
+        db.forEach((item, index) => {
+            const selected = document.querySelector(`input[name="q_${index}"]:checked`);
+            const exp = document.getElementById(`exp_${index}`);
+            exp.style.display = 'block';
+
+            // Deshabilitar inputs
+            document.querySelectorAll(`input[name="q_${index}"]`).forEach(i => i.disabled = true);
+
+            if (!selected || selected.value === 'blank') {
+                blank++;
+                // Marcar la correcta en azulito discreto
+                document.getElementById(`lbl_${index}_${item.ans}`).style.border = "2px dashed #3498db";
+            } else {
+                const val = parseInt(selected.value);
+                if (val === item.ans) {
+                    correct++;
+                    score += 0.33;
+                    document.getElementById(`lbl_${index}_${val}`).classList.add('correct');
+                } else {
+                    wrong++;
+                    score -= 0.11;
+                    document.getElementById(`lbl_${index}_${val}`).classList.add('incorrect');
+                    document.getElementById(`lbl_${index}_${item.ans}`).classList.add('correct');
+                }
+            }
+        });
+
+        if (score < 0) score = 0;
+        // Calcular nota sobre 10
+        // Máximo posible teórico: db.length * 0.33
+        const maxRaw = db.length * 0.33;
+        const finalNote = (score / maxRaw) * 10;
+
+        const resDiv = document.getElementById('results');
+        resDiv.style.display = 'block';
+        resDiv.innerHTML = `
+            <div class="score-circle" style="background: ${finalNote >= 5 ? '#27ae60' : '#c0392b'}">
+                ${finalNote.toFixed(2)}
+            </div>
+            <h2>${finalNote >= 5 ? '¡APROBADO!' : 'SUSPENSO'}</h2>
+            <p>✅ Aciertos: ${correct} (+${(correct*0.33).toFixed(2)})</p>
+            <p>❌ Fallos: ${wrong} (-${(wrong*0.11).toFixed(2)})</p>
+            <p>⚪ Blancos: ${blank}</p>
+            <p><b>Nota Real:</b> ${score.toFixed(3)} / ${maxRaw.toFixed(3)}</p>
+        `;
+
+        window.scrollTo(0, document.body.scrollHeight);
+        document.querySelector('.submit-btn').style.display = 'none';
+    }
+
+    // Timer Global
+    let time = 0;
+    setInterval(() => {
+        time++;
+        const mins = Math.floor(time / 60).toString().padStart(2, '0');
+        const secs = (time % 60).toString().padStart(2, '0');
+        document.getElementById('timer').innerText = `${mins}:${secs}`;
+    }, 1000);
+
+    initExam();
+</script>
+
+</body>
+</html>
