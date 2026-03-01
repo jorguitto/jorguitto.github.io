@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Examen Gestión BD - Temas 4, 5 y 6</title>
+    <title>Examen Gestión BD - Explicado al Detalle</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -11,6 +11,8 @@
             --success: #27ae60;
             --danger: #c0392b;
             --light: #ecf0f1;
+            --warning-bg: #fff3cd;
+            --warning-text: #856404;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -42,28 +44,31 @@
             display: flex;
             justify-content: space-between;
             font-weight: bold;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .question-card {
             background-color: #ecf0f1;
             color: #2c3e50;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
             border-radius: 8px;
-            border-left: 5px solid var(--accent);
+            border-left: 6px solid var(--accent);
         }
         .question-text {
-            font-size: 1.1em;
-            font-weight: 600;
+            font-size: 1.2em;
+            font-weight: 700;
             margin-bottom: 15px;
         }
         .code-block {
             background: #2d2d2d;
             color: #f1c40f;
-            padding: 10px;
+            padding: 15px;
             font-family: 'Consolas', monospace;
             border-radius: 4px;
             margin: 10px 0;
             white-space: pre-wrap;
+            border: 1px solid #444;
         }
         .options-grid {
             display: grid;
@@ -72,12 +77,13 @@
         .option-label {
             display: flex;
             align-items: center;
-            padding: 10px 15px;
+            padding: 12px 15px;
             background: white;
             border: 2px solid #bdc3c7;
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 1.05em;
         }
         .option-label:hover {
             background: #eef2f3;
@@ -85,11 +91,12 @@
         }
         .option-label input {
             margin-right: 15px;
-            transform: scale(1.2);
+            transform: scale(1.3);
         }
         .blank-option {
             border-style: dashed;
             color: #7f8c8d;
+            font-style: italic;
         }
         
         /* Estilos de corrección */
@@ -97,37 +104,48 @@
             background-color: #d4edda !important;
             border-color: var(--success) !important;
             color: #155724;
+            font-weight: bold;
         }
         .wrong-answer {
             background-color: #f8d7da !important;
             border-color: var(--danger) !important;
             color: #721c24;
+            opacity: 0.8;
         }
+        
+        /* Explicaciones súper detalladas */
         .explanation {
             display: none;
-            margin-top: 15px;
-            padding: 10px;
-            background: #fff3cd;
-            color: #856404;
-            border-radius: 5px;
-            font-size: 0.9em;
+            margin-top: 20px;
+            padding: 20px;
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border-radius: 8px;
+            font-size: 1em;
+            border-left: 5px solid #ffeeba;
+            line-height: 1.8; /* Más espacio entre líneas para leer mejor los tochos */
+        }
+        .explanation b {
+            color: #5d4037;
         }
         
         button#submitBtn {
             display: block;
             width: 100%;
             padding: 15px;
-            font-size: 1.2em;
+            font-size: 1.3em;
+            font-weight: bold;
             background: var(--success);
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             margin-top: 30px;
-            transition: background 0.3s;
+            transition: background 0.3s, transform 0.1s;
         }
         button#submitBtn:hover {
             background: #219150;
+            transform: scale(1.01);
         }
 
         #results {
@@ -138,16 +156,16 @@
             border-top: 2px solid #7f8c8d;
         }
         .score-circle {
-            width: 120px;
-            height: 120px;
+            width: 150px;
+            height: 150px;
             background: var(--primary);
-            border: 5px solid var(--light);
+            border: 8px solid var(--light);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 20px;
-            font-size: 2em;
+            font-size: 2.5em;
             font-weight: bold;
         }
         
@@ -157,12 +175,13 @@
             right: 20px;
             background: var(--danger);
             color: white;
-            padding: 15px 20px;
+            padding: 15px 25px;
             border-radius: 50px;
             font-weight: bold;
-            font-size: 1.2em;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            font-size: 1.4em;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
             z-index: 1000;
+            border: 2px solid white;
         }
     </style>
 </head>
@@ -174,10 +193,10 @@
     <h1>Examen BD (T4, T5, T6)</h1>
     
     <div class="info-panel">
-        <span>Preguntas: <span id="qTotal">0</span></span>
-        <span>Acierto: +0.33</span>
-        <span>Fallo: -0.11</span>
-        <span>Blanco: 0</span>
+        <span>📋 Preguntas: <span id="qTotal">0</span></span>
+        <span>✅ Acierto: +0.33</span>
+        <span>❌ Fallo: -0.11</span>
+        <span>⚪ Blanco: 0</span>
     </div>
 
     <form id="quizForm">
@@ -189,7 +208,7 @@
 </div>
 
 <script>
-    // BASE DE DATOS DE PREGUNTAS (Extraídas de los PDFs y Transcripciones)
+    // --- BASE DE DATOS DE PREGUNTAS CON EXPLICACIONES EXTENDIDAS ---
     const questions = [
         // --- TEMA 4: DDL ---
         {
@@ -198,7 +217,7 @@
             code: "",
             opts: ["VARCHAR(9)", "CHAR(9)", "TEXT", "NVARCHAR(9)"],
             ans: 1,
-            exp: "Al ser longitud fija (siempre 9 caracteres), CHAR es más eficiente y rápido que VARCHAR."
+            exp: "<b>¿Por qué CHAR y no VARCHAR?</b><br>Imagina que tienes cajas para guardar zapatos.<br><br>1. <b>VARCHAR</b> es una caja 'mágica' que se encoge o agranda según el zapato. Si metes una sandalia, se hace pequeña. Si metes una bota, se hace grande. ¡Suena genial! Pero esa 'magia' consume recursos: el ordenador tiene que medir cada dato antes de guardarlo.<br><br>2. <b>CHAR</b> es una caja de madera rígida, siempre del mismo tamaño. Si sabes SEGURO que todos tus datos miden lo mismo (como un DNI, que siempre son 9 caracteres), usas CHAR.<br><br><b>Conclusión:</b> Al usar CHAR(9), el ordenador no pierde tiempo midiendo. Sabe que son 9 huecos y entra directo. Es más rápido (eficiente) y para un DNI es perfecto porque nunca variará de tamaño."
         },
         {
             cat: "T4",
@@ -206,7 +225,7 @@
             code: "",
             opts: ["PRIMARY KEY", "FOREIGN KEY", "UNIQUE", "CHECK"],
             ans: 2,
-            exp: "La restricción UNIQUE impide duplicados. A diferencia de la PK, suele permitir un valor nulo (dependiendo del SGBD, en SQL Server permite uno)."
+            exp: "<b>Diferencia vital entre UNIQUE y PRIMARY KEY:</b><br><br>Piénsalo como una fiesta VIP (tu tabla):<br>1. <b>PRIMARY KEY (Tu DNI):</b> Es obligatorio para entrar (NOT NULL) y no puede haber dos personas con el mismo DNI (Único). Identifica la fila.<br><br>2. <b>UNIQUE (Tu número de teléfono):</b> No puede repetirse (si Pepito tiene el 666-555, nadie más puede tenerlo). PERO... ¿y si alguien no tiene teléfono? La restricción UNIQUE permite que alguien entre sin dato (NULL).<br><br><b>Resumen:</b> Si necesitas que no se repita pero admites que a veces el campo esté vacío -> UNIQUE."
         },
         {
             cat: "T4",
@@ -214,7 +233,7 @@
             code: "",
             opts: ["Se crea pero la FK queda inactiva", "Se crean ambas si están en el mismo script", "Da error porque la tabla referenciada no existe", "SQL Server crea una tabla Pacientes temporal"],
             ans: 2,
-            exp: "Integridad Referencial: No puedes referenciar una tabla que aún no existe."
+            exp: "<b>La analogía de la construcción de la casa:</b><br><br>Imagina que 'Pacientes' es la casa y 'Visitas' son los muebles que van dentro de la casa.<br><br>Tú intentas decirle al sistema: 'Oye, mete este sofá (Visita) dentro de la Casa de Juan'.<br>El sistema te mira y dice: '¿Qué casa? Si todavía no has puesto ni los ladrillos'.<br><br><b>Integridad Referencial:</b> No puedes crear un enlace (Foreign Key) apuntando a una tabla que todavía no ha nacido. Primero creas al Padre (Pacientes) y luego creas al Hijo (Visitas) que referencia al padre."
         },
         {
             cat: "T4",
@@ -222,7 +241,7 @@
             code: "",
             opts: ["AUTO_INCREMENT", "IDENTITY(1,1)", "SEQUENCE", "SERIAL"],
             ans: 1,
-            exp: "En los apuntes del Tema 4 (Clínica) se especifica IDENTITY(1,1)."
+            exp: "<b>Ojo con el 'dialecto' SQL:</b><br><br>Aunque todos hablan SQL, cada base de datos tiene su acento:<br>- En MySQL se usa AUTO_INCREMENT.<br>- En Oracle se usaban SEQUENCEs.<br>- En PostgreSQL se usa SERIAL.<br><br><b>En SQL Server</b> (que es lo que estudiamos), la palabra mágica es <b>IDENTITY(semilla, incremento)</b>. <br>IDENTITY(1,1) significa: 'Empieza en el 1, y suma de 1 en 1'. Es decir: 1, 2, 3, 4..."
         },
         {
             cat: "T4",
@@ -230,7 +249,7 @@
             code: "",
             opts: ["DELETE COLUMN Edad FROM Pacientes", "ALTER TABLE Pacientes DROP COLUMN Edad", "DROP COLUMN Edad FROM Pacientes", "ALTER TABLE Pacientes DELETE Edad"],
             ans: 1,
-            exp: "Para modificar estructura se usa ALTER TABLE. Para quitar columnas, DROP COLUMN."
+            exp: "<b>Diferencia entre cambiar la ESTRUCTURA y cambiar los DATOS:</b><br><br>1. <b>DELETE</b> es para borrar DATOS (filas, personas, registros). Es como echar a gente de una habitación.<br>2. <b>DROP</b> es para destruir OBJETOS o ESTRUCTURAS. Es como tirar un tabique de la habitación.<br><br>Como quieres eliminar una columna entera (modificar los planos de la tabla), necesitas el comando de estructura: <b>ALTER TABLE</b>. Y dentro de esa modificación, la acción es destruir la columna: <b>DROP COLUMN</b>."
         },
         {
             cat: "T4",
@@ -238,7 +257,7 @@
             code: "",
             opts: ["FLOAT", "REAL", "DECIMAL(10,2) o MONEY", "INT"],
             ans: 2,
-            exp: "FLOAT y REAL son aproximados. DECIMAL y MONEY son exactos para dinero."
+            exp: "<b>El problema de los céntimos perdidos:</b><br><br>Los tipos <b>FLOAT</b> y <b>REAL</b> son 'aproximados'. El ordenador los guarda en notación científica. A veces guardas 50.50 y el ordenador guarda 50.49999999. Si haces contabilidad con esto, al final del año te falta dinero y vas a la cárcel.<br><br>Para dinero, SIEMPRE usamos tipos <b>EXACTOS</b>:<br>- <b>DECIMAL(10,2):</b> Quiero 10 dígitos en total, y 2 de ellos son decimales.<br>- <b>MONEY:</b> Un tipo especial de SQL Server optimizado para moneda.<br><br>¡Nunca uses FLOAT para dinero!"
         },
         {
             cat: "T4",
@@ -246,7 +265,7 @@
             code: "",
             opts: ["Comprobar que la tabla existe", "Asegurar que no se introduzcan importes negativos o cero", "Verificar la integridad referencial", "Indexar el campo Importe"],
             ans: 1,
-            exp: "CHECK valida una condición lógica en cada fila."
+            exp: "<b>El portero de discoteca:</b><br><br>La restricción <b>CHECK</b> funciona como un portero en la puerta de la tabla. Tú le das una norma: 'Solo entra quien tenga Importe mayor que 0'.<br><br>Cuando intentas hacer un INSERT con un importe negativo (-50€), el portero CHECK mira el dato, ve que no cumple la norma y te da un portazo (Error). Sirve para validar lógica de negocio (edad > 18, precio > 0, etc.) directamente en la base de datos."
         },
         {
             cat: "T4",
@@ -254,7 +273,7 @@
             code: "",
             opts: ["Si borras al hijo, se borra al padre", "Si borras al padre, se borran automáticamente los hijos asociados", "Impide borrar al padre si tiene hijos", "Pone a NULL la clave ajena de los hijos"],
             ans: 1,
-            exp: "Propaga el borrado de la tabla principal a la relacionada."
+            exp: "<b>El efecto Dominó (o La Mafia):</b><br><br>Normalmente, la base de datos protege los datos. Si intentas borrar a un Paciente (Padre) que tiene Visitas (Hijos), el sistema te dice: '¡ERROR! No puedes borrar a este paciente, hay visitas que dependen de él'.<br><br>Pero si activas <b>ON DELETE CASCADE</b>, te vuelves despiadado. Cuando borras al Paciente, la base de datos dice: 'A sus órdenes'. Mata al paciente, busca todas sus visitas y las mata también automáticamente. Es útil pero peligroso."
         },
         {
             cat: "T4",
@@ -262,7 +281,7 @@
             code: "",
             opts: ["NVARCHAR almacena números", "NVARCHAR permite caracteres Unicode (2 bytes/carácter)", "VARCHAR es para textos largos y NVARCHAR para cortos", "No hay diferencia"],
             ans: 1,
-            exp: "La 'N' inicial indica soporte para Unicode (National Language Support)."
+            exp: "<b>La 'N' es de 'National' (Unicode):</b><br><br>- <b>VARCHAR:</b> Usa 1 byte por letra. Solo entiende caracteres estándar (inglés, español básico). Si intentas meter un carácter chino o un emoji raro, puede salirte basura (¿?).<br><br>- <b>NVARCHAR:</b> Usa 2 bytes por letra. Entiende CUALQUIER carácter del mundo (Japonés, Árabe, Emojis...).<br><br><b>Coste:</b> NVARCHAR ocupa el doble de espacio en disco, pero te asegura que no tendrás problemas de idiomas."
         },
         {
             cat: "T4",
@@ -270,7 +289,7 @@
             code: "",
             opts: ["DELETE TABLE", "TRUNCATE TABLE", "DROP TABLE", "REMOVE TABLE"],
             ans: 2,
-            exp: "DROP destruye el objeto. TRUNCATE solo vacía los datos."
+            exp: "<b>La demolición total:</b><br><br>- <b>DELETE:</b> Borra los datos fila a fila, pero la tabla (la estructura vacía) se queda ahí.<br>- <b>TRUNCATE:</b> Borra todos los datos de golpe (vacía la tabla), pero la estructura se queda.<br>- <b>DROP TABLE:</b> Es la bomba atómica. Borra los datos, borra la estructura, borra los índices... Desaparece todo. Si haces un SELECT después de un DROP, te dirá 'El objeto no existe'."
         },
         {
             cat: "T4",
@@ -278,7 +297,7 @@
             code: "",
             opts: ["0 y 1 (y NULL)", "Cualquier número entero pequeño", "Un carácter", "Verdadero/Falso como texto"],
             ans: 0,
-            exp: "BIT es el tipo para valores lógicos (0, 1) en SQL Server."
+            exp: "<b>El interruptor de la luz:</b><br><br>El tipo de dato <b>BIT</b> es lo más pequeño que hay. Solo entiende dos estados:<br>- 0 (Falso / Apagado)<br>- 1 (Verdadero / Encendido)<br><br>Es ideal para campos de 'Sí/No', como '¿Está casado?', '¿Es VIP?', etc. (Y como casi todos los campos, también admite NULL si no se especifica lo contrario)."
         },
         {
             cat: "T4",
@@ -286,7 +305,7 @@
             code: "",
             opts: ["Sí, tantas como quiera", "No, solo una (aunque puede ser compuesta)", "Sí, si son de tipos diferentes", "Depende del SGBD"],
             ans: 1,
-            exp: "Solo una PK por tabla. Si se forma por varios campos, es una única PK compuesta."
+            exp: "<b>Solo puede quedar uno (Highlander):</b><br><br>Por definición, una tabla SOLO puede tener <b>UNA</b> Primary Key. Es el identificador principal.<br><br><b>¡OJO!</b> Esa clave primaria puede estar formada por DOS columnas (ej: DNI + CodigoCurso). Eso se llama 'Clave Primaria Compuesta', pero sigue siendo UN SOLO objeto Primary Key. No puedes tener dos PKs independientes."
         },
         {
             cat: "T4",
@@ -294,7 +313,7 @@
             code: "",
             opts: ["ADD COLUMN Email VARCHAR(50)", "ALTER TABLE Pacientes ADD Email VARCHAR(50)", "INSERT COLUMN Email", "UPDATE Pacientes SET Email"],
             ans: 1,
-            exp: "Sintaxis DDL: ALTER TABLE + ADD."
+            exp: "<b>Modificando los planos:</b><br><br>Estás tocando la estructura (DDL), así que el comando siempre empieza por <b>ALTER TABLE [NombreTabla]</b>.<br>Luego dices qué quieres hacer: <b>ADD</b> (añadir), <b>DROP</b> (borrar) o <b>ALTER/MODIFY</b> (cambiar columna).<br><br>La sintaxis completa es: `ALTER TABLE Pacientes ADD Email VARCHAR(50)`."
         },
         {
             cat: "T4",
@@ -302,7 +321,7 @@
             code: "",
             opts: ["Que es Clave Primaria", "Que es Única", "Que es obligatorio introducir un valor", "Que se rellena automáticamente"],
             ans: 2,
-            exp: "Restricción de obligatoriedad."
+            exp: "<b>Campo Obligatorio:</b><br><br>Simplemente significa que esa celda no se puede dejar vacía. Si intentas hacer un INSERT y te saltas ese campo, la base de datos te dará error. Es la forma de hacer campos obligatorios (como el DNI o el Nombre) en un formulario."
         },
         {
             cat: "T4",
@@ -310,7 +329,7 @@
             code: "",
             opts: ["Fecha y hora con precisión de segundos", "Solo fecha", "Fecha y hora con precisión de minutos", "Hora solamente"],
             ans: 2,
-            exp: "A diferencia de DATETIME, smalldatetime no guarda segundos/milisegundos."
+            exp: "<b>El hermano pequeño de DateTime:</b><br><br>- <b>DATETIME:</b> Guarda fecha, hora, minutos, segundos y milisegundos. Muy preciso, ocupa 8 bytes.<br>- <b>SMALLDATETIME:</b> Para ahorrar espacio (4 bytes), guarda fecha y hora pero <b>TRUNCA los segundos</b>. Siempre pone los segundos a 00. Si guardas '14:30:25', él guarda '14:30:00'. Su precisión llega solo hasta el minuto."
         },
 
         // --- TEMA 5: CONSULTAS (SELECT) ---
@@ -320,7 +339,7 @@
             code: "",
             opts: ["SELECT > FROM > WHERE", "FROM > WHERE > GROUP BY > SELECT", "WHERE > SELECT > ORDER BY", "SELECT > GROUP BY > HAVING"],
             ans: 1,
-            exp: "Primero se elige la tabla (FROM), se filtran filas (WHERE), se agrupan (GROUP BY), se filtran grupos (HAVING) y finalmente se proyectan columnas (SELECT)."
+            exp: "<b>La cocina del SQL:</b><br>Tú escribes la receta en un orden, pero el cocinero (SQL) trabaja en otro:<br><br>1. <b>FROM:</b> Primero va a la despensa y coge los ingredientes (Tablas).<br>2. <b>WHERE:</b> Tira a la basura los ingredientes pochos (Filtra filas).<br>3. <b>GROUP BY:</b> Corta y agrupa los ingredientes (Agrupa datos).<br>4. <b>HAVING:</b> Si algún grupo ha quedado mal, lo tira (Filtra grupos).<br>5. <b>SELECT:</b> Emplata el resultado final para servírtelo.<br><br>Por eso no puedes usar un Alias creado en el SELECT dentro del WHERE, ¡porque el WHERE ocurre antes!"
         },
         {
             cat: "T5",
@@ -328,7 +347,7 @@
             code: "",
             opts: ["WHERE", "HAVING", "ORDER BY", "FILTER"],
             ans: 1,
-            exp: "WHERE filtra filas antes de agrupar. HAVING filtra el resultado de la agrupación (ej: COUNT > 5)."
+            exp: "<b>WHERE vs HAVING (La gran batalla):</b><br><br>- <b>WHERE:</b> Filtra filas individuales ANTES de agrupar. (Ej: 'Solo pacientes de Madrid').<br>- <b>HAVING:</b> Filtra los grupos RESUMIDOS DESPUÉS de agrupar. (Ej: 'Solo ciudades con más de 10 pacientes').<br><br>Si usas una función de agregado como COUNT, SUM, AVG en la condición... obligatoriamente es HAVING."
         },
         {
             cat: "T5",
@@ -336,7 +355,7 @@
             code: "",
             opts: ["Copia los datos a una tabla que ya existe", "Crea una tabla nueva 'CopiaPacientes' y vuelca los datos", "Solo copia la estructura, no los datos", "Da error de sintaxis"],
             ans: 1,
-            exp: "SELECT INTO crea la tabla destino al vuelo. Es ideal para copias de seguridad rápidas."
+            exp: "<b>Magia potagia (Crear y Copiar):</b><br><br>El comando <b>SELECT ... INTO</b> es especial. No necesita que la tabla destino exista.<br>1. Lee la tabla 'Pacientes'.<br>2. <b>CREA</b> automáticamente una tabla nueva llamada 'CopiaPacientes' con la misma estructura (columnas y tipos).<br>3. <b>INSERTA</b> todos los datos de golpe.<br><br>Es la forma más rápida de hacer una copia de seguridad o una tabla temporal."
         },
         {
             cat: "T5",
@@ -344,7 +363,7 @@
             code: "",
             opts: ["WHERE Ciudad = 'Madrid'", "WHERE Precio BETWEEN 10 AND 20", "WHERE SUM(Importe) > 100", "WHERE Nombre LIKE 'A%'"],
             ans: 2,
-            exp: "¡Trampa clásica! No se pueden usar funciones agregadas (SUM, COUNT, AVG) en el WHERE."
+            exp: "<b>¡Trampa Clásica! El error del SUM en el WHERE:</b><br><br>Recuerda el orden de procesamiento: El <b>WHERE</b> se ejecuta antes de agrupar. En ese momento, la base de datos va fila por fila y todavía no sabe cuánto suman los importes en total.<br><br>No puedes filtrar por una suma (SUM) o un conteo (COUNT) en el WHERE. Tienes que dejar que agrupe primero y usar <b>HAVING SUM(Importe) > 100</b>."
         },
         {
             cat: "T5",
@@ -352,7 +371,7 @@
             code: "",
             opts: ["4", "5", "Hola", "Error"],
             ans: 0,
-            exp: "Devuelve la longitud de la cadena. Ojo: en Oracle/MySQL suele ser LENGTH, pero en SQL Server es LEN."
+            exp: "<b>Contando letras:</b><br><br><b>LEN</b> es la función en SQL Server para obtener la longitud (Length) de una cadena. 'Hola' tiene 4 letras. Simple.<br><br><i>Nota curiosa:</i> En Oracle o MySQL esta función suele llamarse LENGTH, pero en SQL Server es LEN."
         },
         {
             cat: "T5",
@@ -360,7 +379,7 @@
             code: "",
             opts: ["Nos muestra todas las ciudades, incluyendo repetidas", "Nos muestra las ciudades sin repetir duplicados", "Nos cuenta cuántas ciudades hay", "Nos muestra las ciudades ordenadas alfabéticamente"],
             ans: 1,
-            exp: "DISTINCT elimina las filas duplicadas del resultado."
+            exp: "<b>El filtro de repetidos:</b><br><br>Imagina que tienes 100 pacientes de 'Madrid'. Si haces un SELECT normal, te sale 'Madrid' 100 veces.<br><br>La palabra clave <b>DISTINCT</b> elimina los duplicados del resultado final. Solo te mostrará 'Madrid' una vez. Te da la lista de ciudades <i>únicas</i> que tienes en la base de datos."
         },
         {
             cat: "T5",
@@ -368,7 +387,7 @@
             code: "",
             opts: ["WHERE Nombre = 'J*'", "WHERE Nombre LIKE 'J%'", "WHERE Nombre IS 'J%'", "WHERE Nombre CONTAINS 'J'"],
             ans: 1,
-            exp: "El operador LIKE usa % como comodín de varios caracteres."
+            exp: "<b>El operador LIKE y sus comodines:</b><br><br>Cuando no buscas algo exacto, sino un patrón, usas <b>LIKE</b>.<br>- El símbolo <b>%</b> significa 'Cualquier cosa, de cualquier longitud'.<br><br>Por tanto, <b>'J%'</b> significa: 'Empieza por J, y luego que venga lo que sea'.<br>Si fuera '%J%', significaría 'Contiene una J en cualquier parte'."
         },
         {
             cat: "T5",
@@ -376,7 +395,7 @@
             code: "",
             opts: ["No devuelve la fila", "Devuelve la fila con NULL en las columnas de la derecha", "Da un error", "Devuelve ceros"],
             ans: 1,
-            exp: "Preserva todas las filas de la tabla izquierda. Si no hay match, rellena con NULL."
+            exp: "<b>La analogía del baile (LEFT JOIN):</b><br><br>Imagina un baile donde los Chicos (Tabla Izquierda) sacan a bailar a las Chicas (Tabla Derecha).<br>- <b>INNER JOIN:</b> Solo bailan las parejas formadas. Si un chico no tiene pareja, se va a casa.<br>- <b>LEFT JOIN:</b> Obliga a bailar a TODOS los chicos de la izquierda. Si un chico (Pepito) no tiene chica coincidente, baila solo. ¿Y qué ponemos en el lugar de la chica? Un fantasma invisible llamado <b>NULL</b>.<br><br>Así que devuelve la fila de la izquierda completa, y la parte derecha rellena de NULLs."
         },
         {
             cat: "T5",
@@ -384,7 +403,7 @@
             code: "",
             opts: ["Solo la fecha actual", "La fecha y hora actual del sistema", "Solo la hora actual", "El timestamp de Unix"],
             ans: 1,
-            exp: "En SQL Server devuelve fecha y hora."
+            exp: "<b>¿Qué hora es?:</b><br><br>En SQL Server, <b>GETDATE()</b> es la función estándar para preguntar al servidor '¿En qué momento vivimos?'. Devuelve TODO: Fecha y Hora con precisión de segundos/milisegundos."
         },
         {
             cat: "T5",
@@ -392,7 +411,7 @@
             code: "",
             opts: ["YEAR(GETDATE()) - FechaNac", "DATEDIFF(YEAR, FechaNac, GETDATE())", "DATEADD(YEAR, FechaNac, GETDATE())", "AGE(FechaNac)"],
             ans: 1,
-            exp: "DATEDIFF calcula la diferencia entre dos fechas en la unidad especificada."
+            exp: "<b>Calculadora de fechas:</b><br><br>Para restar fechas no usamos el signo menos (-), usamos <b>DATEDIFF</b> (Date Difference).<br>Sintaxis: `DATEDIFF(Intervalo, FechaInicio, FechaFin)`.<br><br>Le dices: 'Calcula la diferencia en AÑOS (YEAR) entre su nacimiento y hoy'.<br><i>Nota:</i> La opción A (restar años a pelo) es imprecisa porque no tiene en cuenta si ya has cumplido años este mes o no."
         },
         {
             cat: "T5",
@@ -400,7 +419,7 @@
             code: "WHERE Ciudad IN ('Madrid', 'Barcelona')",
             opts: ["Busca ciudades que contengan Madrid o Barcelona", "Busca ciudades que sean exactamente Madrid o Barcelona", "Busca un rango entre Madrid y Barcelona", "Es inválido"],
             ans: 1,
-            exp: "Es una forma abreviada de múltiples OR (= 'Madrid' OR = 'Barcelona')."
+            exp: "<b>La lista VIP:</b><br><br>El operador <b>IN</b> es simplemente una forma abreviada de escribir muchos <b>OR</b>.<br>En lugar de escribir:<br>`WHERE Ciudad = 'Madrid' OR Ciudad = 'Barcelona' OR Ciudad = 'Valencia'`...<br><br>Escribes:<br>`WHERE Ciudad IN ('Madrid', 'Barcelona', 'Valencia')`.<br>Busca coincidencia exacta con cualquiera de los elementos de la lista."
         },
         {
             cat: "T5",
@@ -408,7 +427,7 @@
             code: "",
             opts: ["%", "_", "?", "*"],
             ans: 1,
-            exp: "El guion bajo (_) sustituye a un único carácter."
+            exp: "<b>El guion bajo (_):</b><br><br>Ya vimos que <b>%</b> es el comodín 'infinito' (vale por 0, 1 o 1000 letras).<br>El guion bajo <b>_</b> es el comodín unitario. Vale por EXACTAMENTE una letra.<br><br>Ejemplo: `LIKE 'P_co'`<br>- Encontraría 'Paco', 'Peco', 'Pico'.<br>- NO encontraría 'Prisco' (porque hay 2 letras en medio)."
         },
         {
             cat: "T5",
@@ -416,7 +435,7 @@
             code: "",
             opts: ["Las 10 primeras filas", "El 10% del total de las filas", "Las filas con ID hasta 10", "Error de sintaxis"],
             ans: 1,
-            exp: "SQL Server permite TOP N PERCENT."
+            exp: "<b>TOP con porcentaje:</b><br><br>Normalmente `TOP 10` te da las 10 primeras filas. Pero si añades la palabra <b>PERCENT</b>, SQL Server calcula matemáticamente el 10% de la tabla.<br><br>Si tu tabla tiene 1.000 filas, te devolverá 100. Si tiene 50 filas, te devolverá 5."
         },
         {
             cat: "T5",
@@ -424,7 +443,7 @@
             code: "",
             opts: ["Une columnas de dos tablas", "Une filas de dos consultas y elimina duplicados", "Une filas de dos consultas manteniendo duplicados", "Realiza un producto cartesiano"],
             ans: 1,
-            exp: "UNION estándar combina resultados y elimina filas repetidas. (UNION ALL las mantiene)."
+            exp: "<b>Pegando resultados (Verticalmente):</b><br><br><b>UNION</b> sirve para coger el resultado de una consulta y pegarle debajo el resultado de otra consulta (siempre que tengan las mismas columnas).<br><br><b>Detalle clave:</b> El UNION estándar es inteligente y <b>ELIMINA DUPLICADOS</b>. Si una fila sale en las dos consultas, en el resultado final solo aparece una vez.<br>(Si quisieras los duplicados usarías UNION ALL)."
         },
         {
             cat: "T5",
@@ -432,7 +451,7 @@
             code: "",
             opts: ["MONTH(Fecha)", "DATENAME(MONTH, Fecha)", "DATEPART(MONTH, Fecha)", "GETMONTH(Fecha)"],
             ans: 1,
-            exp: "MONTH y DATEPART devuelven el número (1). DATENAME devuelve el texto."
+            exp: "<b>Número vs Nombre:</b><br><br>- <b>MONTH()</b> y <b>DATEPART()</b> devuelven números. Para Enero devuelven un <b>1</b>.<br>- <b>DATENAME()</b> es el que devuelve la cadena de texto ('January' o 'Enero', depende del idioma del servidor).<br><br>Truco: DATE<b>NAME</b> -> Nombre."
         },
         {
             cat: "T5",
@@ -440,7 +459,7 @@
             code: "",
             opts: ["Cuenta todos los pacientes", "Solo cuenta los que tienen teléfono (no nulos)", "Da error", "Cuenta los nulos como 0"],
             ans: 1,
-            exp: "Las funciones de agregación (salvo COUNT(*)) ignoran los valores NULL."
+            exp: "<b>COUNT ignora a los fantasmas:</b><br><br>Esta es una regla de oro de las funciones de agregación (SUM, AVG, MAX, MIN, COUNT): <b>Todas ignoran los valores NULL</b>.<br><br>- `COUNT(*)` cuenta filas físicas (le da igual lo que haya dentro, cuenta cajas).<br>- `COUNT(Columna)` cuenta solo las celdas de esa columna que TIENEN VALOR. Si el teléfono es NULL, se lo salta y no suma 1."
         },
         {
             cat: "T5",
@@ -448,7 +467,7 @@
             code: "",
             opts: ["OR > AND > NOT", "NOT > AND > OR", "Son iguales, de izquierda a derecha", "AND > OR > NOT"],
             ans: 1,
-            exp: "El NOT es el más fuerte, luego AND, y el OR es el más débil."
+            exp: "<b>La jerarquía de operaciones:</b><br><br>Igual que en matemáticas la multiplicación va antes que la suma, en lógica:<br>1. <b>NOT</b> (Lo más fuerte, la negación).<br>2. <b>AND</b> (Intermedio, obliga a cumplir ambos).<br>3. <b>OR</b> (El más débil, uno u otro).<br><br>Ejemplo: `A OR B AND C` se interpreta como `A OR (B AND C)` porque el AND manda más. Si quieres lo contrario, ¡usa paréntesis!"
         },
         {
             cat: "T5",
@@ -456,7 +475,7 @@
             code: "",
             opts: ["100", "0", "NULL", "Error"],
             ans: 2,
-            exp: "Cualquier operación aritmética con NULL da como resultado NULL."
+            exp: "<b>El Agujero Negro del NULL:</b><br><br>NULL no significa cero. NULL significa 'DESCONOCIDO'.<br>Imagina que te pregunto: '¿Cuánto dinero tiene Juan?'. No lo sabes (NULL).<br>Ahora te digo: 'Súmale 100 euros a lo que tiene Juan'. ¿Cuánto tiene ahora?<br>Respuesta: <b>Sigues sin saberlo</b> (NULL).<br><br>Cualquier operación matemática con NULL da como resultado NULL."
         },
         {
             cat: "T5",
@@ -464,7 +483,7 @@
             code: "",
             opts: ["ORDER BY ... ASC", "ORDER BY ... DESC", "ORDER BY ... DOWN", "ORDER BY ... TOP"],
             ans: 1,
-            exp: "DESC es la palabra reservada."
+            exp: "<b>Arriba y Abajo:</b><br><br>- <b>ASC</b> (Ascendente): De la A a la Z, o del 0 al 9. Es el defecto si no pones nada.<br>- <b>DESC</b> (Descendente): De la Z a la A, o del 9 al 0 (Mayor a menor)."
         },
         {
             cat: "T5",
@@ -472,7 +491,7 @@
             code: "",
             opts: ["LEFT(Texto, 3)", "SUBSTRING(Texto, 0, 3)", "START(Texto, 3)", "LOWER(Texto, 3)"],
             ans: 0,
-            exp: "LEFT(cadena, n)."
+            exp: "<b>Cortar cadenas:</b><br><br>Es muy intuitivo en inglés:<br>- <b>LEFT(texto, n):</b> Coge 'n' letras desde la Izquierda.<br>- <b>RIGHT(texto, n):</b> Coge 'n' letras desde la Derecha.<br><br>SUBSTRING también valdría pero es más complejo (`SUBSTRING(Texto, 1, 3)`), LEFT es la función específica para esto."
         },
         {
             cat: "T5",
@@ -480,7 +499,7 @@
             code: "",
             opts: ["Filas comunes a dos consultas", "Filas de la primera consulta que no están en la segunda", "Filas de la segunda que no están en la primera", "Todas las filas"],
             ans: 1,
-            exp: "Es la diferencia de conjuntos (Resta)."
+            exp: "<b>La Resta de conjuntos:</b><br><br>Imagina que tienes dos listas:<br>A = {1, 2, 3}<br>B = {2, 3, 4}<br><br><b>A EXCEPT B</b> significa: 'Dame todo lo que está en A, QUITANDO lo que también esté en B'.<br>Resultado: {1}. (El 2 y 3 se eliminan porque están en B)."
         },
         {
             cat: "T5",
@@ -488,7 +507,7 @@
             code: "",
             opts: ["Es válido siempre", "Debes incluir las columnas normales en el GROUP BY", "Debes incluir el COUNT en el GROUP BY", "Da error siempre"],
             ans: 1,
-            exp: "Regla de oro: Todo lo que no sea agregada debe estar en el GROUP BY."
+            exp: "<b>La Regla de Oro del GROUP BY:</b><br><br>Si mezclas columnas normales (Nombre) con cálculos agregados (COUNT), la base de datos se lía. No puede mostrarte 10 nombres y un solo total al lado.<br><br>Regla: <b>Todo lo que esté en el SELECT y NO sea una función de agregación (SUM, COUNT...), TIENE que estar obligatoriamente en la cláusula GROUP BY.</b>"
         },
         {
             cat: "T5",
@@ -496,7 +515,7 @@
             code: "",
             opts: ["WHERE Observaciones = NULL", "WHERE Observaciones IS NULL", "WHERE Observaciones == NULL", "WHERE Observaciones LIKE NULL"],
             ans: 1,
-            exp: "NULL no es un valor, es un estado. No se puede usar '='. Se usa 'IS'."
+            exp: "<b>No puedes ser 'igual' a la nada:</b><br><br>Como NULL es 'desconocido', no puedes usar el signo igual (=). Nada es igual a lo desconocido, ni siquiera otro desconocido.<br><br>Por eso, en SQL se usa una sintaxis especial:<br>- <b>IS NULL</b> (¿Es nulo?)<br>- <b>IS NOT NULL</b> (¿No es nulo?)."
         },
         {
             cat: "T5",
@@ -504,7 +523,7 @@
             code: "",
             opts: ["Menor o mayor", "Distinto", "Igual", "Asignación"],
             ans: 1,
-            exp: "Es el estándar SQL para 'No igual' (también !=)."
+            exp: "<b>Distinto de:</b><br><br>Es el estándar SQL para decir 'No es igual'. También se acepta `!=` en muchos sistemas, pero `<>` es el clásico.<br>Ejemplo: `WHERE Edad <> 18` (Saca a todos menos a los de 18)."
         },
         {
             cat: "T5",
@@ -512,7 +531,7 @@
             code: "",
             opts: ["Un error", "Un Inner Join", "Un Producto Cartesiano", "Una Unión"],
             ans: 2,
-            exp: "Combina todas las filas de T1 con todas las de T2."
+            exp: "<b>El Caos del Producto Cartesiano:</b><br><br>Si pones dos tablas y no le dices cómo unirlas (sin ON, sin WHERE), SQL hace lo único que sabe hacer: Combinar <b>TODOS con TODOS</b>.<br><br>Si T1 tiene 10 filas y T2 tiene 10 filas, el resultado tendrá 100 filas (10x10). Cada fila de la primera tabla se repite con cada fila de la segunda. Generalmente es un error y no es útil."
         },
 
         // --- TEMA 6: DML (MANIPULACIÓN) ---
@@ -522,7 +541,7 @@
             code: "",
             opts: ["Ninguna", "DELETE reinicia el contador Identity, TRUNCATE no", "TRUNCATE reinicia el contador Identity, DELETE no", "Ambos lo reinician"],
             ans: 2,
-            exp: "TRUNCATE resetea el contador autoincremental a su valor inicial. DELETE continúa por donde iba."
+            exp: "<b>El contador de turnos:</b><br><br>Imagina una carnicería con un dispensador de turnos (1, 2, 3...).<br><br>- <b>DELETE:</b> Es como atender a la gente y que se vaya. El local se vacía, pero el dispensador de turnos sigue por donde iba (el siguiente será el 4).<br>- <b>TRUNCATE:</b> Es como cerrar el negocio, reformarlo y volver a abrir. El local se vacía y <b>EL CONTADOR SE PONE A CERO</b>. El siguiente cliente será el número 1 otra vez."
         },
         {
             cat: "T6",
@@ -530,7 +549,7 @@
             code: "",
             opts: ["Da error de seguridad", "Pone a 0 el importe de la primera visita", "Pone a 0 el importe de TODAS las visitas", "No hace nada"],
             ans: 2,
-            exp: "El UPDATE sin filtro afecta a toda la tabla. Es un error muy peligroso."
+            exp: "<b>El Francotirador ciego:</b><br><br>El comando UPDATE es peligroso. El `WHERE` es la mira telescópica que te dice a quién disparar. Si disparas (ejecutas) sin mirar (sin WHERE), SQL asume que quieres disparar a <b>TODO EL MUNDO</b>.<br><br>Resultado: Todas las filas de la tabla cambian su importe a 0. ¡Desastre total!"
         },
         {
             cat: "T6",
@@ -538,7 +557,7 @@
             code: "",
             opts: ["La segunda vez da error", "El precio sube un 20% en total", "El precio sube un 40%", "El precio sube un 20% y luego otro 20% sobre el nuevo precio (acumulativo)"],
             ans: 3,
-            exp: "Los cambios son físicos. Si ejecutas de nuevo, operas sobre el valor ya modificado."
+            exp: "<b>Los datos son persistentes:</b><br><br>La base de datos no tiene 'Memoria Z'. Lo que cambias, cambiado se queda.<br>1. Precio original: 100.<br>2. Primer UPDATE: 100 * 1.20 = 120. (Ahora en el disco duro hay un 120).<br>3. Segundo UPDATE: Coge el 120 * 1.20 = 144.<br><br>El efecto es acumulativo."
         },
         {
             cat: "T6",
@@ -546,7 +565,7 @@
             code: "",
             opts: ["Se borra el médico y las visitas", "Da error de Integridad Referencial", "Se borra el médico y las visitas quedan huérfanas", "SQL te pide confirmación"],
             ans: 1,
-            exp: "La FK protege la integridad. No puedes dejar hijos sin padre (salvo que esté configurado CASCADE)."
+            exp: "<b>La protección familiar:</b><br><br>Por defecto (si no has puesto CASCADE), la Foreign Key protege la integridad de los datos. No puedes dejar registros 'huérfanos'.<br><br>Si borras al Médico, las Visitas no sabrían a quién pertenecen. Para evitar esa incoherencia, SQL Server BLOQUEA el borrado y te da un error: 'Conflicto con restricción REFERENCE'."
         },
         {
             cat: "T6",
@@ -554,7 +573,7 @@
             code: "",
             opts: ["INSERT INTO T1 VALUES (SELECT ...)", "INSERT INTO T1 SELECT ... FROM T2", "SELECT INTO T1 FROM T2", "COPY T1 FROM T2"],
             ans: 1,
-            exp: "La sintaxis es INSERT INTO ... SELECT. (SELECT INTO es para crear tabla nueva)."
+            exp: "<b>La fotocopiadora de datos:</b><br><br>Si la tabla destino YA EXISTE y quieres llenarla con datos que vienen de otra consulta, la sintaxis es:<br><b>INSERT INTO</b> TablaDestino (col1, col2)<br><b>SELECT</b> col1, col2 <b>FROM</b> TablaOrigen;<br><br>Ojo: No lleva la palabra VALUES."
         },
         {
             cat: "T6",
@@ -562,7 +581,7 @@
             code: "",
             opts: ["Da error", "Se inserta un 0", "Se inserta NULL automáticamente", "Pide el valor por pantalla"],
             ans: 2,
-            exp: "Si no se indica y admite nulos (y no tiene Default), se guarda NULL."
+            exp: "<b>El silencio otorga:</b><br><br>Si te saltas una columna en un INSERT:<br>1. Si la columna tiene un valor por defecto (DEFAULT), se pone ese valor.<br>2. Si no tiene Default pero admite NULL, se pone <b>NULL</b>.<br>3. Si es NOT NULL y no tiene Default -> Error."
         },
         {
             cat: "T6",
@@ -570,7 +589,7 @@
             code: "",
             opts: ["INSERT", "UPDATE", "TRUNCATE", "DROP"],
             ans: 3,
-            exp: "DROP es DDL (Definición/Estructura). TRUNCATE es un caso especial (funciona como DML pero internamente es DDL, pero DROP es 100% DDL)."
+            exp: "<b>Clasificando comandos:</b><br><br>- <b>DML (Datos):</b> INSERT, UPDATE, DELETE. Trabajan con el contenido.<br>- <b>DDL (Definición/Estructura):</b> CREATE, ALTER, <b>DROP</b>, TRUNCATE. Trabajan con el contenedor.<br><br>DROP destruye el objeto, así que es DDL puro."
         },
         {
             cat: "T6",
@@ -578,7 +597,7 @@
             code: "",
             opts: ["TRUNCATE TABLE Visitas WHERE Year=2022", "DELETE FROM Visitas WHERE YEAR(Fecha)=2022", "DROP TABLE Visitas", "REMOVE FROM Visitas WHERE Year=2022"],
             ans: 1,
-            exp: "TRUNCATE no admite WHERE. Se debe usar DELETE."
+            exp: "<b>TRUNCATE no admite filtros:</b><br><br>TRUNCATE es 'todo o nada'. No puedes decirle 'borra solo esto'.<br>Para borrar selectivamente (usando un WHERE), SIEMPRE tienes que usar <b>DELETE</b>."
         },
         {
             cat: "T6",
@@ -586,7 +605,7 @@
             code: "",
             opts: ["No se puede nunca", "Simplemente escribiendo el valor", "Activando SET IDENTITY_INSERT Tabla ON", "Usando FORCE"],
             ans: 2,
-            exp: "Por defecto está bloqueado. Hay que permitirlo explícitamente con ese comando."
+            exp: "<b>Saltándose el turno:</b><br><br>Normalmente, las columnas Identity son intocables, el sistema pone el número solo. Si intentas meter un valor manual, da error.<br>Pero si es una emergencia (ej: migración de datos), puedes 'pedir permiso' activando:<br><b>SET IDENTITY_INSERT Tabla ON</b>.<br>Entonces te deja meter el ID que quieras. Al terminar, debes ponerlo en OFF."
         },
         {
             cat: "T6",
@@ -594,7 +613,7 @@
             code: "",
             opts: ["SET col1=x AND col2=y", "SET col1=x, col2=y", "Hacer dos UPDATES separados", "SET (col1,col2) = (x,y)"],
             ans: 1,
-            exp: "Se separan por comas."
+            exp: "<b>La lista de la compra:</b><br><br>En la cláusula SET, las asignaciones se separan por <b>COMAS</b>, no por 'AND'.<br>Correcto: `SET Precio = 20, Stock = 50`<br>Incorrecto: `SET Precio = 20 AND Stock = 50` (Esto intentaría hacer una operación lógica rara)."
         },
         {
             cat: "T6",
@@ -602,7 +621,7 @@
             code: "",
             opts: ["Sí", "No, nunca", "A veces", "Solo en modo admin"],
             ans: 1,
-            exp: "TRUNCATE es todo o nada."
+            exp: "<b>Repetición para fijar concepto:</b><br><br><b>NO. NUNCA. JAMÁS.</b><br>TRUNCATE vacía la tabla entera. Es una operación de bajo nivel que libera las páginas de datos. No mira fila por fila, así que no puede filtrar."
         },
         {
             cat: "T6",
@@ -610,7 +629,7 @@
             code: "",
             opts: ["BACKUP DATABASE", "SELECT * INTO Tabla_Backup FROM Tabla", "COPY TABLE", "EXPORT DATA"],
             ans: 1,
-            exp: "Recomendación del profesor en los apuntes."
+            exp: "<b>El salvavidas del programador:</b><br><br>Antes de ejecutar ese UPDATE masivo que te da miedo, haz:<br>`SELECT * INTO Tabla_Backup FROM TablaOriginal`<br><br>Esto crea una copia instantánea. Si rompes la original, siempre puedes recuperar los datos desde la copia."
         },
         {
             cat: "T6",
@@ -618,7 +637,7 @@
             code: "",
             opts: ["Lo inserta pero avisa", "Da error de violación de restricción PK", "Sobrescribe el anterior", "Lo inserta con otro ID"],
             ans: 1,
-            exp: "La PK debe ser única. Falla la inserción."
+            exp: "<b>La ley fundamental:</b><br><br>La Primary Key es sagrada. Debe ser única. Si intentas meter un ID que ya existe, la base de datos detiene la operación, da un <b>ERROR</b> y no guarda nada. Se llama 'Violación de restricción de clave primaria'."
         },
         {
             cat: "T6",
@@ -626,7 +645,7 @@
             code: "",
             opts: ["Se rellena con NULL o su valor DEFAULT", "Da error siempre", "Copia el valor de Campo1", "Queda vacío (cadena vacía)"],
             ans: 0,
-            exp: "Si tiene Default usa eso, si admite Null usa Null. Si es Not Null y sin Default, daría error."
+            exp: "<b>Rellenando huecos:</b><br><br>La base de datos busca una solución para lo que falta:<br>1. ¿Tiene un valor <b>DEFAULT</b> configurado? Úsalo.<br>2. ¿Admite <b>NULL</b>? Pon NULL.<br>3. ¿Es NOT NULL y no tiene Default? Entonces sí, ERROR."
         },
         {
             cat: "T6",
@@ -634,7 +653,7 @@
             code: "",
             opts: ["No se puede", "DELETE T1 FROM T1 JOIN T2 ON...", "DELETE T1 WHERE T2...", "DELETE * FROM T1, T2"],
             ans: 1,
-            exp: "Sintaxis avanzada de T6: DELETE con alias y JOIN."
+            exp: "<b>Borrado complejo:</b><br><br>Si quieres borrar los 'Pacientes' que no han venido a ninguna 'Visita', necesitas cruzar las tablas.<br>La sintaxis en SQL Server permite hacer JOINs dentro del DELETE:<br>`DELETE T1 FROM Tabla1 T1 JOIN Tabla2 T2 ON...`"
         },
 
         // --- EXTRAS Y MIXTOS ---
@@ -644,7 +663,7 @@
             code: "",
             opts: ["Filtrar nulos (como IS NULL)", "Sustituir el valor nulo por 'Vacio' en la visualización", "Borrar los nulos", "Dar error si es nulo"],
             ans: 1,
-            exp: "Es una función de reemplazo, no de filtro."
+            exp: "<b>Maquillando resultados:</b><br><br>No confundir con el filtro `IS NULL` del WHERE.<br>La función <b>ISNULL(campo, valor_alternativo)</b> sirve para presentar los datos bonitos. Le dice al sistema: 'Mira este campo. Si tiene dato, muéstramelo. Pero si es NULL, no me enseñes NULL, enséñame la palabra Vacio'."
         },
         {
             cat: "Extra",
@@ -652,7 +671,7 @@
             code: "",
             opts: ["// Comentario", "-- Comentario", "# Comentario", ""],
             ans: 1,
-            exp: "Doble guion."
+            exp: "<b>Notas al margen:</b><br><br>- Una línea: Usamos dos guiones medios `-- Esto es un comentario`.<br>- Bloque multilínea: Usamos `/* Esto es un bloque */`."
         },
         {
             cat: "Extra",
@@ -660,7 +679,7 @@
             code: "",
             opts: ["Por Clave Primaria", "Aleatorio / Sin garantía", "Por fecha de inserción", "Alfabético"],
             ans: 1,
-            exp: "Sin ORDER BY, el motor no garantiza ningún orden específico."
+            exp: "<b>El Caos ordenado:</b><br><br>Mucha gente cree que sale ordenado por la Primary Key, pero NO ES SEGURO. SQL Server devuelve las filas como le venga mejor en ese momento (según qué páginas de disco leyó primero).<br>Si necesitas un orden, <b>SIEMPRE</b> debes poner ORDER BY."
         },
         {
             cat: "Extra",
@@ -668,7 +687,7 @@
             code: "",
             opts: ["COUNT(PK)", "COUNT(*)", "COUNT(NULL)", "SUM(1)"],
             ans: 1,
-            exp: "COUNT(*) cuenta filas físicas."
+            exp: "<b>Contar cajas:</b><br><br><b>COUNT(*)</b> es la forma de decir 'Cuenta filas'. No mira dentro de las filas, solo cuenta cuántos registros existen. Por tanto, le da igual si hay nulos o no. Es la forma correcta de contar el total de una tabla."
         },
         {
             cat: "Extra",
@@ -676,7 +695,7 @@
             code: "",
             opts: ["Sí", "No, DROP es DDL (Estructura) y DELETE es DML (Datos)", "DROP es para tablas, DELETE para bases de datos", "No sé"],
             ans: 1,
-            exp: "Diferencia fundamental."
+            exp: "<b>Concepto fundamental:</b><br><br>- <b>DELETE:</b> Borra el contenido (las filas del Excel), pero la hoja sigue existiendo.<br>- <b>DROP:</b> Tira el archivo a la papelera. Desaparece todo."
         },
         {
             cat: "Extra",
@@ -684,7 +703,7 @@
             code: "",
             opts: ["Borrando la fila", "Borrando el valor de esa celda (si se permite)", "Borrando la columna", "Error"],
             ans: 1,
-            exp: "Asignar NULL vacía el contenido del campo."
+            exp: "<b>Limpiando la pizarra:</b><br><br>No estás borrando la fila entera (eso sería DELETE). Estás yendo a una celda concreta y 'borrando' lo que hay escrito dentro, dejándolo como 'Desconocido' (NULL). Solo funciona si la columna admite nulos."
         },
         {
             cat: "Extra",
@@ -692,7 +711,7 @@
             code: "",
             opts: ["Mayúsculas", "Minúsculas", "Longitud baja", "Formato fecha"],
             ans: 1,
-            exp: "Minusculas."
+            exp: "<b>Minusculas:</b><br><br>LOWER('HOLA') -> 'hola'.<br>UPPER('hola') -> 'HOLA'."
         },
         {
             cat: "Extra",
@@ -700,7 +719,7 @@
             code: "",
             opts: ["BIGINT", "HUGEINT", "LONG", "DOUBLE"],
             ans: 0,
-            exp: "Bigint (8 bytes)."
+            exp: "<b>Tipos de enteros:</b><br><br>- <b>INT:</b> Hasta 2.000 millones aprox (4 bytes).<br>- <b>BIGINT:</b> Números gigantescos (8 bytes). Si vas a contar visualizaciones de YouTube o IDs mundiales, usa BIGINT."
         },
         {
             cat: "Extra",
@@ -708,7 +727,7 @@
             code: "",
             opts: ["7.5", "7", "8", "Error"],
             ans: 1,
-            exp: "Al dividir dos enteros, el resultado se trunca a entero."
+            exp: "<b>División entera:</b><br><br>Si divides Entero entre Entero, SQL te devuelve Entero. Trunca los decimales.<br>30 entre 4 es 7.5, pero SQL se queda con el <b>7</b>.<br>Si quieres decimales, uno de los dos debe ser decimal: `30.0 / 4` -> 7.5."
         },
         {
             cat: "Extra",
@@ -716,7 +735,7 @@
             code: "",
             opts: ["2023-01-32", "2023-02-01", "Error", "NULL"],
             ans: 1,
-            exp: "Maneja correctamente el cambio de mes."
+            exp: "<b>Sumar tiempo inteligente:</b><br><br>DATEADD es listo. Sabe que enero tiene 31 días. Si sumas 1 día al 31 de enero, salta automáticamente al 1 de febrero. Maneja años bisiestos y cambios de mes/año."
         },
         {
             cat: "Extra",
@@ -724,7 +743,7 @@
             code: "",
             opts: ["Un pago", "Una unidad de trabajo atómica (todo o nada)", "Una consulta SELECT", "Un error"],
             ans: 1,
-            exp: "Garantiza integridad. Si falla el Update a medias, se deshace todo."
+            exp: "<b>Todo o Nada (Atomicidad):</b><br><br>Una transacción asegura que una serie de operaciones se hagan todas o ninguna. <br>Ejemplo: Transferencia bancaria (Restar dinero a A, Sumar dinero a B). Si falla la suma a B, DEBE deshacerse la resta a A. O se hacen las dos, o no se hace ninguna."
         },
         {
             cat: "Extra",
@@ -732,7 +751,7 @@
             code: "",
             opts: ["Sí", "No, salvo que uses una función agregada sobre Nombre", "Sí, sale el primero", "A veces"],
             ans: 1,
-            exp: "Error de agrupamiento. Solo columnas agrupadas o agregadas."
+            exp: "<b>Coherencia de agrupación:</b><br><br>Si agrupas por Ciudad, tienes una fila por cada ciudad (1 fila para Madrid, 1 para BCN).<br>Si intentas mostrar el 'Nombre' del paciente... ¿Cuál muestras? ¿El de Pepito? ¿El de Juan? ¡Hay mil pacientes en Madrid!<br>Por eso da error. Solo puedes mostrar la columna de agrupación (Ciudad) o un resumen (COUNT(Nombre))."
         },
         {
             cat: "Extra",
@@ -740,7 +759,7 @@
             code: "",
             opts: ["Que empieza por A", "Que NO empieza por A", "Que tiene una A", "Error"],
             ans: 1,
-            exp: "Negación del patrón."
+            exp: "<b>Negación de patrones:</b><br><br>LIKE 'A%' -> Empieza por A.<br>NOT LIKE 'A%' -> Todo lo que NO empiece por A."
         },
         {
             cat: "Extra",
@@ -748,7 +767,7 @@
             code: "",
             opts: ["La segunda columna del SELECT", "El valor 2", "Dos filas", "Segunda tabla"],
             ans: 0,
-            exp: "Referencia posicional."
+            exp: "<b>Referencia posicional:</b><br><br>Es un atajo de vagos. En lugar de escribir el nombre de la columna, le dices 'Ordéname por la columna número 2 de mi lista SELECT'."
         },
         {
             cat: "Extra",
@@ -756,7 +775,7 @@
             code: "",
             opts: ["-10", "10", "0", "NULL"],
             ans: 1,
-            exp: "Valor absoluto."
+            exp: "<b>Valor Absoluto:</b><br><br>Matemáticas básicas. Quita el signo negativo. ABS(-10) es 10. ABS(10) es 10."
         },
         {
             cat: "Extra",
@@ -764,7 +783,7 @@
             code: "",
             opts: ["ALLOW", "GRANT", "PERMIT", "ACCESS"],
             ans: 1,
-            exp: "GRANT (DCL)."
+            exp: "<b>El guardia de seguridad (DCL):</b><br><br>Para dar llaves (permisos) a un usuario usamos <b>GRANT</b>.<br>Para quitárselas usamos <b>REVOKE</b>."
         },
         {
             cat: "Extra",
@@ -772,7 +791,7 @@
             code: "",
             opts: ["  Hola", "Hola", "Hola  ", "ola"],
             ans: 1,
-            exp: "Quita espacios a la izquierda (Left Trim)."
+            exp: "<b>Recortar espacios (Left Trim):</b><br><br>LTRIM quita los espacios en blanco que sobran a la IZQUIERDA del texto.<br>RTRIM quita los de la DERECHA.<br>TRIM quita ambos."
         },
         {
             cat: "Extra",
@@ -780,7 +799,7 @@
             code: "",
             opts: ["Ana", "anA", "nA", "Error"],
             ans: 1,
-            exp: "Invierte la cadena."
+            exp: "<b>Espejo:</b><br><br>Invierte el orden de los caracteres. 'Ana' al revés es 'anA'. 'Roma' sería 'amoR'."
         },
         {
             cat: "Extra",
@@ -788,7 +807,7 @@
             code: "",
             opts: ["DAY(Fecha)", "GETDAY(Fecha)", "DATE(Fecha)", "D(Fecha)"],
             ans: 0,
-            exp: "DAY()."
+            exp: "<b>Extrayendo partes:</b><br><br>DAY() saca el día (1-31).<br>MONTH() saca el mes (1-12).<br>YEAR() saca el año."
         },
         {
             cat: "Extra",
@@ -796,7 +815,7 @@
             code: "",
             opts: ["No", "Sí (Self Join)", "Solo en Oracle", "Error"],
             ans: 1,
-            exp: "Se llama Self Join, usando alias diferentes."
+            exp: "<b>Self Join:</b><br><br>Sí, es muy común. Por ejemplo, en una tabla de Empleados donde tienes una columna 'JefeID'. El Jefe también es un empleado.<br>Haces `FROM Empleados E1 JOIN Empleados E2 ON E1.JefeID = E2.ID`.<br>El truco es usar <b>Alias</b> distintos (E1 y E2) para diferenciar."
         }
     ];
 
@@ -804,12 +823,6 @@
     function initExam() {
         const container = document.getElementById('questionsContainer');
         document.getElementById('qTotal').innerText = questions.length;
-
-        // Barajar preguntas (Fisher-Yates) - Descomentar para orden aleatorio
-        // for (let i = questions.length - 1; i > 0; i--) {
-        //     const j = Math.floor(Math.random() * (i + 1));
-        //     [questions[i], questions[j]] = [questions[j], questions[i]];
-        // }
 
         questions.forEach((item, index) => {
             let html = `
@@ -835,7 +848,10 @@
                     ⚪ Dejar en blanco (No resta)
                 </label>
                 </div>
-                <div class="explanation" id="exp_${index}">💡 <b>Explicación:</b> ${item.exp}</div>
+                <div class="explanation" id="exp_${index}">
+                    💡 <b>EXPLICACIÓN:</b><br>
+                    ${item.exp}
+                </div>
             </div>`;
             
             container.insertAdjacentHTML('beforeend', html);
@@ -853,27 +869,26 @@
         questions.forEach((item, index) => {
             const selected = document.querySelector(`input[name="q_${index}"]:checked`);
             const expDiv = document.getElementById(`exp_${index}`);
-            expDiv.style.display = 'block';
+            expDiv.style.display = 'block'; // Mostrar explicación
 
             // Deshabilitar inputs
             document.querySelectorAll(`input[name="q_${index}"]`).forEach(i => i.disabled = true);
 
             if (!selected || selected.value === 'blank') {
                 blank++;
-                // Marcar la correcta en azul discreto
+                // Marcar la correcta visualmente de forma suave
                 document.getElementById(`lbl_${index}_${item.ans}`).style.border = "2px dashed #3498db";
             } else {
                 const val = parseInt(selected.value);
                 if (val === item.ans) {
                     correct++;
                     score += 0.33;
-                    document.getElementById(`lbl_${index}_val`).classList.add('correct-answer'); // Bug fix: this line will fail, needs fix below
-                    // FIX:
                     document.getElementById(`lbl_${index}_${val}`).classList.add('correct-answer');
                 } else {
                     wrong++;
                     score -= 0.11;
                     document.getElementById(`lbl_${index}_${val}`).classList.add('wrong-answer');
+                    // Marcar la correcta
                     document.getElementById(`lbl_${index}_${item.ans}`).classList.add('correct-answer');
                 }
             }
@@ -900,7 +915,9 @@
         `;
 
         document.getElementById('submitBtn').style.display = 'none';
-        window.scrollTo(0, document.body.scrollHeight);
+        
+        // Scroll suave al resultado
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
     }
 
     // Cronómetro
