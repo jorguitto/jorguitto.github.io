@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker Pro - Rendimiento Personal</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- VARIABLES DE DISEÑO PROFESIONAL --- */
+        :root {
+            --bg-color: #f3f4f6;
+            --surface-color: #ffffff;
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --text-main: #1f2937;
+            --text-light: #6b7280;
+            --border-color: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-md: 0.5rem;
+            --radius-lg: 1rem;
+        }
+
+        /* --- ESTILOS GENERALES --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        
+        body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.5; padding-bottom: 50px; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* --- CABECERA Y NAVEGACIÓN --- */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 20px; background: var(--surface-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+        
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+        
+        .nav-tabs { display: flex; gap: 10px; }
+        
+        .tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--text-light); font-weight: 600; cursor: pointer; border-radius: var(--radius-md); transition: all 0.2s; }
+        
+        .tab-btn.active { background: var(--primary-color); color: white; box-shadow: var(--shadow-md); }
+        
+        .tab-btn:hover:not(.active) { background: var(--border-color); color: var(--text-main); }
+
+        /* --- VISTAS (Pestañas) --- */
+        .view-section { display: none; animation: fadeIn 0.4s ease; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- TARJETAS (Cards) --- */
+        .card { background: var(--surface-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-md); margin-bottom: 25px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .card-title { font-size: 1.25rem; font-weight: 700; color: var(--text-main); }
+
+        /* --- CUADRÍCULA DE HÁBITOS --- */
+        .grid-container { overflow-x: auto; padding-bottom: 10px; }
+        .habit-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 800px; }
+        
+        .habit-table th { background: var(--bg-color); color: var(--text-light); font-weight: 600; padding: 15px; text-align: center; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em; }
+        .habit-table th:first-child { text-align: left; border-top-left-radius: var(--radius-md); }
+        .habit-table th:last-child { border-top-right-radius: var(--radius-md); }
+        
+        .habit-table td { padding: 10px; border-bottom: 1px solid var(--border-color); text-align: center; vertical-align: middle; }
+        .habit-name-cell { font-weight: 600; text-align: left !important; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+        
+        /* Checkbox Personalizado Profesional */
+        .check-btn { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--border-color); background: var(--surface-color); cursor: pointer; display: inline-flex; justify-content: center; align-items: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); color: transparent; font-size: 1.2rem; }
+        .check-btn:hover { border-color: var(--primary-color); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+        .check-btn.completed { background: var(--success-color); border-color: var(--success-color); color: white; transform: scale(1.05); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+
+        /* --- DASHBOARD Y GRÁFICOS --- */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .chart-wrapper { position: relative; height: 300px; width: 100%; display: flex; justify-content: center; }
+        
+        /* Stats Summary */
+        .stats-summary { display: flex; justify-content: space-around; background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); color: white; border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--shadow-md); margin-bottom: 25px; }
+        .stat-box { text-align: center; }
+        .stat-value { font-size: 2.5rem; font-weight: 800; display: block; }
+        .stat-label { font-size: 0.9rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* --- HISTORIAL --- */
+        .history-list { display: flex; flex-direction: column; gap: 15px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: var(--bg-color); border-radius: var(--radius-md); border-left: 5px solid var(--primary-color); transition: transform 0.2s; }
+        .history-item:hover { transform: translateX(5px); background: #e5e7eb; }
+        .history-info h4 { margin-bottom: 5px; color: var(--text-main); }
+        .history-info p { font-size: 0.85rem; color: var(--text-light); }
+        .score-badge { background: var(--primary-color); color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
+
+        /* --- BOTONES --- */
+        .btn { padding: 10px 20px; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; font-size: 0.95rem; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .btn-danger { background: var(--surface-color); color: var(--danger-color); border: 1px solid var(--danger-color); }
+        .btn-danger:hover { background: var(--danger-color); color: white; }
+        .btn-action { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+
+        /* --- PDF EXPORT STYLES --- */
+        #pdf-export-zone { background: white; padding: 20px; }
+        .export-only { display: none; }
+        .pdf-mode .export-only { display: block; text-align: center; margin-bottom: 20px; color: var(--primary-color); }
+        .pdf-mode .no-export { display: none !important; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 15px; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .stats-summary { flex-direction: column; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="logo">
+            <i class="fas fa-chart-line"></i> Tracker Pro
+        </div>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('current')"><i class="fas fa-calendar-week"></i> Semana Actual</button>
+            <button class="tab-btn" onclick="switchTab('history')"><i class="fas fa-history"></i> Historial y PDFs</button>
+        </div>
+    </header>
+
+    <div id="view-current" class="view-section active">
+        
+        <div id="pdf-export-zone">
+            <h1 class="export-only"><i class="fas fa-chart-line"></i> Reporte Semanal - Tracker Pro</h1>
+            
+            <div class="stats-summary">
+                <div class="stat-box">
+                    <span class="stat-value" id="score-display">0%</span>
+                    <span class="stat-label">Puntuación Global</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="completed-display">0</span>
+                    <span class="stat-label">Hábitos Completados</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header no-export">
+                    <h2 class="card-title">Registro Diario</h2>
+                    <button class="btn btn-danger" onclick="resetCurrentWeek()"><i class="fas fa-eraser"></i> Limpiar Pizarra</button>
+                </div>
+                <div class="grid-container">
+                    <table class="habit-table" id="habit-table">
+                        </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Análisis de Rendimiento</h2>
+                </div>
+                <div class="dashboard-grid">
+                    <div>
+                        <h3 style="text-align: center; margin-bottom: 10px; color: var(--text-light); font-size: 1rem;">Equilibrio de Hábitos</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="polarChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="text-align: center; margin-bottom: 10px; color: var(--text-light); font-size: 1rem;">Tendencia Diaria (Progreso)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="lineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-action no-export">
+            <button class="btn btn-primary" onclick="exportCurrentToPDF()"><i class="fas fa-file-pdf"></i> Exportar a PDF</button>
+            <button class="btn btn-primary" style="background-color: var(--success-color);" onclick="saveWeekToHistory()"><i class="fas fa-save"></i> Cerrar Semana y Guardar</button>
+        </div>
+    </div>
+
+    <div id="view-history" class="view-section">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title"><i class="fas fa-archive"></i> Registro Histórico</h2>
+                <p style="color: var(--text-light); font-size: 0.9rem;">Semanas anteriores guardadas en tu dispositivo.</p>
+            </div>
+            
+            <div id="history-container" class="history-list">
+                </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- CONFIGURACIÓN BASE ---
+    const habitsConfig = [
+        { id: 'comidas', name: 'Comidas Sanas', icon: 'fa-utensils', color: '#10b981' }, // Verde
+        { id: 'agua', name: 'Hidratación', icon: 'fa-glass-water', color: '#3b82f6' }, // Azul
+        { id: 'ejercicio', name: 'Ejercicio', icon: 'fa-dumbbell', color: '#f59e0b' }, // Naranja
+        { id: 'estudio', name: 'Estudio Eficiente', icon: 'fa-book-open', color: '#8b5cf6' }, // Morado
+        { id: 'proyecto', name: 'Proyecto X', icon: 'fa-rocket', color: '#ec4899' }, // Rosa
+        { id: 'suplementos', name: 'Suplementos', icon: 'fa-pills', color: '#64748b' }  // Gris
+    ];
+    
+    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    
+    // Variables Globales
+    let currentData = {};
+    let charts = { polar: null, line: null };
+
+    // --- INICIALIZACIÓN ---
+    function init() {
+        loadData();
+        renderTable();
+        updateDashboard();
+        renderHistory();
+    }
+
+    function loadData() {
+        const saved = localStorage.getItem('trackerPro_current');
+        if (saved) {
+            currentData = JSON.parse(saved);
+        } else {
+            // Estructura vacía
+            habitsConfig.forEach(h => {
+                currentData[h.id] = [false, false, false, false, false, false, false];
+            });
+        }
+    }
+
+    // --- RENDERIZADO UI ---
+    function renderTable() {
+        const table = document.getElementById('habit-table');
+        
+        // Cabecera
+        let html = '<thead><tr><th>Hábitos</th>';
+        days.forEach(d => html += `<th>${d}</th>`);
+        html += '</tr></thead><tbody>';
+
+        // Filas
+        habitsConfig.forEach((habit) => {
+            html += `<tr>`;
+            html += `<td class="habit-name-cell"><i class="fas ${habit.icon}" style="color: ${habit.color}; width: 20px;"></i> ${habit.name}</td>`;
+            
+            for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+                const isCompleted = currentData[habit.id][dayIdx];
+                const activeClass = isCompleted ? 'completed' : '';
+                html += `
+                    <td>
+                        <button class="check-btn ${activeClass}" onclick="toggleHabit('${habit.id}', ${dayIdx}, this)">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </td>`;
+            }
+            html += `</tr>`;
+        });
+        
+        html += '</tbody>';
+        table.innerHTML = html;
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        if(tab === 'current') {
+            document.getElementById('view-current').classList.add('active');
+            document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+        } else {
+            document.getElementById('view-history').classList.add('active');
+            document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+            renderHistory();
+        }
+    }
+
+    // --- LÓGICA DE DATOS ---
+    function toggleHabit(habitId, dayIndex, btnElement) {
+        // Cambiar estado
+        currentData[habitId][dayIndex] = !currentData[habitId][dayIndex];
+        
+        // Animación visual rápida
+        btnElement.classList.toggle('completed');
+        
+        // Guardar y actualizar gráficos
+        localStorage.setItem('trackerPro_current', JSON.stringify(currentData));
+        updateDashboard();
+    }
+
+    function calculateStats() {
+        let totalChecks = 0;
+        let possibleChecks = habitsConfig.length * 7;
+        
+        // Para gráfico polar (Puntuación por hábito)
+        let polarData = [];
+        habitsConfig.forEach(h => {
+            let habitChecks = currentData[h.id].filter(Boolean).length;
+            totalChecks += habitChecks;
+            polarData.push(habitChecks); // Max 7
+        });
+
+        // Para gráfico de línea (Puntuación por día)
+        let lineData = [0, 0, 0, 0, 0, 0, 0];
+        for(let d = 0; d < 7; d++) {
+            habitsConfig.forEach(h => {
+                if(currentData[h.id][d]) lineData[d]++;
+            });
+        }
+
+        let globalScore = Math.round((totalChecks / possibleChecks) * 100);
+
+        return { totalChecks, globalScore, polarData, lineData };
+    }
+
+    // --- GRÁFICOS (Chart.js) ---
+    function updateDashboard() {
+        const stats = calculateStats();
+        
+        // Actualizar números
+        document.getElementById('score-display').innerText = `${stats.globalScore}%`;
+        document.getElementById('completed-display').innerText = stats.totalChecks;
+
+        // Configuración común
+        Chart.defaults.color = '#6b7280';
+        Chart.defaults.font.family = 'Inter';
+
+        // 1. Gráfico Polar (Equilibrio)
+        const ctxPolar = document.getElementById('polarChart').getContext('2d');
+        if (charts.polar) charts.polar.destroy();
+        charts.polar = new Chart(ctxPolar, {
+            type: 'polarArea',
+            data: {
+                labels: habitsConfig.map(h => h.name),
+                datasets: [{
+                    data: stats.polarData,
+                    backgroundColor: habitsConfig.map(h => h.color + '80'), // Añade transparencia
+                    borderColor: habitsConfig.map(h => h.color),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { r: { min: 0, max: 7, ticks: { stepSize: 1, display: false } } },
+                plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } }
+            }
+        });
+
+        // 2. Gráfico de Línea (Tendencia Diaria)
+        const ctxLine = document.getElementById('lineChart').getContext('2d');
+        if (charts.line) charts.line.destroy();
+        
+        // Crear un gradiente para la línea
+        let gradient = ctxLine.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.5)'); // primary color con opacidad
+        gradient.addColorStop(1, 'rgba(79, 70, 229, 0.0)');
+
+        charts.line = new Chart(ctxLine, {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [{
+                    label: 'Hábitos completados por día',
+                    data: stats.lineData,
+                    borderColor: '#4f46e5',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#4f46e5',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: true,
+                    tension: 0.4 // Hace la línea curva
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: { min: 0, max: habitsConfig.length, ticks: { stepSize: 1 } },
+                    x: { grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // --- ACCIONES PRINCIPALES ---
+    
+    function resetCurrentWeek() {
+        if(confirm("¿Estás seguro de querer limpiar TODA la semana actual? Esto no se puede deshacer.")) {
+            localStorage.removeItem('trackerPro_current');
+            loadData();
+            renderTable();
+            updateDashboard();
+        }
+    }
+
+    function saveWeekToHistory() {
+        const stats = calculateStats();
+        if(stats.totalChecks === 0) {
+            alert("No has marcado ningún hábito esta semana.");
+            return;
+        }
+
+        if(confirm("¿Cerrar esta semana? Se guardará en el historial y empezarás una nueva en blanco.")) {
+            let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
+            
+            // Crear registro
+            const record = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
+                score: stats.globalScore,
+                checks: stats.totalChecks,
+                data: JSON.parse(JSON.stringify(currentData)) // Copia profunda
+            };
+            
+            history.unshift(record); // Añadir al principio
+            localStorage.setItem('trackerPro_history', JSON.stringify(history));
+            
+            // Limpiar actual
+            localStorage.removeItem('trackerPro_current');
+            loadData();
+            renderTable();
+            updateDashboard();
+            
+            // Ir al historial
+            switchTab('history');
+        }
+    }
+
+    // --- HISTORIAL ---
+    function renderHistory() {
+        const container = document.getElementById('history-container');
+        let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
+        
+        if (history.length === 0) {
+            container.innerHTML = '<p style="text-align:center; padding: 30px; color: var(--text-light);">Aún no hay semanas guardadas. Completa una semana y guárdala para verla aquí.</p>';
+            return;
+        }
+
+        let html = '';
+        history.forEach(record => {
+            let scoreColor = record.score >= 80 ? 'var(--success-color)' : (record.score >= 50 ? '#f59e0b' : 'var(--danger-color)');
+            
+            html += `
+                <div class="history-item">
+                    <div class="history-info">
+                        <h4>Semana terminada el: ${record.date}</h4>
+                        <p><i class="fas fa-check-circle"></i> ${record.checks} hábitos logrados</p>
+                    </div>
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span class="score-badge" style="background-color: ${scoreColor}">Nota: ${record.score}%</span>
+                        <button class="btn btn-primary" onclick="exportHistoryRecord(${record.id})" style="padding: 5px 10px; font-size: 0.8rem;">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteHistoryRecord(${record.id})" style="padding: 5px 10px; font-size: 0.8rem; border: none;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function deleteHistoryRecord(id) {
+        if(confirm("¿Eliminar este registro histórico permanentemente?")) {
+            let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
+            history = history.filter(record => record.id !== id);
+            localStorage.setItem('trackerPro_history', JSON.stringify(history));
+            renderHistory();
+        }
+    }
+
+    // --- EXPORTACIÓN PDF PROFESIONAL ---
+    
+    function generatePDF(element, filename) {
+        // Añadir clase temporal para ajustar el diseño para PDF (ocultar botones, mostrar título)
+        element.classList.add('pdf-mode');
+        
+        const opt = {
+            margin:       10,
+            filename:     filename,
+            image:        { type: 'jpeg', quality: 1 },
+            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+        
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Quitar clase temporal
+            element.classList.remove('pdf-mode');
+        });
+    }
+
+    function exportCurrentToPDF() {
+        const element = document.getElementById('pdf-export-zone');
+        const dateStr = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+        generatePDF(element, `TrackerPro_Semana_${dateStr}.pdf`);
+    }
+
+    // Exportar desde el historial implica cargar temporalmente los datos en la vista principal,
+    // exportar y luego restaurar los datos actuales.
+    function exportHistoryRecord(id) {
+        let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
+        const record = history.find(r => r.id === id);
+        
+        if(record) {
+            // 1. Guardar estado actual en memoria temporal
+            const tempCurrent = JSON.stringify(currentData);
+            
+            // 2. Cargar datos del historial en la interfaz
+            currentData = record.data;
+            renderTable();
+            updateDashboard();
+            
+            // Modificar título temporalmente
+            const titleEl = document.querySelector('.export-only');
+            const originalTitle = titleEl.innerHTML;
+            titleEl.innerHTML = `<i class="fas fa-history"></i> Reporte Histórico - Semana del ${record.date}`;
+            
+            // 3. Forzar a mostrar la pestaña actual (para que HTML2PDF pueda capturarla)
+            switchTab('current');
+            
+            // 4. Esperar un momento para que los gráficos se animen/rendericen antes de capturar
+            setTimeout(() => {
+                const element = document.getElementById('pdf-export-zone');
+                
+                // Generar PDF
+                const opt = {
+                    margin: 10, filename: `TrackerPro_Historico_${record.date.replace(/ /g, '_')}.pdf`,
+                    image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                };
+                
+                element.classList.add('pdf-mode');
+                html2pdf().set(opt).from(element).save().then(() => {
+                    element.classList.remove('pdf-mode');
+                    titleEl.innerHTML = originalTitle;
+                    
+                    // 5. Restaurar estado actual original
+                    currentData = JSON.parse(tempCurrent);
+                    renderTable();
+                    updateDashboard();
+                    switchTab('history'); // Volver al historial
+                });
+            }, 500); // 500ms de espera
+        }
+    }
+
+    // Iniciar aplicación
+    window.onload = init;
+
+</script>
+</body>
+</html>
