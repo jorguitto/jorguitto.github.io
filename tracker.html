@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tracker Pro - Rendimiento Personal</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -10,145 +10,159 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- VARIABLES DE DISEÑO PROFESIONAL --- */
+        /* --- VARIABLES --- */
         :root {
             --bg-color: #f3f4f6;
             --surface-color: #ffffff;
-            --primary-color: #4f46e5;
-            --primary-hover: #4338ca;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
-            --text-main: #1f2937;
-            --text-light: #6b7280;
-            --border-color: #e5e7eb;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --radius-md: 0.5rem;
-            --radius-lg: 1rem;
+            --primary-color: #4a90e2;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --text-main: #2c3e50;
+            --text-light: #7f8c8d;
+            --border-color: #e2e8f0;
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --radius-md: 8px;
+            --radius-lg: 15px;
         }
 
-        /* --- ESTILOS GENERALES --- */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        
-        body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.5; padding-bottom: 50px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 50px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 15px; }
 
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-
-        /* --- CABECERA Y NAVEGACIÓN --- */
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 20px; background: var(--surface-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+        /* --- CABECERA --- */
+        header { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; padding: 20px; background: var(--surface-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+        @media (min-width: 768px) { header { flex-direction: row; justify-content: space-between; align-items: center; } }
         
         .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+        .nav-tabs { display: flex; gap: 10px; width: 100%; overflow-x: auto; }
+        @media (min-width: 768px) { .nav-tabs { width: auto; } }
         
-        .nav-tabs { display: flex; gap: 10px; }
-        
-        .tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--text-light); font-weight: 600; cursor: pointer; border-radius: var(--radius-md); transition: all 0.2s; }
-        
+        .tab-btn { flex: 1; padding: 12px 20px; border: none; background: #edf2f7; color: var(--text-light); font-weight: 600; cursor: pointer; border-radius: var(--radius-md); transition: 0.2s; font-size: 0.95rem; white-space: nowrap; }
         .tab-btn.active { background: var(--primary-color); color: white; box-shadow: var(--shadow-md); }
-        
-        .tab-btn:hover:not(.active) { background: var(--border-color); color: var(--text-main); }
 
-        /* --- VISTAS (Pestañas) --- */
-        .view-section { display: none; animation: fadeIn 0.4s ease; }
+        /* --- VISTAS --- */
+        .view-section { display: none; animation: fadeIn 0.3s; }
         .view-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- TARJETAS (Cards) --- */
-        .card { background: var(--surface-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-md); margin-bottom: 25px; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
-        .card-title { font-size: 1.25rem; font-weight: 700; color: var(--text-main); }
+        /* --- TARJETAS --- */
+        .card { background: var(--surface-color); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-md); margin-bottom: 20px; }
+        .card-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--bg-color); padding-bottom: 15px; }
 
-        /* --- CUADRÍCULA DE HÁBITOS --- */
-        .grid-container { overflow-x: auto; padding-bottom: 10px; }
-        .habit-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 800px; }
+        /* --- TABLA CON SCROLL PARA MÓVILES (ESTILO BOTONES CUADRADOS) --- */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; border-radius: var(--radius-md); }
         
-        .habit-table th { background: var(--bg-color); color: var(--text-light); font-weight: 600; padding: 15px; text-align: center; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em; }
-        .habit-table th:first-child { text-align: left; border-top-left-radius: var(--radius-md); }
-        .habit-table th:last-child { border-top-right-radius: var(--radius-md); }
+        .habit-table { width: 100%; min-width: 700px; border-collapse: separate; border-spacing: 0; }
         
-        .habit-table td { padding: 10px; border-bottom: 1px solid var(--border-color); text-align: center; vertical-align: middle; }
-        .habit-name-cell { font-weight: 600; text-align: left !important; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+        .habit-table th { background: #f8fafc; color: var(--text-main); font-weight: 600; padding: 12px 5px; text-align: center; border-bottom: 2px solid var(--border-color); font-size: 0.9rem; }
+        .day-percent { display: block; font-size: 0.75rem; color: var(--primary-color); margin-top: 3px; font-weight: 700; }
         
-        /* Checkbox Personalizado Profesional */
-        .check-btn { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--border-color); background: var(--surface-color); cursor: pointer; display: inline-flex; justify-content: center; align-items: center; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); color: transparent; font-size: 1.2rem; }
-        .check-btn:hover { border-color: var(--primary-color); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
-        .check-btn.completed { background: var(--success-color); border-color: var(--success-color); color: white; transform: scale(1.05); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+        .habit-table td { padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--border-color); vertical-align: middle; background: var(--surface-color); }
+        
+        /* Columna fija en móvil */
+        .habit-table th:first-child, .habit-table td:first-child { 
+            position: sticky; 
+            left: 0; 
+            z-index: 2; 
+            text-align: left; 
+            padding-left: 15px;
+            box-shadow: 4px 0 6px -2px rgba(0,0,0,0.05);
+        }
+        
+        .habit-name-cell { font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; }
+
+        /* Los Botones Cuadrados que te gustaban */
+        .check-btn { 
+            width: 45px; 
+            height: 45px; 
+            border-radius: 12px; 
+            border: none;
+            background: #edf2f7; 
+            cursor: pointer; 
+            display: inline-flex; 
+            justify-content: center; 
+            align-items: center; 
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            color: transparent; 
+            font-size: 1.2rem; 
+        }
+        .check-btn:hover { background: #e2e8f0; transform: scale(1.05); }
+        .check-btn.completed { 
+            background: var(--success-color); 
+            color: white; 
+            transform: scale(1.1); 
+            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); 
+        }
 
         /* --- DASHBOARD Y GRÁFICOS --- */
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
-        .chart-wrapper { position: relative; height: 300px; width: 100%; display: flex; justify-content: center; }
-        
-        /* Stats Summary */
-        .stats-summary { display: flex; justify-content: space-around; background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); color: white; border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--shadow-md); margin-bottom: 25px; }
-        .stat-box { text-align: center; }
-        .stat-value { font-size: 2.5rem; font-weight: 800; display: block; }
-        .stat-label { font-size: 0.9rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+        .stats-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: linear-gradient(135deg, var(--primary-color), #3498db); color: white; border-radius: var(--radius-lg); padding: 20px; text-align: center; box-shadow: var(--shadow-md); }
+        .stat-value { font-size: 2.2rem; font-weight: 800; display: block; }
+        .stat-label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 800px) { .dashboard-grid { grid-template-columns: 1fr 1fr; } }
+        .chart-wrapper { position: relative; height: 280px; width: 100%; padding: 10px; }
 
         /* --- HISTORIAL --- */
         .history-list { display: flex; flex-direction: column; gap: 15px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: var(--bg-color); border-radius: var(--radius-md); border-left: 5px solid var(--primary-color); transition: transform 0.2s; }
-        .history-item:hover { transform: translateX(5px); background: #e5e7eb; }
-        .history-info h4 { margin-bottom: 5px; color: var(--text-main); }
-        .history-info p { font-size: 0.85rem; color: var(--text-light); }
-        .score-badge { background: var(--primary-color); color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
+        .history-item { display: flex; flex-direction: column; gap: 10px; padding: 15px; background: var(--bg-color); border-radius: var(--radius-md); border-left: 5px solid var(--primary-color); }
+        @media (min-width: 768px) { .history-item { flex-direction: row; justify-content: space-between; align-items: center; } }
+        .score-badge { display: inline-block; background: var(--primary-color); color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
 
-        /* --- BOTONES --- */
-        .btn { padding: 10px 20px; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; font-size: 0.95rem; }
+        /* --- BOTONES DE ACCIÓN --- */
+        .btn { padding: 12px 20px; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-size: 0.95rem; width: 100%; }
+        @media (min-width: 768px) { .btn { width: auto; } }
         .btn-primary { background: var(--primary-color); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); box-shadow: var(--shadow-md); transform: translateY(-2px); }
-        .btn-danger { background: var(--surface-color); color: var(--danger-color); border: 1px solid var(--danger-color); }
-        .btn-danger:hover { background: var(--danger-color); color: white; }
-        .btn-action { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+        .btn-success { background: var(--success-color); color: white; }
+        .btn-danger { background: transparent; color: var(--text-light); border: 1px solid var(--border-color); }
+        .btn-danger:hover { color: var(--danger-color); border-color: var(--danger-color); }
+        
+        .action-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        @media (min-width: 768px) { .action-group { flex-direction: row; justify-content: flex-end; } }
 
-        /* --- PDF EXPORT STYLES --- */
-        #pdf-export-zone { background: white; padding: 20px; }
-        .export-only { display: none; }
-        .pdf-mode .export-only { display: block; text-align: center; margin-bottom: 20px; color: var(--primary-color); }
+        /* --- PDF EXPORT --- */
+        .pdf-mode { background: white; padding: 20px; }
         .pdf-mode .no-export { display: none !important; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            header { flex-direction: column; gap: 15px; }
-            .dashboard-grid { grid-template-columns: 1fr; }
-            .stats-summary { flex-direction: column; gap: 20px; }
-        }
+        .pdf-mode .table-responsive { overflow: visible; }
+        .export-title { display: none; text-align: center; color: var(--primary-color); margin-bottom: 20px; font-size: 1.8rem; }
+        .pdf-mode .export-title { display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div class="logo">
-            <i class="fas fa-chart-line"></i> Tracker Pro
-        </div>
+        <div class="logo"><i class="fas fa-chart-pie"></i> Mi Tracker</div>
         <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('current')"><i class="fas fa-calendar-week"></i> Semana Actual</button>
-            <button class="tab-btn" onclick="switchTab('history')"><i class="fas fa-history"></i> Historial y PDFs</button>
+            <button class="tab-btn active" onclick="switchTab('current')"><i class="fas fa-calendar-check"></i> Esta Semana</button>
+            <button class="tab-btn" onclick="switchTab('history')"><i class="fas fa-folder-open"></i> Mis PDFs</button>
         </div>
     </header>
 
     <div id="view-current" class="view-section active">
         
         <div id="pdf-export-zone">
-            <h1 class="export-only"><i class="fas fa-chart-line"></i> Reporte Semanal - Tracker Pro</h1>
-            
+            <h1 class="export-title">Resumen de Hábitos</h1>
+
             <div class="stats-summary">
                 <div class="stat-box">
                     <span class="stat-value" id="score-display">0%</span>
-                    <span class="stat-label">Puntuación Global</span>
+                    <span class="stat-label">Éxito Total</span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-value" id="completed-display">0</span>
-                    <span class="stat-label">Hábitos Completados</span>
+                    <span class="stat-label">Hábitos Marcados</span>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header no-export">
-                    <h2 class="card-title">Registro Diario</h2>
-                    <button class="btn btn-danger" onclick="resetCurrentWeek()"><i class="fas fa-eraser"></i> Limpiar Pizarra</button>
+                    <h2 style="font-size: 1.2rem; color: var(--text-main);">Pizarra Diaria</h2>
+                    <button class="btn btn-danger" onclick="resetCurrentWeek()"><i class="fas fa-undo"></i> Borrar Todo</button>
                 </div>
-                <div class="grid-container">
+                
+                <div class="table-responsive">
                     <table class="habit-table" id="habit-table">
                         </table>
                 </div>
@@ -156,38 +170,32 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Análisis de Rendimiento</h2>
+                    <h2 style="font-size: 1.2rem; color: var(--text-main);">Mis Gráficas</h2>
                 </div>
                 <div class="dashboard-grid">
                     <div>
-                        <h3 style="text-align: center; margin-bottom: 10px; color: var(--text-light); font-size: 1rem;">Equilibrio de Hábitos</h3>
-                        <div class="chart-wrapper">
-                            <canvas id="polarChart"></canvas>
-                        </div>
+                        <h3 style="text-align: center; color: var(--text-light); font-size: 1rem; margin-bottom: 10px;">Progreso por Hábito (La clásica)</h3>
+                        <div class="chart-wrapper"><canvas id="barChart"></canvas></div>
                     </div>
                     <div>
-                        <h3 style="text-align: center; margin-bottom: 10px; color: var(--text-light); font-size: 1rem;">Tendencia Diaria (Progreso)</h3>
-                        <div class="chart-wrapper">
-                            <canvas id="lineChart"></canvas>
-                        </div>
+                        <h3 style="text-align: center; color: var(--text-light); font-size: 1rem; margin-bottom: 10px;">Tendencia de la Semana</h3>
+                        <div class="chart-wrapper"><canvas id="lineChart"></canvas></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="btn-action no-export">
-            <button class="btn btn-primary" onclick="exportCurrentToPDF()"><i class="fas fa-file-pdf"></i> Exportar a PDF</button>
-            <button class="btn btn-primary" style="background-color: var(--success-color);" onclick="saveWeekToHistory()"><i class="fas fa-save"></i> Cerrar Semana y Guardar</button>
+        <div class="action-group no-export">
+            <button class="btn btn-primary" onclick="exportCurrentToPDF()"><i class="fas fa-file-pdf"></i> Guardar en PDF</button>
+            <button class="btn btn-success" onclick="saveWeekToHistory()"><i class="fas fa-flag-checkered"></i> Terminar Semana</button>
         </div>
     </div>
 
     <div id="view-history" class="view-section">
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title"><i class="fas fa-archive"></i> Registro Histórico</h2>
-                <p style="color: var(--text-light); font-size: 0.9rem;">Semanas anteriores guardadas en tu dispositivo.</p>
+                <h2 style="font-size: 1.2rem;">Semanas Guardadas</h2>
             </div>
-            
             <div id="history-container" class="history-list">
                 </div>
         </div>
@@ -198,19 +206,18 @@
 <script>
     // --- CONFIGURACIÓN BASE ---
     const habitsConfig = [
-        { id: 'comidas', name: 'Comidas Sanas', icon: 'fa-utensils', color: '#10b981' }, // Verde
-        { id: 'agua', name: 'Hidratación', icon: 'fa-glass-water', color: '#3b82f6' }, // Azul
-        { id: 'ejercicio', name: 'Ejercicio', icon: 'fa-dumbbell', color: '#f59e0b' }, // Naranja
-        { id: 'estudio', name: 'Estudio Eficiente', icon: 'fa-book-open', color: '#8b5cf6' }, // Morado
-        { id: 'proyecto', name: 'Proyecto X', icon: 'fa-rocket', color: '#ec4899' }, // Rosa
-        { id: 'suplementos', name: 'Suplementos', icon: 'fa-pills', color: '#64748b' }  // Gris
+        { id: 'comidas', name: 'Comidas Sanas', icon: 'fa-apple-alt', color: '#2ecc71' },
+        { id: 'agua', name: 'Beber Agua', icon: 'fa-tint', color: '#3498db' },
+        { id: 'ejercicio', name: 'Ejercicio', icon: 'fa-running', color: '#e67e22' },
+        { id: 'estudio', name: 'Estudio Efic.', icon: 'fa-book', color: '#9b59b6' },
+        { id: 'proyecto', name: 'Proyecto X', icon: 'fa-star', color: '#f1c40f' },
+        { id: 'suplementos', name: 'Suplementos', icon: 'fa-capsules', color: '#95a5a6' }
     ];
     
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     
-    // Variables Globales
     let currentData = {};
-    let charts = { polar: null, line: null };
+    let charts = { bar: null, line: null };
 
     // --- INICIALIZACIÓN ---
     function init() {
@@ -225,26 +232,35 @@
         if (saved) {
             currentData = JSON.parse(saved);
         } else {
-            // Estructura vacía
             habitsConfig.forEach(h => {
                 currentData[h.id] = [false, false, false, false, false, false, false];
             });
         }
     }
 
-    // --- RENDERIZADO UI ---
+    // --- RENDERIZAR TABLA CLÁSICA CON BOTONES CUADRADOS ---
     function renderTable() {
         const table = document.getElementById('habit-table');
         
-        // Cabecera
-        let html = '<thead><tr><th>Hábitos</th>';
-        days.forEach(d => html += `<th>${d}</th>`);
-        html += '</tr></thead><tbody>';
+        // Calcular porcentajes diarios para la cabecera
+        let dailyPercents = [0,0,0,0,0,0,0];
+        for(let d=0; d<7; d++) {
+            let dayTotal = 0;
+            habitsConfig.forEach(h => { if(currentData[h.id][d]) dayTotal++; });
+            dailyPercents[d] = Math.round((dayTotal / habitsConfig.length) * 100);
+        }
 
-        // Filas
+        // Generar Cabecera
+        let html = `<thead><tr><th style="text-align: left; padding-left: 15px;">Hábitos</th>`;
+        days.forEach((day, i) => {
+            html += `<th id="th-day-${i}">${day} <span class="day-percent" id="perc-day-${i}">${dailyPercents[i]}%</span></th>`;
+        });
+        html += `</tr></thead><tbody>`;
+
+        // Generar Filas y Botones Cuadrados
         habitsConfig.forEach((habit) => {
             html += `<tr>`;
-            html += `<td class="habit-name-cell"><i class="fas ${habit.icon}" style="color: ${habit.color}; width: 20px;"></i> ${habit.name}</td>`;
+            html += `<td class="habit-name-cell"><i class="fas ${habit.icon}" style="color: ${habit.color}; font-size: 1.2rem; width: 25px; text-align: center;"></i> <span>${habit.name}</span></td>`;
             
             for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
                 const isCompleted = currentData[habit.id][dayIdx];
@@ -263,201 +279,174 @@
         table.innerHTML = html;
     }
 
+    // --- CAMBIAR PESTAÑAS ---
     function switchTab(tab) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         
         if(tab === 'current') {
             document.getElementById('view-current').classList.add('active');
-            document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
         } else {
             document.getElementById('view-history').classList.add('active');
-            document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
             renderHistory();
         }
     }
 
-    // --- LÓGICA DE DATOS ---
+    // --- LÓGICA DE CLICS ---
     function toggleHabit(habitId, dayIndex, btnElement) {
-        // Cambiar estado
+        // Cambiar estado en los datos
         currentData[habitId][dayIndex] = !currentData[habitId][dayIndex];
         
-        // Animación visual rápida
+        // Animación del botón cuadrado
         btnElement.classList.toggle('completed');
         
+        // Actualizar el porcentaje de ESE día arriba en la cabecera
+        let dayTotal = 0;
+        habitsConfig.forEach(h => { if(currentData[h.id][dayIndex]) dayTotal++; });
+        let newPercent = Math.round((dayTotal / habitsConfig.length) * 100);
+        document.getElementById(`perc-day-${dayIndex}`).innerText = `${newPercent}%`;
+
         // Guardar y actualizar gráficos
         localStorage.setItem('trackerPro_current', JSON.stringify(currentData));
         updateDashboard();
     }
 
+    // --- CÁLCULOS PARA GRÁFICOS ---
     function calculateStats() {
         let totalChecks = 0;
         let possibleChecks = habitsConfig.length * 7;
         
-        // Para gráfico polar (Puntuación por hábito)
-        let polarData = [];
+        let barData = []; // Para la gráfica de barras
         habitsConfig.forEach(h => {
             let habitChecks = currentData[h.id].filter(Boolean).length;
             totalChecks += habitChecks;
-            polarData.push(habitChecks); // Max 7
+            barData.push(Math.round((habitChecks / 7) * 100)); // Porcentaje de éxito de ese hábito en la semana
         });
 
-        // Para gráfico de línea (Puntuación por día)
         let lineData = [0, 0, 0, 0, 0, 0, 0];
         for(let d = 0; d < 7; d++) {
-            habitsConfig.forEach(h => {
-                if(currentData[h.id][d]) lineData[d]++;
-            });
+            habitsConfig.forEach(h => { if(currentData[h.id][d]) lineData[d]++; });
         }
 
         let globalScore = Math.round((totalChecks / possibleChecks) * 100);
-
-        return { totalChecks, globalScore, polarData, lineData };
+        return { totalChecks, globalScore, barData, lineData };
     }
 
-    // --- GRÁFICOS (Chart.js) ---
+    // --- DIBUJAR GRÁFICOS ---
     function updateDashboard() {
         const stats = calculateStats();
         
-        // Actualizar números
+        // Actualizar números gigantes
         document.getElementById('score-display').innerText = `${stats.globalScore}%`;
         document.getElementById('completed-display').innerText = stats.totalChecks;
 
-        // Configuración común
-        Chart.defaults.color = '#6b7280';
-        Chart.defaults.font.family = 'Inter';
+        Chart.defaults.font.family = 'Segoe UI';
 
-        // 1. Gráfico Polar (Equilibrio)
-        const ctxPolar = document.getElementById('polarChart').getContext('2d');
-        if (charts.polar) charts.polar.destroy();
-        charts.polar = new Chart(ctxPolar, {
-            type: 'polarArea',
+        // 1. Vuelve la Gráfica de Barras Clásica
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        if (charts.bar) charts.bar.destroy();
+        charts.bar = new Chart(ctxBar, {
+            type: 'bar',
             data: {
                 labels: habitsConfig.map(h => h.name),
                 datasets: [{
-                    data: stats.polarData,
-                    backgroundColor: habitsConfig.map(h => h.color + '80'), // Añade transparencia
+                    label: '% Completado',
+                    data: stats.barData,
+                    backgroundColor: habitsConfig.map(h => h.color + '99'), // Color con transparencia
                     borderColor: habitsConfig.map(h => h.color),
-                    borderWidth: 2
+                    borderWidth: 2,
+                    borderRadius: 5
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { r: { min: 0, max: 7, ticks: { stepSize: 1, display: false } } },
-                plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } }
+                scales: { y: { beginAtZero: true, max: 100 } },
+                plugins: { legend: { display: false } }
             }
         });
 
-        // 2. Gráfico de Línea (Tendencia Diaria)
+        // 2. Gráfica de Línea de la semana
         const ctxLine = document.getElementById('lineChart').getContext('2d');
         if (charts.line) charts.line.destroy();
         
-        // Crear un gradiente para la línea
-        let gradient = ctxLine.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.5)'); // primary color con opacidad
-        gradient.addColorStop(1, 'rgba(79, 70, 229, 0.0)');
+        let gradient = ctxLine.createLinearGradient(0, 0, 0, 280);
+        gradient.addColorStop(0, 'rgba(74, 144, 226, 0.5)');
+        gradient.addColorStop(1, 'rgba(74, 144, 226, 0.0)');
 
         charts.line = new Chart(ctxLine, {
             type: 'line',
             data: {
-                labels: days,
+                labels: days.map(d => d.substring(0,3)), // Lun, Mar, Mié...
                 datasets: [{
-                    label: 'Hábitos completados por día',
+                    label: 'Hábitos por día',
                     data: stats.lineData,
-                    borderColor: '#4f46e5',
+                    borderColor: 'var(--primary-color)',
                     backgroundColor: gradient,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#4f46e5',
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    fill: true,
-                    tension: 0.4 // Hace la línea curva
+                    borderWidth: 3, fill: true, tension: 0.3, pointRadius: 5, pointBackgroundColor: 'white'
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: {
-                    y: { min: 0, max: habitsConfig.length, ticks: { stepSize: 1 } },
-                    x: { grid: { display: false } }
-                },
+                scales: { y: { min: 0, max: habitsConfig.length, ticks: { stepSize: 1 } }, x: { grid: { display: false } } },
                 plugins: { legend: { display: false } }
             }
         });
     }
 
-    // --- ACCIONES PRINCIPALES ---
-    
+    // --- ACCIONES Y GUARDADO ---
     function resetCurrentWeek() {
-        if(confirm("¿Estás seguro de querer limpiar TODA la semana actual? Esto no se puede deshacer.")) {
+        if(confirm("¿Seguro que quieres borrar todas las marcas de esta semana?")) {
             localStorage.removeItem('trackerPro_current');
-            loadData();
-            renderTable();
-            updateDashboard();
+            loadData(); renderTable(); updateDashboard();
         }
     }
 
     function saveWeekToHistory() {
         const stats = calculateStats();
-        if(stats.totalChecks === 0) {
-            alert("No has marcado ningún hábito esta semana.");
-            return;
-        }
+        if(stats.totalChecks === 0) { alert("¡Aún no has marcado nada!"); return; }
 
-        if(confirm("¿Cerrar esta semana? Se guardará en el historial y empezarás una nueva en blanco.")) {
+        if(confirm("¿Cerrar semana y archivarla? La tabla se quedará en blanco para el lunes.")) {
             let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
             
-            // Crear registro
-            const record = {
+            history.unshift({
                 id: Date.now(),
-                date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
+                date: new Date().toLocaleDateString('es-ES', {day: '2-digit', month: 'short', year: 'numeric'}),
                 score: stats.globalScore,
                 checks: stats.totalChecks,
-                data: JSON.parse(JSON.stringify(currentData)) // Copia profunda
-            };
+                data: JSON.parse(JSON.stringify(currentData))
+            });
             
-            history.unshift(record); // Añadir al principio
             localStorage.setItem('trackerPro_history', JSON.stringify(history));
-            
-            // Limpiar actual
             localStorage.removeItem('trackerPro_current');
-            loadData();
-            renderTable();
-            updateDashboard();
-            
-            // Ir al historial
-            switchTab('history');
+            loadData(); renderTable(); updateDashboard(); switchTab('history');
         }
     }
 
-    // --- HISTORIAL ---
     function renderHistory() {
         const container = document.getElementById('history-container');
         let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
         
         if (history.length === 0) {
-            container.innerHTML = '<p style="text-align:center; padding: 30px; color: var(--text-light);">Aún no hay semanas guardadas. Completa una semana y guárdala para verla aquí.</p>';
+            container.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--text-light);">Aún no hay semanas guardadas.</p>';
             return;
         }
 
         let html = '';
         history.forEach(record => {
-            let scoreColor = record.score >= 80 ? 'var(--success-color)' : (record.score >= 50 ? '#f59e0b' : 'var(--danger-color)');
+            let color = record.score >= 80 ? 'var(--success-color)' : (record.score >= 50 ? '#f39c12' : 'var(--danger-color)');
             
             html += `
                 <div class="history-item">
-                    <div class="history-info">
-                        <h4>Semana terminada el: ${record.date}</h4>
-                        <p><i class="fas fa-check-circle"></i> ${record.checks} hábitos logrados</p>
+                    <div>
+                        <h4 style="margin-bottom: 5px; color: var(--text-main);">Semana del ${record.date}</h4>
+                        <p style="font-size: 0.85rem; color: var(--text-light);"><i class="fas fa-check-double"></i> ${record.checks} completados</p>
                     </div>
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <span class="score-badge" style="background-color: ${scoreColor}">Nota: ${record.score}%</span>
-                        <button class="btn btn-primary" onclick="exportHistoryRecord(${record.id})" style="padding: 5px 10px; font-size: 0.8rem;">
-                            <i class="fas fa-file-pdf"></i>
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteHistoryRecord(${record.id})" style="padding: 5px 10px; font-size: 0.8rem; border: none;">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span class="score-badge" style="background-color: ${color}">Nota: ${record.score}%</span>
+                        <button class="btn btn-primary" onclick="exportHistoryRecord(${record.id})" style="padding: 8px 12px;"><i class="fas fa-file-pdf"></i></button>
+                        <button class="btn btn-danger" onclick="deleteHistoryRecord(${record.id})" style="padding: 8px 12px; border: none; background: #fdf2f2;"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
             `;
@@ -466,91 +455,63 @@
     }
 
     function deleteHistoryRecord(id) {
-        if(confirm("¿Eliminar este registro histórico permanentemente?")) {
+        if(confirm("¿Borrar este PDF/registro para siempre?")) {
             let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
-            history = history.filter(record => record.id !== id);
+            history = history.filter(r => r.id !== id);
             localStorage.setItem('trackerPro_history', JSON.stringify(history));
             renderHistory();
         }
     }
 
-    // --- EXPORTACIÓN PDF PROFESIONAL ---
-    
+    // --- MOTOR PDF ---
     function generatePDF(element, filename) {
-        // Añadir clase temporal para ajustar el diseño para PDF (ocultar botones, mostrar título)
         element.classList.add('pdf-mode');
         
         const opt = {
             margin:       10,
             filename:     filename,
             image:        { type: 'jpeg', quality: 1 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            html2canvas:  { scale: 2, useCORS: true },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
         };
         
         html2pdf().set(opt).from(element).save().then(() => {
-            // Quitar clase temporal
             element.classList.remove('pdf-mode');
         });
     }
 
     function exportCurrentToPDF() {
         const element = document.getElementById('pdf-export-zone');
-        const dateStr = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
-        generatePDF(element, `TrackerPro_Semana_${dateStr}.pdf`);
+        generatePDF(element, `Mi_Tracker_Semanal.pdf`);
     }
 
-    // Exportar desde el historial implica cargar temporalmente los datos en la vista principal,
-    // exportar y luego restaurar los datos actuales.
     function exportHistoryRecord(id) {
         let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
         const record = history.find(r => r.id === id);
         
         if(record) {
-            // 1. Guardar estado actual en memoria temporal
             const tempCurrent = JSON.stringify(currentData);
-            
-            // 2. Cargar datos del historial en la interfaz
             currentData = record.data;
-            renderTable();
-            updateDashboard();
+            renderTable(); updateDashboard();
             
-            // Modificar título temporalmente
-            const titleEl = document.querySelector('.export-only');
-            const originalTitle = titleEl.innerHTML;
-            titleEl.innerHTML = `<i class="fas fa-history"></i> Reporte Histórico - Semana del ${record.date}`;
-            
-            // 3. Forzar a mostrar la pestaña actual (para que HTML2PDF pueda capturarla)
+            document.querySelector('.export-title').innerText = `Reporte Histórico - ${record.date}`;
             switchTab('current');
             
-            // 4. Esperar un momento para que los gráficos se animen/rendericen antes de capturar
             setTimeout(() => {
                 const element = document.getElementById('pdf-export-zone');
+                generatePDF(element, `Tracker_Semana_${record.date.replace(/ /g, '_')}.pdf`);
                 
-                // Generar PDF
-                const opt = {
-                    margin: 10, filename: `TrackerPro_Historico_${record.date.replace(/ /g, '_')}.pdf`,
-                    image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-                };
-                
-                element.classList.add('pdf-mode');
-                html2pdf().set(opt).from(element).save().then(() => {
-                    element.classList.remove('pdf-mode');
-                    titleEl.innerHTML = originalTitle;
-                    
-                    // 5. Restaurar estado actual original
+                setTimeout(() => {
                     currentData = JSON.parse(tempCurrent);
-                    renderTable();
-                    updateDashboard();
-                    switchTab('history'); // Volver al historial
-                });
-            }, 500); // 500ms de espera
+                    renderTable(); updateDashboard();
+                    document.querySelector('.export-title').innerText = `Resumen de Hábitos`;
+                    switchTab('history');
+                }, 1000);
+            }, 500);
         }
     }
 
-    // Iniciar aplicación
     window.onload = init;
-
 </script>
 </body>
 </html>
