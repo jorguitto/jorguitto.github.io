@@ -772,6 +772,15 @@
         let authReady = false;
         let authStateHandled = false;
         let lastAuthDebug = "Iniciando autenticacion...";
+        const AUTH_DEBUG_KEY = "fittracker_auth_debug";
+        const AUTH_REDIRECT_PENDING_KEY = "fittracker_auth_redirect_pending";
+
+        function setAuthDebug(message) {
+            lastAuthDebug = message;
+            try {
+                localStorage.setItem(AUTH_DEBUG_KEY, message);
+            } catch (_) {}
+        }
 
         function getTodayDocId() {
             return new Date().toISOString().split('T')[0];
@@ -787,7 +796,7 @@
         }
 
         function showLoginError(title, message) {
-            lastAuthDebug = `${title}: ${message}`;
+            setAuthDebug(`${title}: ${message}`);
             Swal.fire({ title, text: message, icon: 'error' });
         }
 
@@ -812,12 +821,28 @@
             }
 
             try {
+                setAuthDebug("Procesando getRedirectResult...");
                 const redirectResult = await auth.getRedirectResult();
                 if (redirectResult && redirectResult.user) {
                     console.log("Redirect auth completado:", redirectResult.user.uid);
-                    lastAuthDebug = `Redirect OK (${redirectResult.user.uid})`;
+                    setAuthDebug(`Redirect OK (${redirectResult.user.uid})`);
+                    try { sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY); } catch (_) {}
                     if (!auth.currentUser) {
                         await completarSesionConUsuario(redirectResult.user);
+                    }
+                } else {
+                    const pending = (() => {
+                        try { return sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1"; } catch (_) { return false; }
+                    })();
+                    if (pending && !auth.currentUser) {
+                        setAuthDebug("Redirect sin usuario. Revisa Google Provider habilitado y dominio autorizado.");
+                        showLoginError(
+                            "Login no completado",
+                            "Google devolvio al sitio pero Firebase no recibio sesion. Revisa: 1) Google provider habilitado en Authentication > Sign-in method, 2) dominio jorguitto.github.io en Authorized domains, 3) no bloqueo de cookies del navegador."
+                        );
+                        try { sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY); } catch (_) {}
+                    } else {
+                        setAuthDebug("getRedirectResult sin resultado (flujo normal sin login previo)");
                     }
                 }
             } catch (error) {
@@ -836,13 +861,13 @@
         auth.onAuthStateChanged(async (user) => {
             authStateHandled = true;
             if (user) {
-                lastAuthDebug = `onAuthStateChanged OK (${user.uid})`;
+                setAuthDebug(`onAuthStateChanged OK (${user.uid})`);
                 await completarSesionConUsuario(user);
             } else {
                 currentUser = null;
                 USER_BIO = null;
                 authReady = false;
-                lastAuthDebug = "onAuthStateChanged: sin usuario";
+                setAuthDebug("onAuthStateChanged: sin usuario");
                 document.getElementById('login-screen').style.display = 'flex'; 
             }
         });
@@ -862,7 +887,8 @@
 
             try {
                 await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-                lastAuthDebug = "Lanzando signInWithRedirect...";
+                setAuthDebug("Lanzando signInWithRedirect...");
+                try { sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1"); } catch (_) {}
                 await auth.signInWithRedirect(provider);
             } catch (error) {
                 console.error("Error Auth:", error);
@@ -876,12 +902,20 @@
         }
 
         function diagnosticarLogin() {
+            const persistedDebug = (() => {
+                try { return localStorage.getItem(AUTH_DEBUG_KEY) || "(sin debug persistido)"; } catch (_) { return "(no se pudo leer debug)"; }
+            })();
+            const redirectPending = (() => {
+                try { return sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1"; } catch (_) { return false; }
+            })();
             const checks = [];
             checks.push(`Protocolo: ${window.location.protocol}`);
             checks.push(`Host: ${window.location.host || "(sin host)"}`);
             checks.push(`Usuario auth.currentUser: ${auth.currentUser ? "SI" : "NO"}`);
             checks.push(`onAuthStateChanged ejecutado: ${authStateHandled ? "SI" : "NO"}`);
             checks.push(`Estado debug: ${lastAuthDebug}`);
+            checks.push(`Debug persistido: ${persistedDebug}`);
+            checks.push(`Redirect pendiente: ${redirectPending ? "SI" : "NO"}`);
             Swal.fire({
                 title: "Diagnostico de Login",
                 html: `<div style="text-align:left;font-size:13px;line-height:1.5">${checks.map(x => `• ${x}`).join('<br>')}</div>`,
