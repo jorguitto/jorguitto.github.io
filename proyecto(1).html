@@ -770,6 +770,7 @@
             experimentalAutoDetectLongPolling: true,
             useFetchStreams: false
         });
+        firebase.firestore.setLogLevel('error');
 
         let currentUser = null;
         let USER_BIO = null; 
@@ -802,6 +803,76 @@
         function showLoginError(title, message) {
             setAuthDebug(`${title}: ${message}`);
             Swal.fire({ title, text: message, icon: 'error' });
+        }
+
+        function isFirestoreOfflineError(error) {
+            return !!(error && (error.code === "unavailable" || (error.message || "").toLowerCase().includes("offline")));
+        }
+
+        function toFsValue(v) {
+            if (v === null || v === undefined) return { nullValue: null };
+            if (typeof v === "string") return { stringValue: v };
+            if (typeof v === "boolean") return { booleanValue: v };
+            if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+            if (Array.isArray(v)) return { arrayValue: { values: v.map(toFsValue) } };
+            if (typeof v === "object") {
+                const fields = {};
+                Object.keys(v).forEach((k) => { fields[k] = toFsValue(v[k]); });
+                return { mapValue: { fields } };
+            }
+            return { stringValue: String(v) };
+        }
+
+        function fromFsValue(value) {
+            if (!value) return null;
+            if (Object.prototype.hasOwnProperty.call(value, "nullValue")) return null;
+            if (Object.prototype.hasOwnProperty.call(value, "stringValue")) return value.stringValue;
+            if (Object.prototype.hasOwnProperty.call(value, "booleanValue")) return value.booleanValue;
+            if (Object.prototype.hasOwnProperty.call(value, "integerValue")) return Number(value.integerValue);
+            if (Object.prototype.hasOwnProperty.call(value, "doubleValue")) return Number(value.doubleValue);
+            if (Object.prototype.hasOwnProperty.call(value, "arrayValue")) return (value.arrayValue.values || []).map(fromFsValue);
+            if (Object.prototype.hasOwnProperty.call(value, "mapValue")) {
+                const out = {};
+                const fields = (value.mapValue && value.mapValue.fields) || {};
+                Object.keys(fields).forEach((k) => { out[k] = fromFsValue(fields[k]); });
+                return out;
+            }
+            return null;
+        }
+
+        async function firestoreRestRequest(method, path, body) {
+            if (!currentUser) throw new Error("No autenticado");
+            const token = await currentUser.getIdToken(true);
+            const projectId = firebaseConfig.projectId;
+            const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${path}`;
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: body ? JSON.stringify(body) : undefined
+            });
+            if (!res.ok) {
+                const txt = await res.text();
+                throw new Error(`REST ${method} ${path} -> ${res.status}: ${txt}`);
+            }
+            if (res.status === 204) return null;
+            return res.json();
+        }
+
+        async function restSetDocument(path, plainData) {
+            const fields = {};
+            Object.keys(plainData).forEach((k) => { fields[k] = toFsValue(plainData[k]); });
+            return firestoreRestRequest("PATCH", path, { fields });
+        }
+
+        async function restGetDocument(path) {
+            const json = await firestoreRestRequest("GET", path);
+            const fields = (json && json.fields) || {};
+            const out = {};
+            Object.keys(fields).forEach((k) => { out[k] = fromFsValue(fields[k]); });
+            return out;
         }
 
         function getDefaultUserBio() {
@@ -1000,12 +1071,30 @@
                 
                 if (docSnap.exists && docSnap.data() && docSnap.data().bio) {
                     USER_BIO = docSnap.data().bio;
+                } else if (docSnap.exists && docSnap.data() && docSnap.data().bio_json) {
+                    USER_BIO = JSON.parse(docSnap.data().bio_json);
                 } else {
                     USER_BIO = getDefaultUserBio();
                     await guardarDatosUsuario();
                 }
             } catch (error) {
                 console.error("Error Firestore:", error);
+                if (isFirestoreOfflineError(error) && currentUser) {
+                    try {
+                        const restDoc = await restGetDocument(`usuarios/${uid}`);
+                        if (restDoc.bio_json) {
+                            USER_BIO = JSON.parse(restDoc.bio_json);
+                        } else if (restDoc.bio) {
+                            USER_BIO = restDoc.bio;
+                        } else {
+                            USER_BIO = getDefaultUserBio();
+                            await guardarDatosUsuario();
+                        }
+                        return;
+                    } catch (restErr) {
+                        console.error("Error REST Firestore (perfil):", restErr);
+                    }
+                }
                 USER_BIO = USER_BIO || getDefaultUserBio();
                 const errCode = (error && error.code) ? error.code : "sin_codigo";
                 const errMsg = (error && error.message) ? error.message : "sin_mensaje";
@@ -1021,10 +1110,22 @@
             try {
                 await db.collection('usuarios').doc(currentUser.uid).set({
                     bio: USER_BIO,
+                    bio_json: JSON.stringify(USER_BIO),
                     ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
             } catch (error) {
                 console.error("Error al guardar:", error);
+                if (isFirestoreOfflineError(error)) {
+                    try {
+                        await restSetDocument(`usuarios/${currentUser.uid}`, {
+                            bio_json: JSON.stringify(USER_BIO),
+                            ultimaActualizacion_txt: new Date().toISOString()
+                        });
+                        return;
+                    } catch (restErr) {
+                        console.error("Error REST guardando perfil:", restErr);
+                    }
+                }
                 showLoginError("Error al guardar perfil", `Firestore devolvio: ${error.code || "sin_codigo"}`);
             }
         }
@@ -1042,6 +1143,20 @@
                     }, { merge: true });
             } catch (error) {
                 console.error("Error al sincronizar registro diario:", error);
+                if (isFirestoreOfflineError(error)) {
+                    try {
+                        const restPayload = {
+                            dateKey: payload.dateKey || docId,
+                            today_json: payload.todayData ? JSON.stringify(payload.todayData) : null,
+                            history_json: payload.historyRecord ? JSON.stringify(payload.historyRecord) : null,
+                            updatedAt_txt: new Date().toISOString()
+                        };
+                        await restSetDocument(`usuarios/${currentUser.uid}/registros_diarios/${docId}`, restPayload);
+                        return;
+                    } catch (restErr) {
+                        console.error("Error REST sincronizando registro:", restErr);
+                    }
+                }
                 if (error && (error.code === "permission-denied" || error.code === "unauthenticated")) {
                     showLoginError(
                         "Sin permisos en Firestore",
@@ -1128,6 +1243,38 @@
                 }
             } catch (error) {
                 console.error("Error cargando registros diarios:", error);
+                if (isFirestoreOfflineError(error) && currentUser) {
+                    try {
+                        const list = await firestoreRestRequest("GET", `usuarios/${uid}/registros_diarios`);
+                        const docs = (list && list.documents) || [];
+                        const cloudHistory = [];
+                        let todayFromCloud = null;
+                        const todayId = getTodayDocId();
+                        docs.forEach((d) => {
+                            const fields = d.fields || {};
+                            const dateKey = fromFsValue(fields.dateKey) || (d.name ? d.name.split('/').pop() : null);
+                            const historyJson = fromFsValue(fields.history_json);
+                            const todayJson = fromFsValue(fields.today_json);
+                            if (historyJson) {
+                                try { cloudHistory.push(JSON.parse(historyJson)); } catch (_) {}
+                            }
+                            if (dateKey === todayId && todayJson) {
+                                try { todayFromCloud = JSON.parse(todayJson); } catch (_) {}
+                            }
+                        });
+                        if (cloudHistory.length > 0) {
+                            history = cloudHistory;
+                            localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
+                        }
+                        if (todayFromCloud) {
+                            todayData = { ...INITIAL_STATE, ...todayFromCloud };
+                            localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData));
+                        }
+                        return;
+                    } catch (restErr) {
+                        console.error("Error REST cargando registros diarios:", restErr);
+                    }
+                }
             }
         }
 
@@ -4768,4 +4915,3 @@
     </script>
 </body>
 </html>
-
