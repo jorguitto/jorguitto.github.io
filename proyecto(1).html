@@ -1097,6 +1097,7 @@
                 }
             } catch (error) {
                 console.error("Error Firestore:", error);
+                let restFailureDetail = "";
                 if (isFirestoreOfflineError(error) && currentUser) {
                     try {
                         const restDoc = await restGetDocument(`usuarios/${uid}`);
@@ -1112,13 +1113,14 @@
                         return;
                     } catch (restErr) {
                         console.error("Error REST Firestore (perfil):", restErr);
+                        restFailureDetail = `\nREST: ${restErr.message || restErr}`;
                     }
                 }
                 USER_BIO = USER_BIO || getDefaultUserBio();
                 const errCode = (error && error.code) ? error.code : "sin_codigo";
                 const errMsg = (error && error.message) ? error.message : "sin_mensaje";
                 const restHint = isFirestoreOfflineError(error)
-                    ? "\n(Si ves esto, el SDK sigue offline y REST tambien fallo; revisa red o reglas.)"
+                    ? `\n(Si ves esto, el SDK sigue offline y REST tambien fallo; revisa red o reglas.)${restFailureDetail}`
                     : "";
                 showLoginError(
                     "Error de Firestore",
@@ -4944,4 +4946,3 @@
     </script>
 </body>
 </html>
-
