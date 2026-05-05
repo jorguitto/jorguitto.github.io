@@ -1097,29 +1097,26 @@
             escannerActivo = new Html5Qrcode("lector-codigo");
             escannerActivo.start(
                 { facingMode: "environment" },
-                { fps: 20, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 },
+                { fps: 15, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 }, // 15 FPS: Rápido pero estable
                 (codigoEscaneado) => {
                     if (procesandoCodigo) return;
                     procesandoCodigo = true;
 
-                    // Vibración instantánea
+                    // 1. Vibración táctil
                     if (navigator.vibrate) navigator.vibrate(200); 
 
-                    // Ocultamos la caja visualmente al instante
-                    document.getElementById('contenedor-escaner').style.display = 'none';
-                    
+                    // 2. Mostramos el cargando INMEDIATAMENTE
                     Swal.fire({ 
                         title: '¡Código capturado!', 
-                        text: 'Descargando nutrientes...', 
+                        text: 'Apagando cámara...', 
                         allowOutsideClick: false, 
                         didOpen: () => { Swal.showLoading() } 
                     });
 
-                    // IMPORTANTE: Le damos 100ms de respiro al móvil para no colapsar la memoria
-                    setTimeout(() => {
-                        cerrarEscaner(); 
+                    // 3. Apagamos la cámara con seguridad ANTES de buscar en internet
+                    cerrarEscaner().then(() => {
                         buscarProductoPorCodigo(codigoEscaneado);
-                    }, 100);
+                    });
                 },
                 (errorMessage) => {}
             ).catch((err) => {
@@ -1127,18 +1124,30 @@
             });
         }
 
+        // Ahora cerrarEscaner nos avisa (Promesa) cuando la cámara está 100% apagada
         function cerrarEscaner() {
-            document.getElementById('contenedor-escaner').style.display = 'none';
-            procesandoCodigo = true; 
-            
-            if (escannerActivo) {
-                escannerActivo.stop().then(() => {
-                    escannerActivo = null;
-                }).catch(err => console.log("Cámara apagada."));
-            }
+            return new Promise((resolve) => {
+                document.getElementById('contenedor-escaner').style.display = 'none';
+                procesandoCodigo = true; 
+                
+                if (escannerActivo) {
+                    escannerActivo.stop().then(() => {
+                        escannerActivo = null;
+                        resolve();
+                    }).catch(err => {
+                        escannerActivo = null;
+                        resolve();
+                    });
+                } else {
+                    resolve();
+                }
+            });
         }
 
         async function buscarProductoPorCodigo(codigo) {
+            // Actualizamos el texto del popup sin cerrarlo (evita bugs gráficos)
+            Swal.update({ text: 'Buscando en la base de datos...' });
+            
             const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
             
             try {
@@ -1147,7 +1156,7 @@
                 
                 if (datos.status === 1 && datos.product) {
                     const p = datos.product;
-                    const n = p.nutriments || {}; // Seguro por si el producto no tiene tabla nutricional
+                    const n = p.nutriments || {}; 
                     
                     const alimento = {
                         name: p.product_name || 'Producto sin nombre',
@@ -1160,54 +1169,50 @@
                         img: p.image_front_url || ''
                     };
                     
-                    // Cerramos el "Cargando..." antes de abrir la interfaz bonita
-                    Swal.close(); 
-                    
-                    setTimeout(() => {
-                        Swal.fire({
-                            title: alimento.name,
-                            imageUrl: alimento.img,
-                            imageHeight: 120,
-                            html: `
-                                <div class="grid grid-cols-2 gap-2 text-[11px] mt-2 text-left">
-                                    <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal.toFixed(1)}</div>
-                                    <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot.toFixed(1)}g</div>
-                                    <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs.toFixed(1)}g</div>
-                                    <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat.toFixed(1)}g</div>
-                                    <div class="bg-yellow-100 p-2 rounded border border-yellow-200 text-yellow-800"><b>🧈 G. Sat:</b> ${alimento.sat.toFixed(1)}g</div>
-                                    <div class="bg-blue-50 p-2 rounded border border-blue-100 text-blue-700"><b>🍬 Azúcar:</b> ${alimento.azucar.toFixed(1)}g</div>
-                                </div>
-                                
-                                <div class="mt-5 text-left border-t border-gray-100 pt-3">
-                                    <label class="text-xs font-black text-slate-700 uppercase">¿Cuántos gramos vas a comer?</label>
-                                    <input type="number" id="gramos-input" class="w-full mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xl font-black text-center text-slate-800 focus:border-blue-500 outline-none" placeholder="Ej: 30" value="100">
-                                </div>
-                            `,
-                            showCancelButton: true,
-                            confirmButtonColor: '#1e293b',
-                            cancelButtonColor: '#ef4444',
-                            confirmButtonText: '<i class="fas fa-check"></i> Añadir a mi dieta',
-                            cancelButtonText: 'Cancelar',
-                            preConfirm: () => {
-                                const gramos = document.getElementById('gramos-input').value;
-                                if (!gramos || gramos <= 0) {
-                                    Swal.showValidationMessage('Introduce una cantidad válida');
-                                }
-                                return gramos;
+                    // Mostramos la interfaz sobreescribiendo el popup de carga
+                    Swal.fire({
+                        title: alimento.name,
+                        imageUrl: alimento.img,
+                        imageHeight: 120,
+                        html: `
+                            <div class="grid grid-cols-2 gap-2 text-[11px] mt-2 text-left">
+                                <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal.toFixed(1)}</div>
+                                <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot.toFixed(1)}g</div>
+                                <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs.toFixed(1)}g</div>
+                                <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat.toFixed(1)}g</div>
+                                <div class="bg-yellow-100 p-2 rounded border border-yellow-200 text-yellow-800"><b>🧈 G. Sat:</b> ${alimento.sat.toFixed(1)}g</div>
+                                <div class="bg-blue-50 p-2 rounded border border-blue-100 text-blue-700"><b>🍬 Azúcar:</b> ${alimento.azucar.toFixed(1)}g</div>
+                            </div>
+                            
+                            <div class="mt-5 text-left border-t border-gray-100 pt-3">
+                                <label class="text-xs font-black text-slate-700 uppercase">¿Cuántos gramos vas a comer?</label>
+                                <input type="number" id="gramos-input" class="w-full mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xl font-black text-center text-slate-800 focus:border-blue-500 outline-none" placeholder="Ej: 30" value="100">
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonColor: '#1e293b',
+                        cancelButtonColor: '#ef4444',
+                        confirmButtonText: '<i class="fas fa-check"></i> Añadir a mi dieta',
+                        cancelButtonText: 'Cancelar',
+                        preConfirm: () => {
+                            const gramos = document.getElementById('gramos-input').value;
+                            if (!gramos || gramos <= 0) {
+                                Swal.showValidationMessage('Introduce una cantidad válida');
                             }
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                agregarAlimentoAlMotor(alimento, result.value);
-                            }
-                        });
-                    }, 100);
+                            return gramos;
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            agregarAlimentoAlMotor(alimento, result.value);
+                        }
+                    });
                     
                 } else {
                     Swal.fire('No encontrado', 'Este producto no está en la base de datos pública.', 'info');
                 }
             } catch (error) {
-                console.error(error);
-                Swal.fire('Error', 'Fallo al conectar a internet o procesar datos.', 'error');
+                console.error("Detalle del error:", error);
+                Swal.fire('Error', 'Fallo al procesar los datos de la base de datos.', 'error');
             }
         }
 
