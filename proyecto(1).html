@@ -911,7 +911,7 @@
             document.getElementById('login-screen').style.display = 'none';
             try {
                 await cargarDatosUsuario(user.uid);
-                await cargarRegistrosDiarios(user.uid);
+                await cargarPersistenciaDesdeNube(user.uid);
             } catch (error) {
                 console.error("Error completando sesion:", error);
             }
@@ -1199,120 +1199,143 @@
             }
         }
 
-        async function syncTodayToFirestore() {
+        async function sincronizarDiaEnNube() {
+            if (!currentUser) return;
             const docId = getTodayDocId();
-            await guardarRegistroDiarioFirestore(docId, {
+            const payload = {
                 dateKey: docId,
-                todayData: todayData
-            });
-        }
-
-        async function syncHistoryRecordToFirestore(record) {
-            const docId = normalizeRecordDateKey(record);
-            await guardarRegistroDiarioFirestore(docId, {
-                dateKey: docId,
-                historyRecord: record
-            });
-        }
-
-        async function syncHistoryListToFirestore() {
-            if (!currentUser || !Array.isArray(history)) return;
-            const keepKeys = new Set(history.map((record) => normalizeRecordDateKey(record)));
+                data: todayData,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
             try {
-                const snap = await db.collection('usuarios')
+                await db.collection('usuarios')
                     .doc(currentUser.uid)
-                    .collection('registros_diarios')
-                    .get();
-
-                for (const doc of snap.docs) {
-                    if (!keepKeys.has(doc.id) && doc.data().historyRecord) {
-                        await db.collection('usuarios')
-                            .doc(currentUser.uid)
-                            .collection('registros_diarios')
-                            .doc(doc.id)
-                            .set({
-                                historyRecord: firebase.firestore.FieldValue.delete(),
-                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                            }, { merge: true });
+                    .collection('dias')
+                    .doc(docId)
+                    .set(payload, { merge: true });
+            } catch (error) {
+                console.error("Error al sincronizar día en nube:", error);
+                if (isFirestoreOfflineError(error)) {
+                    try {
+                        await restSetDocument(`usuarios/${currentUser.uid}/dias/${docId}`, {
+                            dateKey: docId,
+                            data_json: JSON.stringify(todayData),
+                            updatedAt_txt: new Date().toISOString()
+                        });
+                    } catch (restErr) {
+                        console.error("Error REST sincronizando día:", restErr);
                     }
                 }
-            } catch (error) {
-                console.error("Error limpiando historial remoto:", error);
-            }
-
-            for (const record of history) {
-                await syncHistoryRecordToFirestore(record);
             }
         }
 
-        async function cargarRegistrosDiarios(uid) {
+        async function guardarHistorialEnNube(record, existingFirestoreId) {
+            if (!currentUser) return null;
+            const payload = {
+                ...record,
+                dateKey: record.dateKey || getTodayDocId(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
             try {
-                try {
-                    await db.enableNetwork();
-                } catch (enErr) {
-                    console.warn("enableNetwork (registros):", enErr);
+                const histCol = db.collection('usuarios').doc(currentUser.uid).collection('historial');
+                if (existingFirestoreId) {
+                    await histCol.doc(existingFirestoreId).set(payload, { merge: true });
+                    return existingFirestoreId;
                 }
-                const snap = await db.collection('usuarios')
+                const docRef = await histCol.add(payload);
+                return docRef.id;
+            } catch (error) {
+                console.error("Error guardando historial en nube:", error);
+                if (isFirestoreOfflineError(error)) {
+                    try {
+                        const restRecord = { ...record, firestoreId: existingFirestoreId || null };
+                        await restSetDocument(`usuarios/${currentUser.uid}/historial/${record.dateKey || getTodayDocId()}`, {
+                            dateKey: record.dateKey || getTodayDocId(),
+                            record_json: JSON.stringify(restRecord),
+                            createdAt_txt: new Date().toISOString()
+                        });
+                        return existingFirestoreId || (record.dateKey || getTodayDocId());
+                    } catch (restErr) {
+                        console.error("Error REST guardando historial:", restErr);
+                    }
+                }
+            }
+            return null;
+        }
+
+        async function borrarHistorialEnNube(firestoreId) {
+            if (!currentUser || !firestoreId) return;
+            try {
+                await db.collection('usuarios')
+                    .doc(currentUser.uid)
+                    .collection('historial')
+                    .doc(firestoreId)
+                    .delete();
+            } catch (error) {
+                console.error("Error borrando historial en nube:", error);
+            }
+        }
+
+        async function cargarPersistenciaDesdeNube(uid) {
+            const todayId = getTodayDocId();
+            try {
+                try { await db.enableNetwork(); } catch (_) {}
+                const daySnap = await db.collection('usuarios')
                     .doc(uid)
-                    .collection('registros_diarios')
-                    .orderBy('dateKey', 'desc')
+                    .collection('dias')
+                    .doc(todayId)
                     .get({ source: "server" });
-
-                if (snap.empty) return;
-
-                const cloudHistory = [];
-                let todayFromCloud = null;
-                const todayId = getTodayDocId();
-
-                snap.forEach((doc) => {
-                    const data = doc.data() || {};
-                    if (data.historyRecord) cloudHistory.push(data.historyRecord);
-                    if (doc.id === todayId && data.todayData) todayFromCloud = data.todayData;
-                });
-
-                if (cloudHistory.length > 0) {
-                    history = cloudHistory;
-                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
-                }
-
-                if (todayFromCloud) {
-                    todayData = { ...INITIAL_STATE, ...todayFromCloud };
-                    localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData));
+                if (daySnap.exists && daySnap.data() && daySnap.data().data) {
+                    todayData = { ...INITIAL_STATE, ...daySnap.data().data };
                 }
             } catch (error) {
-                console.error("Error cargando registros diarios:", error);
+                console.error("Error cargando día en nube:", error);
                 if (isFirestoreOfflineError(error) && currentUser) {
                     try {
-                        const list = await firestoreRestRequest("GET", `usuarios/${uid}/registros_diarios`, null, { allow404: true });
-                        if (!list) return;
-                        const docs = (list && list.documents) || [];
-                        const cloudHistory = [];
-                        let todayFromCloud = null;
-                        const todayId = getTodayDocId();
-                        docs.forEach((d) => {
-                            const fields = d.fields || {};
-                            const dateKey = fromFsValue(fields.dateKey) || (d.name ? d.name.split('/').pop() : null);
-                            const historyJson = fromFsValue(fields.history_json);
-                            const todayJson = fromFsValue(fields.today_json);
-                            if (historyJson) {
-                                try { cloudHistory.push(JSON.parse(historyJson)); } catch (_) {}
-                            }
-                            if (dateKey === todayId && todayJson) {
-                                try { todayFromCloud = JSON.parse(todayJson); } catch (_) {}
-                            }
-                        });
-                        if (cloudHistory.length > 0) {
-                            history = cloudHistory;
-                            localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
+                        const dayDoc = await restGetDocument(`usuarios/${uid}/dias/${todayId}`);
+                        if (dayDoc.data_json) {
+                            todayData = { ...INITIAL_STATE, ...JSON.parse(dayDoc.data_json) };
                         }
-                        if (todayFromCloud) {
-                            todayData = { ...INITIAL_STATE, ...todayFromCloud };
-                            localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData));
-                        }
-                        setAuthDebug("Registros diarios cargados via REST (SDK offline)");
-                        return;
                     } catch (restErr) {
-                        console.error("Error REST cargando registros diarios:", restErr);
+                        console.error("Error REST cargando día:", restErr);
+                    }
+                }
+            }
+
+            try {
+                const historySnap = await db.collection('usuarios')
+                    .doc(uid)
+                    .collection('historial')
+                    .orderBy('dateKey', 'desc')
+                    .get({ source: "server" });
+                history = historySnap.docs.map((doc) => ({ ...doc.data(), firestoreId: doc.id }));
+            } catch (error) {
+                console.error("Error cargando historial en nube:", error);
+                if (isFirestoreOfflineError(error) && currentUser) {
+                    try {
+                        const list = await firestoreRestRequest("GET", `usuarios/${uid}/historial`, null, { allow404: true });
+                        if (!list || !list.documents) {
+                            history = [];
+                            return;
+                        }
+                        history = list.documents.map((d) => {
+                            const fields = d.fields || {};
+                            const recordJson = fromFsValue(fields.record_json);
+                            const firestoreId = d.name ? d.name.split('/').pop() : null;
+                            if (recordJson) {
+                                try {
+                                    const parsed = JSON.parse(recordJson);
+                                    parsed.firestoreId = parsed.firestoreId || firestoreId;
+                                    return parsed;
+                                } catch (_) {}
+                            }
+                            const out = {};
+                            Object.keys(fields).forEach((k) => { out[k] = fromFsValue(fields[k]); });
+                            out.firestoreId = firestoreId;
+                            return out;
+                        }).sort((a, b) => (b.dateKey || "").localeCompare(a.dateKey || ""));
+                    } catch (restErr) {
+                        console.error("Error REST cargando historial:", restErr);
                     }
                 }
             }
@@ -3024,7 +3047,7 @@
         let todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
         let BASE_GOALS = { cals: 0, prot: 160, fat: 70, sat: 20, carbs: 300, water: 2500 }; 
         let currentGoals = { ...BASE_GOALS };
-        let history = JSON.parse(localStorage.getItem('fitTrackerHistory_MD')) || [];
+        let history = [];
         
         let mentalLoad = 0;
         let physicalLoad = 0;
@@ -4010,7 +4033,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     const actualScore = result.value.energy * 10;
-                    const predicted = parseFloat(localStorage.getItem('today_prediction_score')) || 50;
+                    const predicted = 50;
                     const dateStr = result.value.date;
                     
                     if (Math.abs(actualScore - predicted) > 25) {
@@ -4057,8 +4080,12 @@
             if (existingIdx >= 0) history[existingIdx] = record;
             else history.unshift(record);
             
-            localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
-            syncHistoryRecordToFirestore(record);
+            const existingFirestoreId = existingIdx >= 0 ? history[existingIdx].firestoreId : null;
+            guardarHistorialEnNube(record, existingFirestoreId).then((firestoreId) => {
+                if (!firestoreId) return;
+                const idx = history.findIndex(h => h.dateKey === record.dateKey);
+                if (idx >= 0) history[idx].firestoreId = firestoreId;
+            });
             todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
             todayAlerts = [];
             saveDay();
@@ -4695,37 +4722,32 @@
         }
         
         function saveDay() { 
-            localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData)); 
             if (authReady && currentUser) {
-                syncTodayToFirestore();
+                sincronizarDiaEnNube();
             }
         }
         
         function loadDay() { 
-            const s = localStorage.getItem('fitTrackerToday_MD'); 
-            if(s) { 
-                const loaded = JSON.parse(s); 
-                todayData = { ...INITIAL_STATE, ...loaded }; 
-                if (!Array.isArray(todayData.studySessions)) todayData.studySessions = []; 
-                if(document.getElementById('wakeTime')) document.getElementById('wakeTime').value = todayData.wakeTime; 
-                if(document.getElementById('sleepHours')) document.getElementById('sleepHours').value = todayData.sleepHours || ''; 
-                if(document.getElementById('sleepQuality')) document.getElementById('sleepQuality').value = todayData.sleepQuality || ''; 
-                
-                document.getElementById('range-run-km').value = todayData.runKm || 0; 
-                document.getElementById('range-run-pace').value = todayData.runPace || 5.5; 
-                document.getElementById('range-run-int').value = todayData.runInt || 2; 
-                document.getElementById('run-cals').value = todayData.runCals || '';
+            todayData = { ...INITIAL_STATE, ...todayData };
+            if (!Array.isArray(todayData.studySessions)) todayData.studySessions = []; 
+            if(document.getElementById('wakeTime')) document.getElementById('wakeTime').value = todayData.wakeTime; 
+            if(document.getElementById('sleepHours')) document.getElementById('sleepHours').value = todayData.sleepHours || ''; 
+            if(document.getElementById('sleepQuality')) document.getElementById('sleepQuality').value = todayData.sleepQuality || ''; 
+            
+            document.getElementById('range-run-km').value = todayData.runKm || 0; 
+            document.getElementById('range-run-pace').value = todayData.runPace || 5.5; 
+            document.getElementById('range-run-int').value = todayData.runInt || 2; 
+            document.getElementById('run-cals').value = todayData.runCals || '';
 
-                document.getElementById('range-bike-km').value = todayData.bikeKm || 0; 
-                document.getElementById('range-bike-int').value = todayData.bikeInt || 2; 
-                document.getElementById('bike-cals').value = todayData.bikeCals || '';
+            document.getElementById('range-bike-km').value = todayData.bikeKm || 0; 
+            document.getElementById('range-bike-int').value = todayData.bikeInt || 2; 
+            document.getElementById('bike-cals').value = todayData.bikeCals || '';
 
-                document.getElementById('gym-cals').value = todayData.gymCals || ''; 
-                document.getElementById('range-mobile').value = todayData.mobileHours || 0; 
-                document.getElementById('range-steps').value = todayData.steps || 0; 
-                document.getElementById('range-standing').value = todayData.standingHours || 0; 
-                if (!todayData.gymSessions) todayData.gymSessions = [];
-            } 
+            document.getElementById('gym-cals').value = todayData.gymCals || ''; 
+            document.getElementById('range-mobile').value = todayData.mobileHours || 0; 
+            document.getElementById('range-steps').value = todayData.steps || 0; 
+            document.getElementById('range-standing').value = todayData.standingHours || 0; 
+            if (!todayData.gymSessions) todayData.gymSessions = [];
         }
         
         function navigateTo(id) { 
@@ -4756,9 +4778,9 @@
             }).then((result) => { 
                 if(result.isConfirmed) { 
                     todayData = history[index].data; 
+                    const removed = history[index];
                     history.splice(index, 1); 
-                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history)); 
-                    syncHistoryListToFirestore();
+                    borrarHistorialEnNube(removed && removed.firestoreId);
                     saveDay(); 
                     window.location.reload(); 
                 } 
@@ -4775,9 +4797,9 @@
                 confirmButtonColor: '#ef4444' 
             }).then((result) => { 
                 if(result.isConfirmed) { 
+                    const removed = history[index];
                     history.splice(index, 1); 
-                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history)); 
-                    syncHistoryListToFirestore();
+                    borrarHistorialEnNube(removed && removed.firestoreId);
                     updateHistoryUI(); 
                     Swal.fire('Eliminado', '', 'success'); 
                 } 
