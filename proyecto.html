@@ -785,14 +785,22 @@
             }
         });
 
-        function loginConGoogle() {
+       function loginConGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Forzamos el idioma al español
+            auth.languageCode = 'es';
+            
             auth.signInWithPopup(provider).catch((error) => {
-                console.error("Error en login:", error);
-                Swal.fire('Error', 'No se pudo iniciar sesión con Google.', 'error');
+                console.error("Error completo:", error);
+                // ESTO NOS DIRÁ EL FALLO EXACTO
+                Swal.fire({
+                    title: 'Error de Firebase',
+                    text: error.message,
+                    icon: 'error'
+                });
             });
         }
-
         async function cargarDatosUsuario(uid) {
             try {
                 const docRef = db.collection('usuarios').doc(uid);
