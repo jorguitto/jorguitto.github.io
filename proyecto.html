@@ -1086,7 +1086,131 @@
         }
 
         const ENGINE = new BioEngine();
-// FUNCIÓN QUE PROCESA LOS GRAMOS Y ACTUALIZA TU APLICACIÓN
+// --- PEGA AQUÍ TUS FUNCIONES NUEVAS ---
+        let escannerActivo = null;
+        let procesandoCodigo = false; 
+
+        function iniciarEscaner() {
+            document.getElementById('contenedor-escaner').style.display = 'block';
+            procesandoCodigo = false; 
+            
+            escannerActivo = new Html5Qrcode("lector-codigo");
+            escannerActivo.start(
+                { facingMode: "environment" },
+                { fps: 20, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 },
+                (codigoEscaneado) => {
+                    if (procesandoCodigo) return;
+                    procesandoCodigo = true;
+
+                    // Vibración instantánea
+                    if (navigator.vibrate) navigator.vibrate(200); 
+
+                    // Ocultamos la caja visualmente al instante
+                    document.getElementById('contenedor-escaner').style.display = 'none';
+                    
+                    Swal.fire({ 
+                        title: '¡Código capturado!', 
+                        text: 'Descargando nutrientes...', 
+                        allowOutsideClick: false, 
+                        didOpen: () => { Swal.showLoading() } 
+                    });
+
+                    // IMPORTANTE: Le damos 100ms de respiro al móvil para no colapsar la memoria
+                    setTimeout(() => {
+                        cerrarEscaner(); 
+                        buscarProductoPorCodigo(codigoEscaneado);
+                    }, 100);
+                },
+                (errorMessage) => {}
+            ).catch((err) => {
+                Swal.fire('Error', 'Comprueba los permisos de la cámara.', 'error');
+            });
+        }
+
+        function cerrarEscaner() {
+            document.getElementById('contenedor-escaner').style.display = 'none';
+            procesandoCodigo = true; 
+            
+            if (escannerActivo) {
+                escannerActivo.stop().then(() => {
+                    escannerActivo = null;
+                }).catch(err => console.log("Cámara apagada."));
+            }
+        }
+
+        async function buscarProductoPorCodigo(codigo) {
+            const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
+            
+            try {
+                const respuesta = await fetch(url);
+                const datos = await respuesta.json();
+                
+                if (datos.status === 1 && datos.product) {
+                    const p = datos.product;
+                    const n = p.nutriments || {}; // Seguro por si el producto no tiene tabla nutricional
+                    
+                    const alimento = {
+                        name: p.product_name || 'Producto sin nombre',
+                        cal: parseFloat(n['energy-kcal_100g']) || 0,
+                        prot: parseFloat(n.proteins_100g) || 0,
+                        carbs: parseFloat(n.carbohydrates_100g) || 0,
+                        fat: parseFloat(n.fat_100g) || 0,
+                        sat: parseFloat(n['saturated-fat_100g']) || 0,
+                        azucar: parseFloat(n.sugars_100g) || 0,
+                        img: p.image_front_url || ''
+                    };
+                    
+                    // Cerramos el "Cargando..." antes de abrir la interfaz bonita
+                    Swal.close(); 
+                    
+                    setTimeout(() => {
+                        Swal.fire({
+                            title: alimento.name,
+                            imageUrl: alimento.img,
+                            imageHeight: 120,
+                            html: `
+                                <div class="grid grid-cols-2 gap-2 text-[11px] mt-2 text-left">
+                                    <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal.toFixed(1)}</div>
+                                    <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot.toFixed(1)}g</div>
+                                    <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs.toFixed(1)}g</div>
+                                    <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat.toFixed(1)}g</div>
+                                    <div class="bg-yellow-100 p-2 rounded border border-yellow-200 text-yellow-800"><b>🧈 G. Sat:</b> ${alimento.sat.toFixed(1)}g</div>
+                                    <div class="bg-blue-50 p-2 rounded border border-blue-100 text-blue-700"><b>🍬 Azúcar:</b> ${alimento.azucar.toFixed(1)}g</div>
+                                </div>
+                                
+                                <div class="mt-5 text-left border-t border-gray-100 pt-3">
+                                    <label class="text-xs font-black text-slate-700 uppercase">¿Cuántos gramos vas a comer?</label>
+                                    <input type="number" id="gramos-input" class="w-full mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xl font-black text-center text-slate-800 focus:border-blue-500 outline-none" placeholder="Ej: 30" value="100">
+                                </div>
+                            `,
+                            showCancelButton: true,
+                            confirmButtonColor: '#1e293b',
+                            cancelButtonColor: '#ef4444',
+                            confirmButtonText: '<i class="fas fa-check"></i> Añadir a mi dieta',
+                            cancelButtonText: 'Cancelar',
+                            preConfirm: () => {
+                                const gramos = document.getElementById('gramos-input').value;
+                                if (!gramos || gramos <= 0) {
+                                    Swal.showValidationMessage('Introduce una cantidad válida');
+                                }
+                                return gramos;
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                agregarAlimentoAlMotor(alimento, result.value);
+                            }
+                        });
+                    }, 100);
+                    
+                } else {
+                    Swal.fire('No encontrado', 'Este producto no está en la base de datos pública.', 'info');
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Error', 'Fallo al conectar a internet o procesar datos.', 'error');
+            }
+        }
+
         function agregarAlimentoAlMotor(alimento100g, gramos) {
             const factor = gramos / 100;
             
@@ -1096,7 +1220,6 @@
             const fatFinal = Math.round(alimento100g.fat * factor);
             const satFinal = Math.round(alimento100g.sat * factor);
 
-            // Actualizamos barras de progreso
             actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', kcalFinal);
             actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', protFinal);
             actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', carbsFinal);
@@ -1109,10 +1232,8 @@
                 spanTotal.innerText = (totalActual + kcalFinal) + " kcal";
             }
 
-            // CREAMOS LA TARJETA CON EL BOTÓN DE ELIMINAR
             const lista = document.getElementById('addedFoodsList');
             if (lista) {
-                // Generamos un ID único para poder borrar este elemento exacto luego
                 const idUnico = 'food-scan-' + Date.now(); 
                 
                 const nuevaTarjeta = `
@@ -1141,7 +1262,6 @@
             });
         }
 
-        // NUEVA FUNCIÓN: ELIMINAR ALIMENTO
         function eliminarAlimentoEscaneado(idElemento, kcal, prot, carbs, fat, sat) {
             Swal.fire({
                 title: '¿Eliminar alimento?',
@@ -1154,30 +1274,26 @@
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // 1. Quitamos la tarjeta de la lista visualmente
                     const tarjeta = document.getElementById(idElemento);
                     if (tarjeta) tarjeta.remove();
 
-                    // 2. Restamos los valores enviando las cantidades en negativo
                     actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', -kcal);
                     actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', -prot);
                     actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', -carbs);
                     actualizarMacroHTML('val-fat', 'goal-fat', 'bar-fat', -fat);
                     actualizarMacroHTML('val-sat', 'goal-sat', 'bar-sat', -sat);
 
-                    // 3. Restamos del total consumido
                     const spanTotal = document.getElementById('total-consumed-kcal');
                     if (spanTotal) {
                         const totalActual = parseInt(spanTotal.innerText) || 0;
                         let nuevoTotal = totalActual - kcal;
-                        if (nuevoTotal < 0) nuevoTotal = 0; // Evitar que salgan números negativos
+                        if (nuevoTotal < 0) nuevoTotal = 0; 
                         spanTotal.innerText = nuevoTotal + " kcal";
                     }
                 }
             });
         }
 
-        // FUNCIÓN AUXILIAR MEJORADA (Ahora soporta restar y evita bajar de cero)
         function actualizarMacroHTML(idVal, idGoal, idBar, cantidadSuma) {
             const elVal = document.getElementById(idVal);
             const elGoal = document.getElementById(idGoal);
@@ -1188,7 +1304,7 @@
                 const meta = parseInt(elGoal.innerText) || 1;
                 
                 let nuevoActual = actual + cantidadSuma;
-                if (nuevoActual < 0) nuevoActual = 0; // Si restas de más, se queda en 0
+                if (nuevoActual < 0) nuevoActual = 0; 
                 
                 elVal.innerText = nuevoActual;
                 
@@ -1198,6 +1314,7 @@
                 elBar.style.width = porcentaje + '%';
             }
         }
+        // --- FIN DE TUS FUNCIONES NUEVAS ---
 
         // ==========================================================================================
         // 📦 BASE DE DATOS
