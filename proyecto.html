@@ -1086,30 +1086,22 @@
         }
 
         const ENGINE = new BioEngine();
-        let escannerActivo = null; // Guardamos el escáner para poder apagarlo
+       // --- PEGA AQUÍ TUS FUNCIONES NUEVAS ---
+        let escannerActivo = null;
 
         function iniciarEscaner() {
             document.getElementById('contenedor-escaner').style.display = 'block';
-            
             escannerActivo = new Html5Qrcode("lector-codigo");
-            
             escannerActivo.start(
                 { facingMode: "environment" },
-                { 
-                    fps: 20, // Subimos a 20 FPS para que escanee mucho más rápido
-                    qrbox: { width: 250, height: 150 },
-                    aspectRatio: 1.0
-                },
+                { fps: 20, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 },
                 (codigoEscaneado) => {
-                    // ¡Lo leyó!
-                    cerrarEscaner(); // Apagamos la cámara
+                    cerrarEscaner(); 
                     buscarProductoPorCodigo(codigoEscaneado);
                 },
-                (errorMessage) => {
-                    // Se ejecuta 20 veces por segundo mientras busca, lo ignoramos
-                }
+                (errorMessage) => {}
             ).catch((err) => {
-                console.error("Error al iniciar la cámara", err);
+                console.error("Error cámara", err);
                 Swal.fire('Error', 'Comprueba los permisos de la cámara.', 'error');
             });
         }
@@ -1119,7 +1111,7 @@
                 escannerActivo.stop().then(() => {
                     document.getElementById('contenedor-escaner').style.display = 'none';
                     escannerActivo = null;
-                }).catch(err => console.error("Error al detener cámara", err));
+                });
             } else {
                 document.getElementById('contenedor-escaner').style.display = 'none';
             }
@@ -1138,41 +1130,54 @@
                     const p = datos.product;
                     const n = p.nutriments;
                     
-                    // Limpiamos los datos y redondeamos
+                    // EXTRAEMOS EL MÁXIMO DE DATOS POSIBLES
                     const alimento = {
                         name: p.product_name || 'Producto sin nombre',
-                        cal: Math.round(n['energy-kcal_100g'] || 0),
-                        prot: Math.round(n.proteins_100g || 0),
-                        carbs: Math.round(n.carbohydrates_100g || 0),
-                        fat: Math.round(n.fat_100g || 0),
-                        sat: Math.round(n['saturated-fat_100g'] || 0),
-                        img: p.image_front_url || '' // Imagen del producto si la tiene
+                        cal: parseFloat(n['energy-kcal_100g'] || 0),
+                        prot: parseFloat(n.proteins_100g || 0),
+                        carbs: parseFloat(n.carbohydrates_100g || 0),
+                        fat: parseFloat(n.fat_100g || 0),
+                        sat: parseFloat(n['saturated-fat_100g'] || 0), // Grasas saturadas añadidas
+                        azucar: parseFloat(n.sugars_100g || 0),        // Azúcares añadidos
+                        img: p.image_front_url || ''
                     };
                     
-                    // INTERFAZ BONITA
+                    // POPUP CON INPUT DE GRAMOS
                     Swal.fire({
                         title: alimento.name,
                         imageUrl: alimento.img,
                         imageHeight: 120,
-                        imageAlt: 'Foto producto',
                         html: `
-                            <div class="grid grid-cols-2 gap-2 text-sm mt-4 text-left">
-                                <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal}</div>
-                                <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot}g</div>
-                                <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs}g</div>
-                                <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat}g</div>
+                            <div class="grid grid-cols-2 gap-2 text-[11px] mt-2 text-left">
+                                <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal.toFixed(1)}</div>
+                                <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot.toFixed(1)}g</div>
+                                <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs.toFixed(1)}g</div>
+                                <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat.toFixed(1)}g</div>
+                                <div class="bg-yellow-100 p-2 rounded border border-yellow-200 text-yellow-800"><b>🧈 G. Sat:</b> ${alimento.sat.toFixed(1)}g</div>
+                                <div class="bg-blue-50 p-2 rounded border border-blue-100 text-blue-700"><b>🍬 Azúcar:</b> ${alimento.azucar.toFixed(1)}g</div>
                             </div>
-                            <p class="text-[10px] text-gray-400 mt-3 font-bold">*Valores por cada 100 gramos</p>
+                            
+                            <div class="mt-5 text-left border-t border-gray-100 pt-3">
+                                <label class="text-xs font-black text-slate-700 uppercase">¿Cuántos gramos vas a comer?</label>
+                                <input type="number" id="gramos-input" class="w-full mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xl font-black text-center text-slate-800 focus:border-blue-500 outline-none" placeholder="Ej: 30" value="100">
+                            </div>
                         `,
                         showCancelButton: true,
-                        confirmButtonColor: '#1e293b', // Color slate-800 de tu app
+                        confirmButtonColor: '#1e293b',
                         cancelButtonColor: '#ef4444',
-                        confirmButtonText: 'Añadir a mi dieta',
-                        cancelButtonText: 'Cancelar'
+                        confirmButtonText: '<i class="fas fa-check"></i> Añadir a mi dieta',
+                        cancelButtonText: 'Cancelar',
+                        preConfirm: () => {
+                            const gramos = document.getElementById('gramos-input').value;
+                            if (!gramos || gramos <= 0) {
+                                Swal.showValidationMessage('Introduce una cantidad válida en gramos');
+                            }
+                            return gramos;
+                        }
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            // Cuando el usuario le da a "Añadir a mi dieta"
-                            agregarAlimentoAlMotor(alimento);
+                            const gramos = result.value;
+                            agregarAlimentoAlMotor(alimento, gramos);
                         }
                     });
                     
@@ -1184,18 +1189,80 @@
             }
         }
 
-        function agregarAlimentoAlMotor(alimento) {
-            // Aquí es donde en el futuro engancharemos los gramos exactos
-            // y sumaremos las calorías a tus barras de progreso.
-            console.log("Alimento listo para añadir:", alimento);
+        // FUNCIÓN QUE PROCESA LOS GRAMOS Y ACTUALIZA TU APLICACIÓN
+        function agregarAlimentoAlMotor(alimento100g, gramos) {
+            // 1. Calculamos los valores reales según los gramos
+            const factor = gramos / 100;
+            
+            const kcalFinal = Math.round(alimento100g.cal * factor);
+            const protFinal = Math.round(alimento100g.prot * factor);
+            const carbsFinal = Math.round(alimento100g.carbs * factor);
+            const fatFinal = Math.round(alimento100g.fat * factor);
+            const satFinal = Math.round(alimento100g.sat * factor);
+
+            // 2. Actualizamos los textos y las barras de progreso que ya tienes en tu HTML
+            actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', kcalFinal);
+            actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', protFinal);
+            actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', carbsFinal);
+            actualizarMacroHTML('val-fat', 'goal-fat', 'bar-fat', fatFinal);
+            actualizarMacroHTML('val-sat', 'goal-sat', 'bar-sat', satFinal);
+
+            // 3. Sumar calorías al total de la pestaña "Dieta"
+            const spanTotal = document.getElementById('total-consumed-kcal');
+            if (spanTotal) {
+                const totalActual = parseInt(spanTotal.innerText) || 0;
+                spanTotal.innerText = (totalActual + kcalFinal) + " kcal";
+            }
+
+            // 4. Crear la tarjeta visual en la lista de comidas de hoy[cite: 1]
+            const lista = document.getElementById('addedFoodsList');
+            if (lista) {
+                const nuevaTarjeta = `
+                    <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center mb-2 animate-[fadeIn_0.3s_ease-out]">
+                        <div>
+                            <p class="text-xs font-bold text-slate-700 leading-tight">${alimento100g.name}</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5"><i class="fas fa-scale-balanced mr-1"></i>${gramos}g • ${protFinal}g P / ${carbsFinal}g C / ${fatFinal}g G</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-black text-orange-500">${kcalFinal} kcal</p>
+                        </div>
+                    </div>
+                `;
+                lista.innerHTML = nuevaTarjeta + lista.innerHTML; // Se añade arriba del todo
+            }
+
+            // 5. Mensaje de éxito
             Swal.fire({
                 title: '¡Añadido!',
-                text: 'Macros listos para procesar',
+                text: `Se han sumado ${kcalFinal} kcal a tu día.`,
                 icon: 'success',
-                timer: 1500,
+                timer: 1800,
                 showConfirmButton: false
             });
         }
+
+        // FUNCIÓN AUXILIAR: Suma el valor y rellena la barra de progreso
+        function actualizarMacroHTML(idVal, idGoal, idBar, cantidadSuma) {
+            const elVal = document.getElementById(idVal);
+            const elGoal = document.getElementById(idGoal);
+            const elBar = document.getElementById(idBar);
+            
+            if (elVal && elGoal && elBar) {
+                const actual = parseInt(elVal.innerText) || 0;
+                const meta = parseInt(elGoal.innerText) || 1; // Para evitar dividir por cero
+                const nuevoActual = actual + cantidadSuma;
+                
+                // Actualizar el número
+                elVal.innerText = nuevoActual;
+                
+                // Rellenar la barra (hasta un máximo de 100% para que no se rompa el diseño)
+                let porcentaje = (nuevoActual / meta) * 100;
+                if (porcentaje > 100) porcentaje = 100;
+                
+                elBar.style.width = porcentaje + '%';
+            }
+        }
+        // --- FIN DE TUS FUNCIONES NUEVAS ---
 
         // ==========================================================================================
         // 📦 BASE DE DATOS
@@ -4360,4 +4427,3 @@
     </script>
 </body>
 </html>
-
