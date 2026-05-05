@@ -431,10 +431,16 @@
                 <input type="text" id="globalSearch" onkeyup="searchGlobal(this.value)" placeholder="🔍 Buscador PRO (ej: Yogur Proteina Mercadona)..." class="w-full bg-white p-4 pl-12 rounded-2xl border border-gray-100 shadow-sm text-sm focus:ring-2 focus:ring-primary/20 outline-none transition">
                 <div id="searchResults" class="absolute z-20 w-full bg-white shadow-xl rounded-xl mt-2 hidden max-h-60 overflow-y-auto border border-gray-100 px-2 py-2"></div>
             </div>
-            <!-- AQUÍ PEGAS EL CÓDIGO NUEVO -->
-            <div id="lector-codigo" style="width: 100%; display: none;"></div>
-            <button onclick="iniciarEscaner()" class="w-full mb-4 bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition">
-                📷 Escanear Producto
+           <!-- CÓDIGO NUEVO DEL ESCÁNER -->
+            <div id="contenedor-escaner" style="display: none;" class="mb-6 relative">
+                <div id="lector-codigo" class="w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100"></div>
+                <button onclick="cerrarEscaner()" class="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <button onclick="iniciarEscaner()" class="w-full mb-4 bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition flex justify-center items-center gap-2">
+                <i class="fas fa-barcode"></i> Escanear Producto
             </button>
             <!-- FIN DEL CÓDIGO NUEVO -->
 
@@ -1080,62 +1086,116 @@
         }
 
         const ENGINE = new BioEngine();
-        // --- PEGA AQUÍ TUS FUNCIONES NUEVAS ---
+        let escannerActivo = null; // Guardamos el escáner para poder apagarlo
+
         function iniciarEscaner() {
-            document.getElementById('lector-codigo').style.display = 'block';
+            document.getElementById('contenedor-escaner').style.display = 'block';
             
-            const html5QrCode = new Html5Qrcode("lector-codigo");
+            escannerActivo = new Html5Qrcode("lector-codigo");
             
-            html5QrCode.start(
+            escannerActivo.start(
                 { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 150 } },
-                (codigoEscaneado, decodedResult) => {
-                    html5QrCode.stop(); 
-                    document.getElementById('lector-codigo').style.display = 'none';
+                { 
+                    fps: 20, // Subimos a 20 FPS para que escanee mucho más rápido
+                    qrbox: { width: 250, height: 150 },
+                    aspectRatio: 1.0
+                },
+                (codigoEscaneado) => {
+                    // ¡Lo leyó!
+                    cerrarEscaner(); // Apagamos la cámara
                     buscarProductoPorCodigo(codigoEscaneado);
                 },
                 (errorMessage) => {
-                    // Ignorar errores
+                    // Se ejecuta 20 veces por segundo mientras busca, lo ignoramos
                 }
             ).catch((err) => {
-                console.log("Error al iniciar la cámara", err);
+                console.error("Error al iniciar la cámara", err);
+                Swal.fire('Error', 'Comprueba los permisos de la cámara.', 'error');
             });
+        }
+
+        function cerrarEscaner() {
+            if (escannerActivo) {
+                escannerActivo.stop().then(() => {
+                    document.getElementById('contenedor-escaner').style.display = 'none';
+                    escannerActivo = null;
+                }).catch(err => console.error("Error al detener cámara", err));
+            } else {
+                document.getElementById('contenedor-escaner').style.display = 'none';
+            }
         }
 
         async function buscarProductoPorCodigo(codigo) {
             const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
             
             try {
-                Swal.fire({ title: 'Buscando producto...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                Swal.fire({ title: 'Analizando...', text: 'Buscando nutrientes', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
                 
                 const respuesta = await fetch(url);
                 const datos = await respuesta.json();
                 
                 if (datos.status === 1) {
-                    const producto = datos.product;
-                    const nutris = producto.nutriments;
+                    const p = datos.product;
+                    const n = p.nutriments;
                     
-                    const nuevoAlimento = {
-                        name: producto.product_name || 'Producto Desconocido',
-                        cal: nutris['energy-kcal_100g'] || 0,
-                        prot: nutris.proteins_100g || 0,
-                        carbs: nutris.carbohydrates_100g || 0,
-                        fat: nutris.fat_100g || 0,
-                        sat: nutris['saturated-fat_100g'] || 0
+                    // Limpiamos los datos y redondeamos
+                    const alimento = {
+                        name: p.product_name || 'Producto sin nombre',
+                        cal: Math.round(n['energy-kcal_100g'] || 0),
+                        prot: Math.round(n.proteins_100g || 0),
+                        carbs: Math.round(n.carbohydrates_100g || 0),
+                        fat: Math.round(n.fat_100g || 0),
+                        sat: Math.round(n['saturated-fat_100g'] || 0),
+                        img: p.image_front_url || '' // Imagen del producto si la tiene
                     };
                     
-                    Swal.close();
-                    console.log("Producto encontrado:", nuevoAlimento);
-                    alert(`Encontrado: ${nuevoAlimento.name} (${nuevoAlimento.cal} kcal/100g)`);
+                    // INTERFAZ BONITA
+                    Swal.fire({
+                        title: alimento.name,
+                        imageUrl: alimento.img,
+                        imageHeight: 120,
+                        imageAlt: 'Foto producto',
+                        html: `
+                            <div class="grid grid-cols-2 gap-2 text-sm mt-4 text-left">
+                                <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal}</div>
+                                <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot}g</div>
+                                <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs}g</div>
+                                <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat}g</div>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-3 font-bold">*Valores por cada 100 gramos</p>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonColor: '#1e293b', // Color slate-800 de tu app
+                        cancelButtonColor: '#ef4444',
+                        confirmButtonText: 'Añadir a mi dieta',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Cuando el usuario le da a "Añadir a mi dieta"
+                            agregarAlimentoAlMotor(alimento);
+                        }
+                    });
                     
                 } else {
-                    Swal.fire('No encontrado', 'El producto no está en la base de datos pública.', 'error');
+                    Swal.fire('No encontrado', 'Este producto no está en la base de datos pública.', 'info');
                 }
             } catch (error) {
-                Swal.fire('Error', 'Fallo al conectar con la base de datos.', 'error');
+                Swal.fire('Error', 'Fallo al conectar a internet.', 'error');
             }
         }
-        // --- FIN DE TUS FUNCIONES NUEVAS ---
+
+        function agregarAlimentoAlMotor(alimento) {
+            // Aquí es donde en el futuro engancharemos los gramos exactos
+            // y sumaremos las calorías a tus barras de progreso.
+            console.log("Alimento listo para añadir:", alimento);
+            Swal.fire({
+                title: '¡Añadido!',
+                text: 'Macros listos para procesar',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
 
         // ==========================================================================================
         // 📦 BASE DE DATOS
@@ -4300,3 +4360,4 @@
     </script>
 </body>
 </html>
+
