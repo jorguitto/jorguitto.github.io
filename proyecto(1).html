@@ -840,11 +840,14 @@
             return null;
         }
 
-        async function firestoreRestRequest(method, path, body) {
+        async function firestoreRestRequest(method, path, body, opts) {
             if (!currentUser) throw new Error("No autenticado");
             const token = await currentUser.getIdToken(true);
             const projectId = firebaseConfig.projectId;
-            const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${path}`;
+            let url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${path}`;
+            if (opts && opts.querySuffix) {
+                url += (opts.querySuffix.startsWith("?") ? "" : "?") + opts.querySuffix;
+            }
             const res = await fetch(url, {
                 method,
                 headers: {
@@ -854,6 +857,9 @@
                 body: body ? JSON.stringify(body) : undefined
             });
             if (!res.ok) {
+                if (opts && opts.allow404 && method === "GET" && res.status === 404) {
+                    return null;
+                }
                 const txt = await res.text();
                 throw new Error(`REST ${method} ${path} -> ${res.status}: ${txt}`);
             }
@@ -861,14 +867,21 @@
             return res.json();
         }
 
-        async function restSetDocument(path, plainData) {
+        async function restPatchDocument(path, plainData) {
+            const keys = Object.keys(plainData).filter((k) => plainData[k] !== undefined);
+            const maskQs = keys.map((k) => `updateMask.fieldPaths=${encodeURIComponent(k)}`).join("&");
             const fields = {};
-            Object.keys(plainData).forEach((k) => { fields[k] = toFsValue(plainData[k]); });
-            return firestoreRestRequest("PATCH", path, { fields });
+            keys.forEach((k) => { fields[k] = toFsValue(plainData[k]); });
+            return firestoreRestRequest("PATCH", path, { fields }, { querySuffix: maskQs ? `?${maskQs}` : "" });
+        }
+
+        async function restSetDocument(path, plainData) {
+            return restPatchDocument(path, plainData);
         }
 
         async function restGetDocument(path) {
-            const json = await firestoreRestRequest("GET", path);
+            const json = await firestoreRestRequest("GET", path, null, { allow404: true });
+            if (!json) return {};
             const fields = (json && json.fields) || {};
             const out = {};
             Object.keys(fields).forEach((k) => { out[k] = fromFsValue(fields[k]); });
@@ -1066,8 +1079,13 @@
 
         async function cargarDatosUsuario(uid) {
             try {
+                try {
+                    await db.enableNetwork();
+                } catch (enErr) {
+                    console.warn("enableNetwork:", enErr);
+                }
                 const docRef = db.collection('usuarios').doc(uid);
-                const docSnap = await docRef.get();
+                const docSnap = await docRef.get({ source: "server" });
                 
                 if (docSnap.exists && docSnap.data() && docSnap.data().bio) {
                     USER_BIO = docSnap.data().bio;
@@ -1090,6 +1108,7 @@
                             USER_BIO = getDefaultUserBio();
                             await guardarDatosUsuario();
                         }
+                        setAuthDebug("Perfil cargado via REST (SDK offline)");
                         return;
                     } catch (restErr) {
                         console.error("Error REST Firestore (perfil):", restErr);
@@ -1098,9 +1117,12 @@
                 USER_BIO = USER_BIO || getDefaultUserBio();
                 const errCode = (error && error.code) ? error.code : "sin_codigo";
                 const errMsg = (error && error.message) ? error.message : "sin_mensaje";
+                const restHint = isFirestoreOfflineError(error)
+                    ? "\n(Si ves esto, el SDK sigue offline y REST tambien fallo; revisa red o reglas.)"
+                    : "";
                 showLoginError(
                     "Error de Firestore",
-                    `No se pudieron cargar tus datos en la nube.\nCódigo: ${errCode}\nDetalle: ${errMsg}\nSe usará perfil local temporal.`
+                    `No se pudieron cargar tus datos en la nube.\nCódigo: ${errCode}\nDetalle: ${errMsg}${restHint}\nSe usará perfil local temporal.`
                 );
             }
         }
@@ -1214,11 +1236,16 @@
 
         async function cargarRegistrosDiarios(uid) {
             try {
+                try {
+                    await db.enableNetwork();
+                } catch (enErr) {
+                    console.warn("enableNetwork (registros):", enErr);
+                }
                 const snap = await db.collection('usuarios')
                     .doc(uid)
                     .collection('registros_diarios')
                     .orderBy('dateKey', 'desc')
-                    .get();
+                    .get({ source: "server" });
 
                 if (snap.empty) return;
 
@@ -1245,7 +1272,8 @@
                 console.error("Error cargando registros diarios:", error);
                 if (isFirestoreOfflineError(error) && currentUser) {
                     try {
-                        const list = await firestoreRestRequest("GET", `usuarios/${uid}/registros_diarios`);
+                        const list = await firestoreRestRequest("GET", `usuarios/${uid}/registros_diarios`, null, { allow404: true });
+                        if (!list) return;
                         const docs = (list && list.documents) || [];
                         const cloudHistory = [];
                         let todayFromCloud = null;
@@ -1270,6 +1298,7 @@
                             todayData = { ...INITIAL_STATE, ...todayFromCloud };
                             localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData));
                         }
+                        setAuthDebug("Registros diarios cargados via REST (SDK offline)");
                         return;
                     } catch (restErr) {
                         console.error("Error REST cargando registros diarios:", restErr);
@@ -4915,3 +4944,4 @@
     </script>
 </body>
 </html>
+
