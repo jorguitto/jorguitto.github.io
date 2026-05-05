@@ -800,12 +800,36 @@
             Swal.fire({ title, text: message, icon: 'error' });
         }
 
+        function getDefaultUserBio() {
+            return {
+                nombre: (currentUser && currentUser.displayName) ? currentUser.displayName : "Atleta",
+                genero: "hombre",
+                edad: 18,
+                altura: 168,
+                peso: 60,
+                grasa: 12,
+                masaMuscular: 50,
+                ubicacion: "España",
+                maxRunKm: 5,
+                maxGymTime: 60,
+                maxBikeKm: 25,
+                goal: "maintenance"
+            };
+        }
+
         async function completarSesionConUsuario(user) {
             if (!user) return;
             currentUser = user;
             document.getElementById('login-screen').style.display = 'none';
-            await cargarDatosUsuario(user.uid);
-            await cargarRegistrosDiarios(user.uid);
+            try {
+                await cargarDatosUsuario(user.uid);
+                await cargarRegistrosDiarios(user.uid);
+            } catch (error) {
+                console.error("Error completando sesion:", error);
+            }
+            if (!USER_BIO) {
+                USER_BIO = getDefaultUserBio();
+            }
             loadDay();
             updateHistoryUI();
             authReady = true;
@@ -970,28 +994,16 @@
                 const docRef = db.collection('usuarios').doc(uid);
                 const docSnap = await docRef.get();
                 
-                if (docSnap.exists) {
+                if (docSnap.exists && docSnap.data() && docSnap.data().bio) {
                     USER_BIO = docSnap.data().bio;
                 } else {
-                    // Si es nuevo, creamos perfil inicial
-                    USER_BIO = {
-                        nombre: currentUser.displayName || "Atleta",
-                        genero: "hombre",
-                        edad: 18,
-                        altura: 168,
-                        peso: 60,
-                        grasa: 12,
-                        masaMuscular: 50,
-                        ubicacion: "España",
-                        maxRunKm: 5,     
-                        maxGymTime: 60,  
-                        maxBikeKm: 25,   
-                        goal: 'maintenance' 
-                    };
+                    USER_BIO = getDefaultUserBio();
                     await guardarDatosUsuario();
                 }
             } catch (error) {
                 console.error("Error Firestore:", error);
+                USER_BIO = USER_BIO || getDefaultUserBio();
+                showLoginError("Error de Firestore", "No se pudieron cargar tus datos de perfil en la nube. Se usará un perfil local temporal y reintentaremos sincronizar.");
             }
         }
 
@@ -1004,6 +1016,7 @@
                 }, { merge: true });
             } catch (error) {
                 console.error("Error al guardar:", error);
+                showLoginError("Error al guardar perfil", `Firestore devolvio: ${error.code || "sin_codigo"}`);
             }
         }
 
@@ -1020,6 +1033,12 @@
                     }, { merge: true });
             } catch (error) {
                 console.error("Error al sincronizar registro diario:", error);
+                if (error && (error.code === "permission-denied" || error.code === "unauthenticated")) {
+                    showLoginError(
+                        "Sin permisos en Firestore",
+                        "Tu sesion existe, pero las reglas de Firestore están bloqueando escritura en usuarios/{uid}/registros_diarios. Debes permitir acceso al usuario autenticado."
+                    );
+                }
             }
         }
 
@@ -4740,3 +4759,4 @@
     </script>
 </body>
 </html>
+
