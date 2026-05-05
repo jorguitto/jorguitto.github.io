@@ -1053,6 +1053,15 @@
             }
         }
 
+        async function logoutUsuario() {
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error("Error al cerrar sesión:", error);
+            }
+            // onAuthStateChanged se encarga de volver a mostrar #login-screen.
+        }
+
         function diagnosticarLogin() {
             const persistedDebug = (() => {
                 try { return localStorage.getItem(AUTH_DEBUG_KEY) || "(sin debug persistido)"; } catch (_) { return "(no se pudo leer debug)"; }
@@ -3512,6 +3521,9 @@
                     </div>
                 `,
                 confirmButtonText: 'Guardar y Recalcular',
+                showDenyButton: true,
+                denyButtonText: 'Cerrar sesión',
+                denyButtonColor: '#ef4444',
                 preConfirm: () => {
                     return {
                         genero: document.getElementById('swal-user-gen').value,
@@ -3532,6 +3544,9 @@
                     guardarDatosUsuario();
                     updateDay();
                     Swal.fire('Perfil Actualizado', 'Las metas de agua y calorías se han ajustado a tu nueva biología.', 'success');
+                } else if (result.isDenied) {
+                    logoutUsuario();
+                    Swal.close();
                 }
             });
         }
