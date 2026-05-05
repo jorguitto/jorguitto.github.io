@@ -11,9 +11,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -127,13 +124,6 @@
     </style>
 </head>
 <body>
-   <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6">
-    <h1 class="text-4xl font-black text-white italic mb-2">FIT<span class="text-primary">TRACKER</span></h1>
-    <p class="text-gray-400 mb-8 text-center text-sm">Inicia sesión para sincronizar tus datos</p>
-    <button onclick="loginConGoogle()" class="bg-white text-slate-900 font-bold py-3 px-6 rounded-xl shadow-lg flex items-center gap-3 active:scale-95 transition">
-        <i class="fab fa-google text-red-500"></i> Entrar con Google
-    </button>
-</div>
 
     <header class="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-40 border-b border-gray-100 px-6 py-4 flex justify-between items-center shadow-sm">
         <button onclick="navigateTo('registro')" class="text-gray-400 hover:text-primary transition"><i class="fas fa-history text-xl"></i></button>
@@ -743,64 +733,21 @@
         // 🧬 CONFIGURACIÓN: PERFIL BIOLÓGICO REACTIVO
         // ==========================================================================================
         
-       // ==========================================================================================
-        // ☁️ CONEXIÓN A LA NUBE: FIREBASE
-        // ==========================================================================================
-       // ==========================================================================================
-        // ☁️ CONEXIÓN A LA NUBE: FIREBASE (CORREGIDO)
-        // ==========================================================================================
-       // CONFIGURACIÓN FIREBASE (Tus llaves corregidas)
-const firebaseConfig = {
-    apiKey: "AIzaSyCgCwGwkMUTI9PhyWHBv6DXxhkHgf8Rjzg",
-    authDomain: "fittracker-a347a.firebaseapp.com",
-    projectId: "fittracker-a347a",
-    storageBucket: "fittracker-a347a.firebasestorage.app",
-    messagingSenderId: "251475812729",
-    appId: "1:251475812729:web:d1ed26b4262091f11f8fa8",
-    measurementId: "G-K0R3K5EBT0"
-};
+        let USER_BIO = JSON.parse(localStorage.getItem('user_bio_config')) || {
+            nombre: "Atleta",
+            genero: "hombre",
+            edad: 18,
+            altura: 168,
+            peso: 60,
+            grasa: 12,
+            masaMuscular: 50,
+            ubicacion: "Petrer",
+            maxRunKm: 5,     // Personal Record Running
+            maxGymTime: 60,  // Personal Record Gym Time
+            maxBikeKm: 25,   // Personal Record Bike
+            goal: 'maintenance' // 'fat_loss', 'muscle_gain', 'maintenance'
+        };
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-let currentUser = null;
-let USER_BIO = null; // Se llenará al loguearse
-
-// CONTROL DE ACCESO
-auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        currentUser = user;
-        document.getElementById('login-screen').style.display = 'none';
-        await cargarDatosUsuario(user.uid);
-        // LLAMADA VITAL: Una vez tenemos al usuario, arrancamos tu app
-        if (typeof updateDay === 'function') updateDay();
-    } else {
-        document.getElementById('login-screen').style.display = 'flex';
-    }
-});
-
-function loginConGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(err => Swal.fire('Error', err.message, 'error'));
-}
-
-async function cargarDatosUsuario(uid) {
-    const doc = await db.collection('usuarios').doc(uid).get();
-    if (doc.exists) {
-        USER_BIO = doc.data().bio;
-    } else {
-        // PERFIL POR DEFECTO PARA USUARIOS NUEVOS
-        USER_BIO = { nombre: currentUser.displayName, peso: 70, altura: 175, edad: 25, genero: 'hombre', goal: 'maintenance' };
-        await guardarDatosUsuario();
-    }
-}
-
-async function guardarDatosUsuario() {
-    if (currentUser && USER_BIO) {
-        await db.collection('usuarios').doc(currentUser.uid).set({ bio: USER_BIO }, { merge: true });
-    }
-}
         const MONTH_NAMES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
 
         // ==========================================================================================
@@ -1139,7 +1086,116 @@ async function guardarDatosUsuario() {
         }
 
         const ENGINE = new BioEngine();
-// FUNCIÓN QUE PROCESA LOS GRAMOS Y ACTUALIZA TU APLICACIÓN
+// --- PEGA AQUÍ TUS FUNCIONES NUEVAS ---
+        let escannerActivo = null;
+
+        // 1. INICIAR LA CÁMARA (Versión estable)
+        function iniciarEscaner() {
+            document.getElementById('contenedor-escaner').style.display = 'block';
+            
+            escannerActivo = new Html5Qrcode("lector-codigo");
+            
+            escannerActivo.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 150 } }, // 10 FPS, enfoque seguro
+                (codigoEscaneado) => {
+                    // ¡Código detectado!
+                    cerrarEscaner(); // Apagamos la cámara
+                    buscarProductoPorCodigo(codigoEscaneado);
+                },
+                (errorMessage) => {
+                    // Ignorar errores de lectura en progreso
+                }
+            ).catch((err) => {
+                console.error("Error al iniciar la cámara", err);
+                Swal.fire('Error', 'Comprueba los permisos de la cámara.', 'error');
+            });
+        }
+
+        // 2. APAGAR LA CÁMARA
+        function cerrarEscaner() {
+            if (escannerActivo) {
+                escannerActivo.stop().then(() => {
+                    document.getElementById('contenedor-escaner').style.display = 'none';
+                    escannerActivo = null;
+                }).catch(err => console.error("Error al detener cámara", err));
+            } else {
+                document.getElementById('contenedor-escaner').style.display = 'none';
+            }
+        }
+
+        // 3. BUSCAR EN OPEN FOOD FACTS Y PEDIR GRAMOS
+        async function buscarProductoPorCodigo(codigo) {
+            const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
+            
+            try {
+                Swal.fire({ title: 'Analizando...', text: 'Buscando nutrientes', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                
+                const respuesta = await fetch(url);
+                const datos = await respuesta.json();
+                
+                if (datos.status === 1) {
+                    const p = datos.product;
+                    const n = p.nutriments || {};
+                    
+                    const alimento = {
+                        name: p.product_name || 'Producto sin nombre',
+                        cal: parseFloat(n['energy-kcal_100g'] || 0),
+                        prot: parseFloat(n.proteins_100g || 0),
+                        carbs: parseFloat(n.carbohydrates_100g || 0),
+                        fat: parseFloat(n.fat_100g || 0),
+                        sat: parseFloat(n['saturated-fat_100g'] || 0),
+                        azucar: parseFloat(n.sugars_100g || 0),
+                        img: p.image_front_url || ''
+                    };
+                    
+                    // INTERFAZ BONITA CON GRAMOS
+                    Swal.fire({
+                        title: alimento.name,
+                        imageUrl: alimento.img,
+                        imageHeight: 120,
+                        html: `
+                            <div class="grid grid-cols-2 gap-2 text-[11px] mt-2 text-left">
+                                <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal.toFixed(1)}</div>
+                                <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot.toFixed(1)}g</div>
+                                <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs.toFixed(1)}g</div>
+                                <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat.toFixed(1)}g</div>
+                                <div class="bg-yellow-100 p-2 rounded border border-yellow-200 text-yellow-800"><b>🧈 G. Sat:</b> ${alimento.sat.toFixed(1)}g</div>
+                                <div class="bg-blue-50 p-2 rounded border border-blue-100 text-blue-700"><b>🍬 Azúcar:</b> ${alimento.azucar.toFixed(1)}g</div>
+                            </div>
+                            
+                            <div class="mt-5 text-left border-t border-gray-100 pt-3">
+                                <label class="text-xs font-black text-slate-700 uppercase">¿Cuántos gramos vas a comer?</label>
+                                <input type="number" id="gramos-input" class="w-full mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xl font-black text-center text-slate-800 focus:border-blue-500 outline-none" placeholder="Ej: 30" value="100">
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonColor: '#1e293b',
+                        cancelButtonColor: '#ef4444',
+                        confirmButtonText: '<i class="fas fa-check"></i> Añadir a mi dieta',
+                        cancelButtonText: 'Cancelar',
+                        preConfirm: () => {
+                            const gramos = document.getElementById('gramos-input').value;
+                            if (!gramos || gramos <= 0) {
+                                Swal.showValidationMessage('Introduce una cantidad válida');
+                            }
+                            return gramos;
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            agregarAlimentoAlMotor(alimento, result.value);
+                        }
+                    });
+                    
+                } else {
+                    Swal.fire('No encontrado', 'Este producto no está en la base de datos pública.', 'info');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Fallo al conectar a internet.', 'error');
+            }
+        }
+
+        // 4. AÑADIR A LA APP Y CREAR TARJETA CON BOTÓN DE BORRAR
         function agregarAlimentoAlMotor(alimento100g, gramos) {
             const factor = gramos / 100;
             
@@ -1149,7 +1205,6 @@ async function guardarDatosUsuario() {
             const fatFinal = Math.round(alimento100g.fat * factor);
             const satFinal = Math.round(alimento100g.sat * factor);
 
-            // Actualizamos barras de progreso
             actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', kcalFinal);
             actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', protFinal);
             actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', carbsFinal);
@@ -1162,10 +1217,8 @@ async function guardarDatosUsuario() {
                 spanTotal.innerText = (totalActual + kcalFinal) + " kcal";
             }
 
-            // CREAMOS LA TARJETA CON EL BOTÓN DE ELIMINAR
             const lista = document.getElementById('addedFoodsList');
             if (lista) {
-                // Generamos un ID único para poder borrar este elemento exacto luego
                 const idUnico = 'food-scan-' + Date.now(); 
                 
                 const nuevaTarjeta = `
@@ -1194,7 +1247,7 @@ async function guardarDatosUsuario() {
             });
         }
 
-        // NUEVA FUNCIÓN: ELIMINAR ALIMENTO
+        // 5. ELIMINAR EL ALIMENTO SI TE EQUIVOCAS
         function eliminarAlimentoEscaneado(idElemento, kcal, prot, carbs, fat, sat) {
             Swal.fire({
                 title: '¿Eliminar alimento?',
@@ -1207,30 +1260,27 @@ async function guardarDatosUsuario() {
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // 1. Quitamos la tarjeta de la lista visualmente
                     const tarjeta = document.getElementById(idElemento);
                     if (tarjeta) tarjeta.remove();
 
-                    // 2. Restamos los valores enviando las cantidades en negativo
                     actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', -kcal);
                     actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', -prot);
                     actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', -carbs);
                     actualizarMacroHTML('val-fat', 'goal-fat', 'bar-fat', -fat);
                     actualizarMacroHTML('val-sat', 'goal-sat', 'bar-sat', -sat);
 
-                    // 3. Restamos del total consumido
                     const spanTotal = document.getElementById('total-consumed-kcal');
                     if (spanTotal) {
                         const totalActual = parseInt(spanTotal.innerText) || 0;
                         let nuevoTotal = totalActual - kcal;
-                        if (nuevoTotal < 0) nuevoTotal = 0; // Evitar que salgan números negativos
+                        if (nuevoTotal < 0) nuevoTotal = 0; 
                         spanTotal.innerText = nuevoTotal + " kcal";
                     }
                 }
             });
         }
 
-        // FUNCIÓN AUXILIAR MEJORADA (Ahora soporta restar y evita bajar de cero)
+        // 6. ACTUALIZAR LAS BARRAS (Soporta sumar y restar)
         function actualizarMacroHTML(idVal, idGoal, idBar, cantidadSuma) {
             const elVal = document.getElementById(idVal);
             const elGoal = document.getElementById(idGoal);
@@ -1241,7 +1291,7 @@ async function guardarDatosUsuario() {
                 const meta = parseInt(elGoal.innerText) || 1;
                 
                 let nuevoActual = actual + cantidadSuma;
-                if (nuevoActual < 0) nuevoActual = 0; // Si restas de más, se queda en 0
+                if (nuevoActual < 0) nuevoActual = 0; 
                 
                 elVal.innerText = nuevoActual;
                 
@@ -1251,6 +1301,7 @@ async function guardarDatosUsuario() {
                 elBar.style.width = porcentaje + '%';
             }
         }
+        // --- FIN DE TUS FUNCIONES NUEVAS ---
 
         // ==========================================================================================
         // 📦 BASE DE DATOS
@@ -4415,3 +4466,4 @@ async function guardarDatosUsuario() {
     </script>
 </body>
 </html>
+
