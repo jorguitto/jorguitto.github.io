@@ -818,6 +818,12 @@
                 await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             } catch (error) {
                 console.error("No se pudo fijar persistencia LOCAL:", error);
+                try {
+                    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+                    setAuthDebug("Persistencia fallback: SESSION");
+                } catch (fallbackError) {
+                    console.error("No se pudo fijar persistencia SESSION:", fallbackError);
+                }
             }
 
             try {
@@ -883,11 +889,35 @@
 
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
+            provider.addScope('email');
             auth.languageCode = 'es';
+            const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
 
             try {
                 await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-                setAuthDebug("Lanzando signInWithRedirect...");
+            } catch (error) {
+                try {
+                    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+                } catch (_) {}
+            }
+
+            try {
+                if (isMobile) {
+                    setAuthDebug("Movil detectado: signInWithRedirect");
+                    try { sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1"); } catch (_) {}
+                    await auth.signInWithRedirect(provider);
+                    return;
+                }
+
+                setAuthDebug("Desktop detectado: intentando signInWithPopup");
+                const popupResult = await auth.signInWithPopup(provider);
+                if (popupResult && popupResult.user) {
+                    setAuthDebug(`Popup OK (${popupResult.user.uid})`);
+                    await completarSesionConUsuario(popupResult.user);
+                    return;
+                }
+
+                setAuthDebug("Popup sin usuario. Fallback a redirect");
                 try { sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1"); } catch (_) {}
                 await auth.signInWithRedirect(provider);
             } catch (error) {
@@ -895,8 +925,18 @@
                 const msgByCode = {
                     "auth/unauthorized-domain": "Este dominio no está autorizado en Firebase. Añádelo en Authentication > Settings > Authorized domains.",
                     "auth/operation-not-supported-in-this-environment": "El entorno actual no soporta login Google con redirect.",
-                    "auth/network-request-failed": "Error de red durante login. Revisa tu conexión."
+                    "auth/network-request-failed": "Error de red durante login. Revisa tu conexión.",
+                    "auth/popup-blocked": "El navegador bloqueó la ventana popup. Se intentará redirect.",
+                    "auth/popup-closed-by-user": "Cerraste la ventana popup antes de completar login."
                 };
+                if (!isMobile && (error.code === "auth/popup-blocked" || error.code === "auth/cancelled-popup-request")) {
+                    try {
+                        setAuthDebug("Popup bloqueado/cancelado. Fallback a redirect");
+                        sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1");
+                        await auth.signInWithRedirect(provider);
+                        return;
+                    } catch (_) {}
+                }
                 showLoginError("Error de Acceso", msgByCode[error.code] || `${error.code || "Error desconocido"}: ${error.message || "No se pudo iniciar sesión con Google."}`);
             }
         }
@@ -4700,4 +4740,3 @@
     </script>
 </body>
 </html>
-
