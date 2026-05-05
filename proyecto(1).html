@@ -768,6 +768,20 @@
 
         let currentUser = null;
         let USER_BIO = null; 
+        let authReady = false;
+
+        function getTodayDocId() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function normalizeRecordDateKey(record) {
+            if (record && record.dateKey) return record.dateKey;
+            const fallback = getTodayDocId();
+            if (!record || !record.date) return fallback;
+            const parsed = new Date(record.date);
+            if (Number.isNaN(parsed.getTime())) return fallback;
+            return parsed.toISOString().split('T')[0];
+        }
 
         // Escuchar cambios de estado (Login/Logout)
         auth.onAuthStateChanged(async (user) => {
@@ -775,8 +789,15 @@
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none'; 
                 await cargarDatosUsuario(user.uid);
+                await cargarRegistrosDiarios(user.uid);
+                loadDay();
+                updateHistoryUI();
+                authReady = true;
                 if (typeof updateDay === "function") updateDay(); 
             } else {
+                currentUser = null;
+                USER_BIO = null;
+                authReady = false;
                 document.getElementById('login-screen').style.display = 'flex'; 
             }
         });
@@ -785,8 +806,7 @@
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.languageCode = 'es';
             
-            // Usamos signInWithPopup para que sea más cómodo en el móvil
-            auth.signInWithPopup(provider).catch((error) => {
+            auth.signInWithRedirect(provider).catch((error) => {
                 console.error("Error Auth:", error.code);
                 Swal.fire({
                     title: 'Error de Acceso',
@@ -835,6 +855,102 @@
                 }, { merge: true });
             } catch (error) {
                 console.error("Error al guardar:", error);
+            }
+        }
+
+        async function guardarRegistroDiarioFirestore(docId, payload) {
+            if (!currentUser) return;
+            try {
+                await db.collection('usuarios')
+                    .doc(currentUser.uid)
+                    .collection('registros_diarios')
+                    .doc(docId)
+                    .set({
+                        ...payload,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+            } catch (error) {
+                console.error("Error al sincronizar registro diario:", error);
+            }
+        }
+
+        async function syncTodayToFirestore() {
+            const docId = getTodayDocId();
+            await guardarRegistroDiarioFirestore(docId, {
+                dateKey: docId,
+                todayData: todayData
+            });
+        }
+
+        async function syncHistoryRecordToFirestore(record) {
+            const docId = normalizeRecordDateKey(record);
+            await guardarRegistroDiarioFirestore(docId, {
+                dateKey: docId,
+                historyRecord: record
+            });
+        }
+
+        async function syncHistoryListToFirestore() {
+            if (!currentUser || !Array.isArray(history)) return;
+            const keepKeys = new Set(history.map((record) => normalizeRecordDateKey(record)));
+            try {
+                const snap = await db.collection('usuarios')
+                    .doc(currentUser.uid)
+                    .collection('registros_diarios')
+                    .get();
+
+                for (const doc of snap.docs) {
+                    if (!keepKeys.has(doc.id) && doc.data().historyRecord) {
+                        await db.collection('usuarios')
+                            .doc(currentUser.uid)
+                            .collection('registros_diarios')
+                            .doc(doc.id)
+                            .set({
+                                historyRecord: firebase.firestore.FieldValue.delete(),
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            }, { merge: true });
+                    }
+                }
+            } catch (error) {
+                console.error("Error limpiando historial remoto:", error);
+            }
+
+            for (const record of history) {
+                await syncHistoryRecordToFirestore(record);
+            }
+        }
+
+        async function cargarRegistrosDiarios(uid) {
+            try {
+                const snap = await db.collection('usuarios')
+                    .doc(uid)
+                    .collection('registros_diarios')
+                    .orderBy('dateKey', 'desc')
+                    .get();
+
+                if (snap.empty) return;
+
+                const cloudHistory = [];
+                let todayFromCloud = null;
+                const todayId = getTodayDocId();
+
+                snap.forEach((doc) => {
+                    const data = doc.data() || {};
+                    if (data.historyRecord) cloudHistory.push(data.historyRecord);
+                    if (doc.id === todayId && data.todayData) todayFromCloud = data.todayData;
+                });
+
+                if (cloudHistory.length > 0) {
+                    history = cloudHistory;
+                    localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
+                }
+
+                if (todayFromCloud) {
+                    todayData = { ...INITIAL_STATE, ...todayFromCloud };
+                    localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData));
+                }
+            } catch (error) {
+                console.error("Error cargando registros diarios:", error);
             }
         }
 
@@ -3050,7 +3166,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     USER_BIO = { ...USER_BIO, ...result.value };
-                    localStorage.setItem('user_bio_config', JSON.stringify(USER_BIO));
+                    guardarDatosUsuario();
                     updateDay();
                     Swal.fire('Perfil Actualizado', 'Las metas de agua y calorías se han ajustado a tu nueva biología.', 'success');
                 }
@@ -3539,6 +3655,7 @@
             
             const record = { 
                 date: recordDate, 
+                dateKey: dateStr || getTodayDocId(),
                 data: { ...todayData }, 
                 goals: { ...currentGoals },
                 stress: Math.round((mentalLoad + physicalLoad) / 2),
@@ -3555,6 +3672,7 @@
             else history.unshift(record);
             
             localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history));
+            syncHistoryRecordToFirestore(record);
             todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
             todayAlerts = [];
             saveDay();
@@ -4192,6 +4310,9 @@
         
         function saveDay() { 
             localStorage.setItem('fitTrackerToday_MD', JSON.stringify(todayData)); 
+            if (authReady && currentUser) {
+                syncTodayToFirestore();
+            }
         }
         
         function loadDay() { 
@@ -4251,6 +4372,7 @@
                     todayData = history[index].data; 
                     history.splice(index, 1); 
                     localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history)); 
+                    syncHistoryListToFirestore();
                     saveDay(); 
                     window.location.reload(); 
                 } 
@@ -4269,6 +4391,7 @@
                 if(result.isConfirmed) { 
                     history.splice(index, 1); 
                     localStorage.setItem('fitTrackerHistory_MD', JSON.stringify(history)); 
+                    syncHistoryListToFirestore();
                     updateHistoryUI(); 
                     Swal.fire('Eliminado', '', 'success'); 
                 } 
@@ -4452,4 +4575,3 @@
     </script>
 </body>
 </html>
-
