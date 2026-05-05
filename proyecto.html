@@ -748,17 +748,20 @@
        // ==========================================================================================
         // ☁️ CONEXIÓN A LA NUBE: FIREBASE
         // ==========================================================================================
+       // ==========================================================================================
+        // ☁️ CONEXIÓN A LA NUBE: FIREBASE (CORREGIDO)
+        // ==========================================================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyCGcwGwkMUTI9PhyWHBv6DXxhkHgf8Rjzg",
+            apiKey: "AIzaSyCgCwGwkMUTI9PhyWHBv6DXxhkHgf8Rjzg",
             authDomain: "fittracker-a347a.firebaseapp.com",
             projectId: "fittracker-a347a",
             storageBucket: "fittracker-a347a.firebasestorage.app",
             messagingSenderId: "251475812729",
-            appId: "1:251475812729:web:d1ed26b4762091f11f8fa8",
-            measurementId: "G-K0R3K5EBTE"
+            appId: "1:251475812729:web:d1ed26b4262091f11f8fa8",
+            measurementId: "G-K0R3K5EBT0"
         };
 
-        // Inicializar Firebase
+        // Inicializar Firebase (Versión compatible con navegador)
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -766,53 +769,42 @@
         let currentUser = null;
         let USER_BIO = null; 
 
-        // Escuchar cuando el usuario entra o sale
+        // Escuchar cambios de estado (Login/Logout)
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // LOGUEADO
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none'; 
-                console.log("¡Logueado con éxito!", user.email);
-                
                 await cargarDatosUsuario(user.uid);
-                
-                // Actualizamos la interfaz una vez tenemos los datos
                 if (typeof updateDay === "function") updateDay(); 
             } else {
-                // NO LOGUEADO
                 document.getElementById('login-screen').style.display = 'flex'; 
-                USER_BIO = null;
             }
         });
 
-       function loginConGoogle() {
+        function loginConGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            
-            // Forzamos el idioma al español
             auth.languageCode = 'es';
             
+            // Usamos signInWithPopup para que sea más cómodo en el móvil
             auth.signInWithPopup(provider).catch((error) => {
-                console.error("Error completo:", error);
-                // ESTO NOS DIRÁ EL FALLO EXACTO
+                console.error("Error Auth:", error.code);
                 Swal.fire({
-                    title: 'Error de Firebase',
-                    text: error.message,
+                    title: 'Error de Acceso',
+                    text: "Asegúrate de que 'jorguitto.github.io' está en Dominios Autorizados en la consola de Firebase.",
                     icon: 'error'
                 });
             });
         }
+
         async function cargarDatosUsuario(uid) {
             try {
                 const docRef = db.collection('usuarios').doc(uid);
                 const docSnap = await docRef.get();
                 
                 if (docSnap.exists) {
-                    // El usuario ya existe, cargamos sus datos de la nube
                     USER_BIO = docSnap.data().bio;
-                    console.log("Datos de la nube cargados.");
                 } else {
-                    // Usuario nuevo, le creamos un perfil por defecto en la nube
-                    console.log("Usuario nuevo. Creando perfil...");
+                    // Si es nuevo, creamos perfil inicial
                     USER_BIO = {
                         nombre: currentUser.displayName || "Atleta",
                         genero: "hombre",
@@ -830,19 +822,19 @@
                     await guardarDatosUsuario();
                 }
             } catch (error) {
-                console.error("Error al cargar base de datos:", error);
+                console.error("Error Firestore:", error);
             }
         }
 
         async function guardarDatosUsuario() {
-            if (!currentUser) return;
+            if (!currentUser || !USER_BIO) return;
             try {
                 await db.collection('usuarios').doc(currentUser.uid).set({
                     bio: USER_BIO,
-                    ultimaConexion: firebase.firestore.FieldValue.serverTimestamp()
+                    ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
             } catch (error) {
-                console.error("Error guardando datos:", error);
+                console.error("Error al guardar:", error);
             }
         }
 
