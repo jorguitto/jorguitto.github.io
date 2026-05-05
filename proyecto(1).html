@@ -1003,7 +1003,12 @@
             } catch (error) {
                 console.error("Error Firestore:", error);
                 USER_BIO = USER_BIO || getDefaultUserBio();
-                showLoginError("Error de Firestore", "No se pudieron cargar tus datos de perfil en la nube. Se usará un perfil local temporal y reintentaremos sincronizar.");
+                const errCode = (error && error.code) ? error.code : "sin_codigo";
+                const errMsg = (error && error.message) ? error.message : "sin_mensaje";
+                showLoginError(
+                    "Error de Firestore",
+                    `No se pudieron cargar tus datos en la nube.\nCódigo: ${errCode}\nDetalle: ${errMsg}\nSe usará perfil local temporal.`
+                );
             }
         }
 
@@ -4759,4 +4764,3 @@
     </script>
 </body>
 </html>
-
