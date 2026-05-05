@@ -1086,43 +1086,60 @@
         }
 
         const ENGINE = new BioEngine();
-       // --- PEGA AQUÍ TUS FUNCIONES NUEVAS ---
+// --- PEGA AQUÍ TUS FUNCIONES NUEVAS ---
         let escannerActivo = null;
+        let procesandoCodigo = false; // Candado para evitar dobles lecturas
 
+        // 1. INICIAR LA CÁMARA
         function iniciarEscaner() {
             document.getElementById('contenedor-escaner').style.display = 'block';
+            procesandoCodigo = false; 
+            
             escannerActivo = new Html5Qrcode("lector-codigo");
             escannerActivo.start(
                 { facingMode: "environment" },
                 { fps: 20, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 },
                 (codigoEscaneado) => {
+                    if (procesandoCodigo) return;
+                    procesandoCodigo = true;
+
+                    if (navigator.vibrate) navigator.vibrate(200); 
+
+                    document.getElementById('contenedor-escaner').style.display = 'none';
+                    
+                    Swal.fire({ 
+                        title: '¡Código capturado!', 
+                        text: 'Descargando nutrientes...', 
+                        allowOutsideClick: false, 
+                        didOpen: () => { Swal.showLoading() } 
+                    });
+
                     cerrarEscaner(); 
                     buscarProductoPorCodigo(codigoEscaneado);
                 },
                 (errorMessage) => {}
             ).catch((err) => {
-                console.error("Error cámara", err);
                 Swal.fire('Error', 'Comprueba los permisos de la cámara.', 'error');
             });
         }
 
+        // 2. APAGAR LA CÁMARA
         function cerrarEscaner() {
+            document.getElementById('contenedor-escaner').style.display = 'none';
+            procesandoCodigo = true; 
+            
             if (escannerActivo) {
                 escannerActivo.stop().then(() => {
-                    document.getElementById('contenedor-escaner').style.display = 'none';
                     escannerActivo = null;
-                });
-            } else {
-                document.getElementById('contenedor-escaner').style.display = 'none';
+                }).catch(err => console.error("Error al apagar cámara", err));
             }
         }
 
+        // 3. BUSCAR EN OPEN FOOD FACTS Y PEDIR GRAMOS
         async function buscarProductoPorCodigo(codigo) {
             const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
             
             try {
-                Swal.fire({ title: 'Analizando...', text: 'Buscando nutrientes', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
-                
                 const respuesta = await fetch(url);
                 const datos = await respuesta.json();
                 
@@ -1130,19 +1147,17 @@
                     const p = datos.product;
                     const n = p.nutriments;
                     
-                    // EXTRAEMOS EL MÁXIMO DE DATOS POSIBLES
                     const alimento = {
                         name: p.product_name || 'Producto sin nombre',
                         cal: parseFloat(n['energy-kcal_100g'] || 0),
                         prot: parseFloat(n.proteins_100g || 0),
                         carbs: parseFloat(n.carbohydrates_100g || 0),
                         fat: parseFloat(n.fat_100g || 0),
-                        sat: parseFloat(n['saturated-fat_100g'] || 0), // Grasas saturadas añadidas
-                        azucar: parseFloat(n.sugars_100g || 0),        // Azúcares añadidos
+                        sat: parseFloat(n['saturated-fat_100g'] || 0),
+                        azucar: parseFloat(n.sugars_100g || 0),
                         img: p.image_front_url || ''
                     };
                     
-                    // POPUP CON INPUT DE GRAMOS
                     Swal.fire({
                         title: alimento.name,
                         imageUrl: alimento.img,
@@ -1170,14 +1185,13 @@
                         preConfirm: () => {
                             const gramos = document.getElementById('gramos-input').value;
                             if (!gramos || gramos <= 0) {
-                                Swal.showValidationMessage('Introduce una cantidad válida en gramos');
+                                Swal.showValidationMessage('Introduce una cantidad válida');
                             }
                             return gramos;
                         }
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            const gramos = result.value;
-                            agregarAlimentoAlMotor(alimento, gramos);
+                            agregarAlimentoAlMotor(alimento, result.value);
                         }
                     });
                     
@@ -1188,7 +1202,8 @@
                 Swal.fire('Error', 'Fallo al conectar a internet.', 'error');
             }
         }
-// FUNCIÓN QUE PROCESA LOS GRAMOS Y ACTUALIZA TU APLICACIÓN
+
+        // 4. AÑADIR A LA APP Y CREAR TARJETA CON BOTÓN DE BORRAR
         function agregarAlimentoAlMotor(alimento100g, gramos) {
             const factor = gramos / 100;
             
@@ -1198,7 +1213,6 @@
             const fatFinal = Math.round(alimento100g.fat * factor);
             const satFinal = Math.round(alimento100g.sat * factor);
 
-            // Actualizamos barras de progreso
             actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', kcalFinal);
             actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', protFinal);
             actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', carbsFinal);
@@ -1211,10 +1225,8 @@
                 spanTotal.innerText = (totalActual + kcalFinal) + " kcal";
             }
 
-            // CREAMOS LA TARJETA CON EL BOTÓN DE ELIMINAR
             const lista = document.getElementById('addedFoodsList');
             if (lista) {
-                // Generamos un ID único para poder borrar este elemento exacto luego
                 const idUnico = 'food-scan-' + Date.now(); 
                 
                 const nuevaTarjeta = `
@@ -1243,7 +1255,7 @@
             });
         }
 
-        // NUEVA FUNCIÓN: ELIMINAR ALIMENTO
+        // 5. ELIMINAR EL ALIMENTO SI TE EQUIVOCAS
         function eliminarAlimentoEscaneado(idElemento, kcal, prot, carbs, fat, sat) {
             Swal.fire({
                 title: '¿Eliminar alimento?',
@@ -1256,30 +1268,27 @@
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // 1. Quitamos la tarjeta de la lista visualmente
                     const tarjeta = document.getElementById(idElemento);
                     if (tarjeta) tarjeta.remove();
 
-                    // 2. Restamos los valores enviando las cantidades en negativo
                     actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', -kcal);
                     actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', -prot);
                     actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', -carbs);
                     actualizarMacroHTML('val-fat', 'goal-fat', 'bar-fat', -fat);
                     actualizarMacroHTML('val-sat', 'goal-sat', 'bar-sat', -sat);
 
-                    // 3. Restamos del total consumido
                     const spanTotal = document.getElementById('total-consumed-kcal');
                     if (spanTotal) {
                         const totalActual = parseInt(spanTotal.innerText) || 0;
                         let nuevoTotal = totalActual - kcal;
-                        if (nuevoTotal < 0) nuevoTotal = 0; // Evitar que salgan números negativos
+                        if (nuevoTotal < 0) nuevoTotal = 0; 
                         spanTotal.innerText = nuevoTotal + " kcal";
                     }
                 }
             });
         }
 
-        // FUNCIÓN AUXILIAR MEJORADA (Ahora soporta restar y evita bajar de cero)
+        // 6. ACTUALIZAR LAS BARRAS (Soporta sumar y restar)
         function actualizarMacroHTML(idVal, idGoal, idBar, cantidadSuma) {
             const elVal = document.getElementById(idVal);
             const elGoal = document.getElementById(idGoal);
@@ -1290,7 +1299,7 @@
                 const meta = parseInt(elGoal.innerText) || 1;
                 
                 let nuevoActual = actual + cantidadSuma;
-                if (nuevoActual < 0) nuevoActual = 0; // Si restas de más, se queda en 0
+                if (nuevoActual < 0) nuevoActual = 0; 
                 
                 elVal.innerText = nuevoActual;
                 
@@ -1300,7 +1309,7 @@
                 elBar.style.width = porcentaje + '%';
             }
         }
-       
+        // --- FIN DE TUS FUNCIONES NUEVAS ---
 
         // ==========================================================================================
         // 📦 BASE DE DATOS
