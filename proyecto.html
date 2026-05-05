@@ -11,7 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script>
@@ -127,13 +127,11 @@
     </style>
 </head>
 <body>
-    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6" style="display: flex;">
+   <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6">
     <h1 class="text-4xl font-black text-white italic mb-2">FIT<span class="text-primary">TRACKER</span></h1>
-    <p class="text-gray-400 mb-8 text-center text-sm">Inicia sesión para cargar o crear tu perfil biológico en la nube</p>
-    
-    <button onclick="loginConGoogle()" class="bg-white text-slate-900 font-bold py-3 px-6 rounded-xl shadow-lg flex items-center gap-3 active:scale-95 transition w-full max-w-sm justify-center">
-        <i class="fab fa-google text-red-500"></i>
-        Entrar con Google
+    <p class="text-gray-400 mb-8 text-center text-sm">Inicia sesión para sincronizar tus datos</p>
+    <button onclick="loginConGoogle()" class="bg-white text-slate-900 font-bold py-3 px-6 rounded-xl shadow-lg flex items-center gap-3 active:scale-95 transition">
+        <i class="fab fa-google text-red-500"></i> Entrar con Google
     </button>
 </div>
 
@@ -751,93 +749,58 @@
        // ==========================================================================================
         // ☁️ CONEXIÓN A LA NUBE: FIREBASE (CORREGIDO)
         // ==========================================================================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyCgCwGwkMUTI9PhyWHBv6DXxhkHgf8Rjzg",
-            authDomain: "fittracker-a347a.firebaseapp.com",
-            projectId: "fittracker-a347a",
-            storageBucket: "fittracker-a347a.firebasestorage.app",
-            messagingSenderId: "251475812729",
-            appId: "1:251475812729:web:d1ed26b4262091f11f8fa8",
-            measurementId: "G-K0R3K5EBT0"
-        };
+       // CONFIGURACIÓN FIREBASE (Tus llaves corregidas)
+const firebaseConfig = {
+    apiKey: "AIzaSyCgCwGwkMUTI9PhyWHBv6DXxhkHgf8Rjzg",
+    authDomain: "fittracker-a347a.firebaseapp.com",
+    projectId: "fittracker-a347a",
+    storageBucket: "fittracker-a347a.firebasestorage.app",
+    messagingSenderId: "251475812729",
+    appId: "1:251475812729:web:d1ed26b4262091f11f8fa8",
+    measurementId: "G-K0R3K5EBT0"
+};
 
-        // Inicializar Firebase (Versión compatible con navegador)
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-        let currentUser = null;
-        let USER_BIO = null; 
+let currentUser = null;
+let USER_BIO = null; // Se llenará al loguearse
 
-        // Escuchar cambios de estado (Login/Logout)
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('login-screen').style.display = 'none'; 
-                await cargarDatosUsuario(user.uid);
-                if (typeof updateDay === "function") updateDay(); 
-            } else {
-                document.getElementById('login-screen').style.display = 'flex'; 
-            }
-        });
+// CONTROL DE ACCESO
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user;
+        document.getElementById('login-screen').style.display = 'none';
+        await cargarDatosUsuario(user.uid);
+        // LLAMADA VITAL: Una vez tenemos al usuario, arrancamos tu app
+        if (typeof updateDay === 'function') updateDay();
+    } else {
+        document.getElementById('login-screen').style.display = 'flex';
+    }
+});
 
-        function loginConGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.languageCode = 'es';
-            
-            // Usamos signInWithPopup para que sea más cómodo en el móvil
-            auth.signInWithPopup(provider).catch((error) => {
-                console.error("Error Auth:", error.code);
-                Swal.fire({
-                    title: 'Error de Acceso',
-                    text: "Asegúrate de que 'jorguitto.github.io' está en Dominios Autorizados en la consola de Firebase.",
-                    icon: 'error'
-                });
-            });
-        }
+function loginConGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(err => Swal.fire('Error', err.message, 'error'));
+}
 
-        async function cargarDatosUsuario(uid) {
-            try {
-                const docRef = db.collection('usuarios').doc(uid);
-                const docSnap = await docRef.get();
-                
-                if (docSnap.exists) {
-                    USER_BIO = docSnap.data().bio;
-                } else {
-                    // Si es nuevo, creamos perfil inicial
-                    USER_BIO = {
-                        nombre: currentUser.displayName || "Atleta",
-                        genero: "hombre",
-                        edad: 18,
-                        altura: 168,
-                        peso: 60,
-                        grasa: 12,
-                        masaMuscular: 50,
-                        ubicacion: "España",
-                        maxRunKm: 5,     
-                        maxGymTime: 60,  
-                        maxBikeKm: 25,   
-                        goal: 'maintenance' 
-                    };
-                    await guardarDatosUsuario();
-                }
-            } catch (error) {
-                console.error("Error Firestore:", error);
-            }
-        }
+async function cargarDatosUsuario(uid) {
+    const doc = await db.collection('usuarios').doc(uid).get();
+    if (doc.exists) {
+        USER_BIO = doc.data().bio;
+    } else {
+        // PERFIL POR DEFECTO PARA USUARIOS NUEVOS
+        USER_BIO = { nombre: currentUser.displayName, peso: 70, altura: 175, edad: 25, genero: 'hombre', goal: 'maintenance' };
+        await guardarDatosUsuario();
+    }
+}
 
-        async function guardarDatosUsuario() {
-            if (!currentUser || !USER_BIO) return;
-            try {
-                await db.collection('usuarios').doc(currentUser.uid).set({
-                    bio: USER_BIO,
-                    ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-            } catch (error) {
-                console.error("Error al guardar:", error);
-            }
-        }
-
+async function guardarDatosUsuario() {
+    if (currentUser && USER_BIO) {
+        await db.collection('usuarios').doc(currentUser.uid).set({ bio: USER_BIO }, { merge: true });
+    }
+}
         const MONTH_NAMES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
 
         // ==========================================================================================
