@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -426,10 +426,17 @@
                 </button>
             </div>
             
+            
             <div class="relative mb-6">
                 <input type="text" id="globalSearch" onkeyup="searchGlobal(this.value)" placeholder="🔍 Buscador PRO (ej: Yogur Proteina Mercadona)..." class="w-full bg-white p-4 pl-12 rounded-2xl border border-gray-100 shadow-sm text-sm focus:ring-2 focus:ring-primary/20 outline-none transition">
                 <div id="searchResults" class="absolute z-20 w-full bg-white shadow-xl rounded-xl mt-2 hidden max-h-60 overflow-y-auto border border-gray-100 px-2 py-2"></div>
             </div>
+            <!-- AQUÍ PEGAS EL CÓDIGO NUEVO -->
+            <div id="lector-codigo" style="width: 100%; display: none;"></div>
+            <button onclick="iniciarEscaner()" class="w-full mb-4 bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition">
+                📷 Escanear Producto
+            </button>
+            <!-- FIN DEL CÓDIGO NUEVO -->
 
             <div id="foodCategoriesContainer" class="space-y-4 pb-8"></div>
 
@@ -1073,6 +1080,62 @@
         }
 
         const ENGINE = new BioEngine();
+        // --- PEGA AQUÍ TUS FUNCIONES NUEVAS ---
+        function iniciarEscaner() {
+            document.getElementById('lector-codigo').style.display = 'block';
+            
+            const html5QrCode = new Html5Qrcode("lector-codigo");
+            
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 150 } },
+                (codigoEscaneado, decodedResult) => {
+                    html5QrCode.stop(); 
+                    document.getElementById('lector-codigo').style.display = 'none';
+                    buscarProductoPorCodigo(codigoEscaneado);
+                },
+                (errorMessage) => {
+                    // Ignorar errores
+                }
+            ).catch((err) => {
+                console.log("Error al iniciar la cámara", err);
+            });
+        }
+
+        async function buscarProductoPorCodigo(codigo) {
+            const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
+            
+            try {
+                Swal.fire({ title: 'Buscando producto...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                
+                const respuesta = await fetch(url);
+                const datos = await respuesta.json();
+                
+                if (datos.status === 1) {
+                    const producto = datos.product;
+                    const nutris = producto.nutriments;
+                    
+                    const nuevoAlimento = {
+                        name: producto.product_name || 'Producto Desconocido',
+                        cal: nutris['energy-kcal_100g'] || 0,
+                        prot: nutris.proteins_100g || 0,
+                        carbs: nutris.carbohydrates_100g || 0,
+                        fat: nutris.fat_100g || 0,
+                        sat: nutris['saturated-fat_100g'] || 0
+                    };
+                    
+                    Swal.close();
+                    console.log("Producto encontrado:", nuevoAlimento);
+                    alert(`Encontrado: ${nuevoAlimento.name} (${nuevoAlimento.cal} kcal/100g)`);
+                    
+                } else {
+                    Swal.fire('No encontrado', 'El producto no está en la base de datos pública.', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Fallo al conectar con la base de datos.', 'error');
+            }
+        }
+        // --- FIN DE TUS FUNCIONES NUEVAS ---
 
         // ==========================================================================================
         // 📦 BASE DE DATOS
@@ -4237,4 +4300,3 @@
     </script>
 </body>
 </html>
-
