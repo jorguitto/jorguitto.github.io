@@ -1088,97 +1088,68 @@
         const ENGINE = new BioEngine();
 // --- PEGA AQUÍ TUS FUNCIONES NUEVAS ---
         let escannerActivo = null;
-        let procesandoCodigo = false; 
 
+        // 1. INICIAR LA CÁMARA (Versión estable)
         function iniciarEscaner() {
             document.getElementById('contenedor-escaner').style.display = 'block';
-            procesandoCodigo = false; 
             
             escannerActivo = new Html5Qrcode("lector-codigo");
             
-            // Configuración súper estable para que el móvil enfoque rápido por sí solo
-            const config = { 
-                fps: 10, 
-                qrbox: { width: 250, height: 150 } 
-            };
-
             escannerActivo.start(
                 { facingMode: "environment" },
-                config,
+                { fps: 10, qrbox: { width: 250, height: 150 } }, // 10 FPS, enfoque seguro
                 (codigoEscaneado) => {
-                    if (procesandoCodigo) return;
-                    procesandoCodigo = true;
-
-                    // Vibración instantánea
-                    if (navigator.vibrate) navigator.vibrate(200); 
-
-                    // Ocultamos la caja visualmente al instante
-                    document.getElementById('contenedor-escaner').style.display = 'none';
-                    
-                    Swal.fire({ 
-                        title: '¡Código capturado!', 
-                        text: 'Buscando datos...', 
-                        allowOutsideClick: false, 
-                        didOpen: () => { Swal.showLoading() } 
-                    });
-
-                    // Apagamos la cámara con seguridad ANTES de buscar en internet
-                    cerrarEscaner().then(() => {
-                        buscarProductoPorCodigo(codigoEscaneado);
-                    });
+                    // ¡Código detectado!
+                    cerrarEscaner(); // Apagamos la cámara
+                    buscarProductoPorCodigo(codigoEscaneado);
                 },
                 (errorMessage) => {
-                    // Ignoramos errores de lectura continua
+                    // Ignorar errores de lectura en progreso
                 }
             ).catch((err) => {
-                console.error(err);
+                console.error("Error al iniciar la cámara", err);
                 Swal.fire('Error', 'Comprueba los permisos de la cámara.', 'error');
             });
         }
 
-        // Ahora cerrarEscaner nos avisa cuando la cámara está 100% apagada
+        // 2. APAGAR LA CÁMARA
         function cerrarEscaner() {
-            return new Promise((resolve) => {
+            if (escannerActivo) {
+                escannerActivo.stop().then(() => {
+                    document.getElementById('contenedor-escaner').style.display = 'none';
+                    escannerActivo = null;
+                }).catch(err => console.error("Error al detener cámara", err));
+            } else {
                 document.getElementById('contenedor-escaner').style.display = 'none';
-                procesandoCodigo = true; 
-                
-                if (escannerActivo) {
-                    escannerActivo.stop().then(() => {
-                        escannerActivo = null;
-                        resolve();
-                    }).catch(err => {
-                        escannerActivo = null;
-                        resolve();
-                    });
-                } else {
-                    resolve();
-                }
-            });
+            }
         }
 
+        // 3. BUSCAR EN OPEN FOOD FACTS Y PEDIR GRAMOS
         async function buscarProductoPorCodigo(codigo) {
             const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
             
             try {
+                Swal.fire({ title: 'Analizando...', text: 'Buscando nutrientes', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                
                 const respuesta = await fetch(url);
                 const datos = await respuesta.json();
                 
-                if (datos.status === 1 && datos.product) {
+                if (datos.status === 1) {
                     const p = datos.product;
-                    const n = p.nutriments || {}; 
+                    const n = p.nutriments || {};
                     
                     const alimento = {
                         name: p.product_name || 'Producto sin nombre',
-                        cal: parseFloat(n['energy-kcal_100g']) || 0,
-                        prot: parseFloat(n.proteins_100g) || 0,
-                        carbs: parseFloat(n.carbohydrates_100g) || 0,
-                        fat: parseFloat(n.fat_100g) || 0,
-                        sat: parseFloat(n['saturated-fat_100g']) || 0,
-                        azucar: parseFloat(n.sugars_100g) || 0,
+                        cal: parseFloat(n['energy-kcal_100g'] || 0),
+                        prot: parseFloat(n.proteins_100g || 0),
+                        carbs: parseFloat(n.carbohydrates_100g || 0),
+                        fat: parseFloat(n.fat_100g || 0),
+                        sat: parseFloat(n['saturated-fat_100g'] || 0),
+                        azucar: parseFloat(n.sugars_100g || 0),
                         img: p.image_front_url || ''
                     };
                     
-                    // Mostramos la interfaz bonita
+                    // INTERFAZ BONITA CON GRAMOS
                     Swal.fire({
                         title: alimento.name,
                         imageUrl: alimento.img,
@@ -1220,11 +1191,11 @@
                     Swal.fire('No encontrado', 'Este producto no está en la base de datos pública.', 'info');
                 }
             } catch (error) {
-                console.error("Detalle del error:", error);
-                Swal.fire('Error', 'Fallo al procesar los datos.', 'error');
+                Swal.fire('Error', 'Fallo al conectar a internet.', 'error');
             }
         }
 
+        // 4. AÑADIR A LA APP Y CREAR TARJETA CON BOTÓN DE BORRAR
         function agregarAlimentoAlMotor(alimento100g, gramos) {
             const factor = gramos / 100;
             
@@ -1276,6 +1247,7 @@
             });
         }
 
+        // 5. ELIMINAR EL ALIMENTO SI TE EQUIVOCAS
         function eliminarAlimentoEscaneado(idElemento, kcal, prot, carbs, fat, sat) {
             Swal.fire({
                 title: '¿Eliminar alimento?',
@@ -1308,6 +1280,7 @@
             });
         }
 
+        // 6. ACTUALIZAR LAS BARRAS (Soporta sumar y restar)
         function actualizarMacroHTML(idVal, idGoal, idBar, cantidadSuma) {
             const elVal = document.getElementById(idVal);
             const elGoal = document.getElementById(idGoal);
