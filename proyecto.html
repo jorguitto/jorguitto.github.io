@@ -1188,10 +1188,8 @@
                 Swal.fire('Error', 'Fallo al conectar a internet.', 'error');
             }
         }
-
-        // FUNCIÓN QUE PROCESA LOS GRAMOS Y ACTUALIZA TU APLICACIÓN
+// FUNCIÓN QUE PROCESA LOS GRAMOS Y ACTUALIZA TU APLICACIÓN
         function agregarAlimentoAlMotor(alimento100g, gramos) {
-            // 1. Calculamos los valores reales según los gramos
             const factor = gramos / 100;
             
             const kcalFinal = Math.round(alimento100g.cal * factor);
@@ -1200,38 +1198,42 @@
             const fatFinal = Math.round(alimento100g.fat * factor);
             const satFinal = Math.round(alimento100g.sat * factor);
 
-            // 2. Actualizamos los textos y las barras de progreso que ya tienes en tu HTML
+            // Actualizamos barras de progreso
             actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', kcalFinal);
             actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', protFinal);
             actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', carbsFinal);
             actualizarMacroHTML('val-fat', 'goal-fat', 'bar-fat', fatFinal);
             actualizarMacroHTML('val-sat', 'goal-sat', 'bar-sat', satFinal);
 
-            // 3. Sumar calorías al total de la pestaña "Dieta"
             const spanTotal = document.getElementById('total-consumed-kcal');
             if (spanTotal) {
                 const totalActual = parseInt(spanTotal.innerText) || 0;
                 spanTotal.innerText = (totalActual + kcalFinal) + " kcal";
             }
 
-            // 4. Crear la tarjeta visual en la lista de comidas de hoy[cite: 1]
+            // CREAMOS LA TARJETA CON EL BOTÓN DE ELIMINAR
             const lista = document.getElementById('addedFoodsList');
             if (lista) {
+                // Generamos un ID único para poder borrar este elemento exacto luego
+                const idUnico = 'food-scan-' + Date.now(); 
+                
                 const nuevaTarjeta = `
-                    <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center mb-2 animate-[fadeIn_0.3s_ease-out]">
+                    <div id="${idUnico}" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center mb-2 animate-[fadeIn_0.3s_ease-out]">
                         <div>
                             <p class="text-xs font-bold text-slate-700 leading-tight">${alimento100g.name}</p>
                             <p class="text-[10px] text-gray-400 mt-0.5"><i class="fas fa-scale-balanced mr-1"></i>${gramos}g • ${protFinal}g P / ${carbsFinal}g C / ${fatFinal}g G</p>
                         </div>
-                        <div class="text-right">
+                        <div class="flex items-center gap-3 text-right">
                             <p class="text-sm font-black text-orange-500">${kcalFinal} kcal</p>
+                            <button onclick="eliminarAlimentoEscaneado('${idUnico}', ${kcalFinal}, ${protFinal}, ${carbsFinal}, ${fatFinal}, ${satFinal})" class="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
                         </div>
                     </div>
                 `;
-                lista.innerHTML = nuevaTarjeta + lista.innerHTML; // Se añade arriba del todo
+                lista.innerHTML = nuevaTarjeta + lista.innerHTML; 
             }
 
-            // 5. Mensaje de éxito
             Swal.fire({
                 title: '¡Añadido!',
                 text: `Se han sumado ${kcalFinal} kcal a tu día.`,
@@ -1241,7 +1243,43 @@
             });
         }
 
-        // FUNCIÓN AUXILIAR: Suma el valor y rellena la barra de progreso
+        // NUEVA FUNCIÓN: ELIMINAR ALIMENTO
+        function eliminarAlimentoEscaneado(idElemento, kcal, prot, carbs, fat, sat) {
+            Swal.fire({
+                title: '¿Eliminar alimento?',
+                text: "Se restarán las calorías y macros de tu progreso de hoy.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // 1. Quitamos la tarjeta de la lista visualmente
+                    const tarjeta = document.getElementById(idElemento);
+                    if (tarjeta) tarjeta.remove();
+
+                    // 2. Restamos los valores enviando las cantidades en negativo
+                    actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', -kcal);
+                    actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', -prot);
+                    actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', -carbs);
+                    actualizarMacroHTML('val-fat', 'goal-fat', 'bar-fat', -fat);
+                    actualizarMacroHTML('val-sat', 'goal-sat', 'bar-sat', -sat);
+
+                    // 3. Restamos del total consumido
+                    const spanTotal = document.getElementById('total-consumed-kcal');
+                    if (spanTotal) {
+                        const totalActual = parseInt(spanTotal.innerText) || 0;
+                        let nuevoTotal = totalActual - kcal;
+                        if (nuevoTotal < 0) nuevoTotal = 0; // Evitar que salgan números negativos
+                        spanTotal.innerText = nuevoTotal + " kcal";
+                    }
+                }
+            });
+        }
+
+        // FUNCIÓN AUXILIAR MEJORADA (Ahora soporta restar y evita bajar de cero)
         function actualizarMacroHTML(idVal, idGoal, idBar, cantidadSuma) {
             const elVal = document.getElementById(idVal);
             const elGoal = document.getElementById(idGoal);
@@ -1249,20 +1287,20 @@
             
             if (elVal && elGoal && elBar) {
                 const actual = parseInt(elVal.innerText) || 0;
-                const meta = parseInt(elGoal.innerText) || 1; // Para evitar dividir por cero
-                const nuevoActual = actual + cantidadSuma;
+                const meta = parseInt(elGoal.innerText) || 1;
                 
-                // Actualizar el número
+                let nuevoActual = actual + cantidadSuma;
+                if (nuevoActual < 0) nuevoActual = 0; // Si restas de más, se queda en 0
+                
                 elVal.innerText = nuevoActual;
                 
-                // Rellenar la barra (hasta un máximo de 100% para que no se rompa el diseño)
                 let porcentaje = (nuevoActual / meta) * 100;
                 if (porcentaje > 100) porcentaje = 100;
                 
                 elBar.style.width = porcentaje + '%';
             }
         }
-        // --- FIN DE TUS FUNCIONES NUEVAS ---
+       
 
         // ==========================================================================================
         // 📦 BASE DE DATOS
