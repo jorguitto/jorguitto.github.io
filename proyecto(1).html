@@ -769,6 +769,7 @@
         let currentUser = null;
         let USER_BIO = null; 
         let authReady = false;
+        let authStateHandled = false;
 
         function getTodayDocId() {
             return new Date().toISOString().split('T')[0];
@@ -783,8 +784,38 @@
             return parsed.toISOString().split('T')[0];
         }
 
+        function showLoginError(title, message) {
+            Swal.fire({ title, text: message, icon: 'error' });
+        }
+
+        async function initAuthFlow() {
+            auth.useDeviceLanguage();
+            try {
+                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            } catch (error) {
+                console.error("No se pudo fijar persistencia LOCAL:", error);
+            }
+
+            try {
+                const redirectResult = await auth.getRedirectResult();
+                if (redirectResult && redirectResult.user) {
+                    console.log("Redirect auth completado:", redirectResult.user.uid);
+                }
+            } catch (error) {
+                console.error("Error en getRedirectResult:", error);
+                const msgByCode = {
+                    "auth/unauthorized-domain": "Dominio no autorizado en Firebase Auth. Debes abrir la app desde un dominio permitido (localhost o hosting) y añadirlo en Authentication > Settings > Authorized domains.",
+                    "auth/operation-not-supported-in-this-environment": "Google Sign-In no está permitido desde file://. Abre la app en un servidor (por ejemplo http://localhost:5500).",
+                    "auth/popup-blocked": "El navegador bloqueó la ventana de login. Vuelve a intentarlo permitiendo popups.",
+                    "auth/network-request-failed": "Fallo de red durante autenticación. Revisa conexión e inténtalo de nuevo."
+                };
+                showLoginError("Error de acceso", msgByCode[error.code] || `${error.code || "Error desconocido"}: ${error.message || "No se pudo completar el login."}`);
+            }
+        }
+
         // Escuchar cambios de estado (Login/Logout)
         auth.onAuthStateChanged(async (user) => {
+            authStateHandled = true;
             if (user) {
                 currentUser = user;
                 document.getElementById('login-screen').style.display = 'none'; 
@@ -802,19 +833,34 @@
             }
         });
 
-        function loginConGoogle() {
+        async function loginConGoogle() {
+            if (window.location.protocol === 'file:') {
+                showLoginError(
+                    "No se puede iniciar sesión desde archivo local",
+                    "Firebase Auth con Google no funciona en file://. Abre este HTML en http://localhost (Live Server o servidor local) y añade localhost en Authorized domains."
+                );
+                return;
+            }
+
             const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
             auth.languageCode = 'es';
-            
-            auth.signInWithRedirect(provider).catch((error) => {
-                console.error("Error Auth:", error.code);
-                Swal.fire({
-                    title: 'Error de Acceso',
-                    text: "Asegúrate de que 'jorguitto.github.io' está en Dominios Autorizados en la consola de Firebase.",
-                    icon: 'error'
-                });
-            });
+
+            try {
+                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                await auth.signInWithRedirect(provider);
+            } catch (error) {
+                console.error("Error Auth:", error);
+                const msgByCode = {
+                    "auth/unauthorized-domain": "Este dominio no está autorizado en Firebase. Añádelo en Authentication > Settings > Authorized domains.",
+                    "auth/operation-not-supported-in-this-environment": "El entorno actual no soporta login Google con redirect.",
+                    "auth/network-request-failed": "Error de red durante login. Revisa tu conexión."
+                };
+                showLoginError("Error de Acceso", msgByCode[error.code] || `${error.code || "Error desconocido"}: ${error.message || "No se pudo iniciar sesión con Google."}`);
+            }
         }
+
+        initAuthFlow();
 
         async function cargarDatosUsuario(uid) {
             try {
@@ -4591,4 +4637,3 @@
     </script>
 </body>
 </html>
-
