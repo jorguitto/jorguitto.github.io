@@ -1089,7 +1089,7 @@
         async function cargarDatosUsuario(uid) {
             try {
                 try {
-                    await db.enableNetwork();
+                    // await db.enableNetwork();
                 } catch (enErr) {
                     console.warn("enableNetwork:", enErr);
                 }
@@ -1276,10 +1276,10 @@
             }
         }
 
-        async function cargarPersistenciaDesdeNube(uid) {
+       async function cargarPersistenciaDesdeNube(uid) {
             const todayId = getTodayDocId();
             try {
-                try { await db.enableNetwork(); } catch (_) {}
+                try { /* await db.enableNetwork(); */ } catch (_) {} // <--- O MÁRCALO ASÍ
                 const daySnap = await db.collection('usuarios')
                     .doc(uid)
                     .collection('dias')
