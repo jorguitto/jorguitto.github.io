@@ -4957,6 +4957,61 @@
             const blob = doc.output('bloburl');
             window.open(blob, '_blank');
         }
+        // ==========================================
+        // CÓDIGO DEL ESCÁNER CORREGIDO
+        // ==========================================
+        let html5QrcodeScanner = null;
+
+        function iniciarEscaner() {
+            // Mostramos el contenedor
+            document.getElementById('contenedor-escaner').style.display = 'block';
+            
+            // 1. Evitamos escáneres fantasma duplicados
+            if (html5QrcodeScanner) {
+                console.warn("El escáner ya estaba inicializado.");
+                return;
+            }
+            
+            // 2. Iniciamos el lector en el div correcto ("lector-codigo")
+            html5QrcodeScanner = new Html5QrcodeScanner("lector-codigo", { 
+                fps: 10, 
+                qrbox: {width: 250, height: 250},
+                rememberLastUsedCamera: true
+            }, false);
+            
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function cerrarEscaner() {
+            // 3. Apagado seguro de la cámara
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
+                    html5QrcodeScanner = null;
+                    document.getElementById('contenedor-escaner').style.display = 'none';
+                }).catch(error => {
+                    console.error("Error al apagar el escáner: ", error);
+                    html5QrcodeScanner = null;
+                    document.getElementById('contenedor-escaner').style.display = 'none';
+                });
+            } else {
+                document.getElementById('contenedor-escaner').style.display = 'none';
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Aquí pones lo que quieres que pase al detectar un código
+            console.log(`Código leído: ${decodedText}`);
+            
+            // Puedes buscar el alimento en tu base de datos aquí
+            // Ejemplo: buscarAlimentoPorCodigo(decodedText);
+            
+            // Si quieres que se cierre solo al leer un código, descomenta esto:
+            // cerrarEscaner(); 
+        }
+
+        function onScanFailure(error) {
+            // No hacemos nada, es normal que falle mientras intenta enfocar
+        }
     </script>
 </body>
 </html>
