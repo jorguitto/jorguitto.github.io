@@ -139,19 +139,19 @@
                 </div>
 
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-xs font-bold text-gray-600 uppercase">Género</label>
-                            <select id="onb-genero" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500">
-                                <option value="Hombre">Hombre</option>
-                                <option value="Mujer">Mujer</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-600 uppercase">Edad</label>
-                            <input type="number" id="onb-edad" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 25">
-                        </div>
-                    </div>
+              <div class="grid grid-cols-2 gap-3">
+    <div>
+        <label class="text-[10px] font-bold text-gray-600 uppercase">Género</label>
+        <select id="onb-genero" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500">
+            <option value="hombre">Hombre</option>
+            <option value="mujer">Mujer</option>
+        </select>
+    </div>
+    <div>
+        <label class="text-[10px] font-bold text-gray-600 uppercase">F. Nacimiento</label>
+        <input type="date" id="onb-birthdate" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500">
+    </div>
+</div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -5582,45 +5582,78 @@
             });
         }
 
+       // Función para calcular la edad exacta a partir de la fecha
+        function calcularEdad(fechaNacimiento) {
+            const hoy = new Date();
+            const cumple = new Date(fechaNacimiento);
+            let edad = hoy.getFullYear() - cumple.getFullYear();
+            const m = hoy.getMonth() - cumple.getMonth();
+            if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) {
+                edad--;
+            }
+            return edad;
+        }
+
         async function guardarOnboarding() {
-            const edad = parseInt(document.getElementById('onb-edad').value);
-            const peso = parseFloat(document.getElementById('onb-peso').value);
-            const altura = parseInt(document.getElementById('onb-altura').value);
-            
-            // Validamos que al menos ponga lo más importante
-            if (!edad || !peso || !altura) {
-                Swal.fire('Faltan datos', 'Por favor, rellena al menos tu edad, peso y altura para que el motor pueda arrancar.', 'error');
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            const fechaNacStr = document.getElementById('onb-birthdate').value;
+            if (!fechaNacStr) {
+                Swal.fire('Atención', 'Por favor, introduce tu fecha de nacimiento.', 'error');
                 return;
             }
 
-            const user = firebase.auth().currentUser;
-            if (user) {
-                // Guardamos todos los campos en Firebase listos para que "Editar Perfil" los lea luego
-                await db.collection('usuarios').doc(user.uid).update({
-                    perfilCompletado: true,
-                    genero: document.getElementById('onb-genero').value,
-                    edad: edad,
-                    peso: peso,
-                    altura: altura,
-                    grasa: parseFloat(document.getElementById('onb-grasa').value) || 0,
-                    musculo: parseFloat(document.getElementById('onb-musculo').value) || 0,
-                    maxRun: parseFloat(document.getElementById('onb-run').value) || 0,
-                    maxBike: parseFloat(document.getElementById('onb-bike').value) || 0,
-                    objetivo: document.getElementById('onb-objetivo').value
-                });
+            const edadCalculada = calcularEdad(fechaNacStr);
+            const pesoForm = parseFloat(document.getElementById('onb-peso').value) || 0;
+            const alturaForm = parseInt(document.getElementById('onb-altura').value) || 0;
 
-                document.getElementById('onboarding-modal').classList.add('hidden');
-                document.getElementById('onboarding-modal').classList.remove('flex');
-                
+            if (edadCalculada < 1 || pesoForm <= 0 || alturaForm <= 0) {
+                Swal.fire('Datos inválidos', 'Por favor, revisa tu fecha de nacimiento, peso y altura.', 'error');
+                return;
+            }
+
+            // Construimos el objeto BIO tal cual lo espera tu aplicación
+            const datosBio = {
+                nombre: user.displayName || "Usuario",
+                genero: document.getElementById('onb-genero').value,
+                fechaNacimiento: fechaNacStr, // Guardamos la fecha para el futuro
+                edad: edadCalculada,
+                peso: pesoForm,
+                altura: alturaForm,
+                grasa: parseFloat(document.getElementById('onb-grasa').value) || 15,
+                masaMuscular: parseFloat(document.getElementById('onb-musculo').value) || 30,
+                maxRunKm: parseFloat(document.getElementById('onb-run').value) || 0,
+                maxBikeKm: parseFloat(document.getElementById('onb-bike').value) || 0,
+                goal: document.getElementById('onb-objetivo').value
+            };
+
+            try {
+                // IMPORTANTE: Guardamos en 'bio' porque es donde tu loadUserData lo lee
+                await db.collection('usuarios').doc(user.uid).set({
+                    perfilCompletado: true,
+                    email: user.email,
+                    bio: datosBio 
+                }, { merge: true });
+
                 Swal.fire({
-                    title: '¡Perfil Creado!',
-                    text: 'Motor biológico calibrado.',
+                    title: '¡Perfil Calibrado!',
+                    text: `Edad calculada: ${edadCalculada} años`,
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
+
+                // Cerramos modal y cargamos la app
+                document.getElementById('onboarding-modal').classList.add('hidden');
+                document.getElementById('onboarding-modal').classList.remove('flex');
                 
-                arrancarAplicacion(user); // Arrancamos la app
+                // Forzamos la recarga de datos para que el motor biológico se entere del cambio
+                await completarSesionConUsuario(user); 
+
+            } catch (error) {
+                console.error("Error al guardar perfil:", error);
+                Swal.fire('Error', 'No se pudieron guardar los datos en Firebase.', 'error');
             }
         }
     </script>
