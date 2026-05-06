@@ -1054,27 +1054,43 @@
                 showLoginError("Error de acceso", msgByCode[error.code] || `${error.code || "Error desconocido"}: ${error.message || "No se pudo completar el login."}`);
             }
         }
+        // Este bloque SIEMPRE debe estar en tu código
+auth.onAuthStateChanged(async (user) => {
+    authStateHandled = true;
+    if (user) {
+        setAuthDebug(`Sesión detectada: ${user.uid}`);
+        // Llamamos a la función de verificación
+        await verificarUsuarioNuevo(user);
+    } else {
+        setAuthDebug("No hay sesión activa");
+        // Mostrar pantalla de login si no hay usuario
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('onboarding-modal').classList.add('hidden');
+    }
+});
 // Escuchar cambios de estado (Login/Logout) CON ONBOARDING
 async function verificarUsuarioNuevo(user) {
-            try {
-                const docRef = db.collection('usuarios').doc(user.uid);
-                const docSnap = await docRef.get();
-                
-                // Si el usuario existe y ya guardó sus datos
-                if (docSnap.exists && docSnap.data().perfilCompletado) {
-                    await completarSesionConUsuario(user);
-                } else {
-                    // Es un usuario nuevo: Ocultamos login y mostramos onboarding
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('onboarding-modal').classList.remove('hidden');
-                    document.getElementById('onboarding-modal').classList.add('flex');
-                }
-            } catch (error) {
-                console.error("Error al verificar usuario:", error);
-                // Si falla la red, entraremos normal para no bloquear al usuario
-                await completarSesionConUsuario(user);
-            }
+    try {
+        const docRef = db.collection('usuarios').doc(user.uid);
+        const docSnap = await docRef.get();
+        
+        // Si el documento existe Y tiene el perfil completado
+        if (docSnap.exists && docSnap.data().perfilCompletado) {
+            console.log("Usuario veterano, cargando app...");
+            await completarSesionConUsuario(user);
+        } else {
+            console.log("Usuario nuevo, mostrando bienvenida...");
+            // OCULTAMOS el login y MOSTRAMOS el onboarding
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('onboarding-modal').classList.remove('hidden');
+            document.getElementById('onboarding-modal').classList.add('flex');
         }
+    } catch (error) {
+        console.error("Error en verificación:", error);
+        // Si hay error de conexión, dejamos pasar a la app para no bloquear
+        await completarSesionConUsuario(user);
+    }
+}
         
 
        async function loginConGoogle() {
