@@ -5175,11 +5175,10 @@
             }
         }
 // ==========================================================================================
-        // ⚡️ BUSCADOR ULTRA RÁPIDO: LOCAL INSTANTÁNEO + MODO FRANCOTIRADOR ASÍNCRONO
+        // ⚡️ BUSCADOR MASIVO: RED DE ARRASTRE (150 PRODUCTOS) + RANKING ESPAÑA
         // ==========================================================================================
         let temporizadorBuscador = null;
 
-        // Función para quitar acentos y mayúsculas
         function normalizarTexto(texto) {
             return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
         }
@@ -5196,10 +5195,13 @@
                 return;
             }
 
+            // Hacemos que el contenedor pueda hacer scroll si la lista es muy larga
             contenedorResultados.classList.remove('hidden');
+            contenedorResultados.style.maxHeight = "400px";
+            contenedorResultados.style.overflowY = "auto";
 
             // ------------------------------------------------------------------
-            // FASE 1: BÚSQUEDA LOCAL (¡Se ejecuta al instante, en 0 milisegundos!)
+            // FASE 1: BÚSQUEDA LOCAL INSTANTÁNEA
             // ------------------------------------------------------------------
             let resultadosLocales = [];
             try {
@@ -5223,11 +5225,10 @@
                 console.error("Error local:", err);
             }
 
-            // Pintamos LO LOCAL de inmediato en la pantalla
             let htmlLocal = '';
             if (resultadosLocales.length > 0) {
                 htmlLocal += '<div class="px-3 py-1.5 bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-widest sticky top-0"><i class="fas fa-database mr-1"></i> Mi Base de Datos</div>';
-                resultadosLocales.slice(0, 10).forEach(alimento => {
+                resultadosLocales.slice(0, 15).forEach(alimento => {
                     const objCodificado = encodeURIComponent(JSON.stringify(alimento));
                     htmlLocal += `
                         <div class="p-3 border-b border-gray-50 hover:bg-blue-50 active:bg-blue-100 cursor-pointer transition flex justify-between items-center" onclick="seleccionarDesdeBuscador('${objCodificado}')">
@@ -5238,32 +5239,27 @@
                 });
             }
 
-            // Añadimos un pequeño "cargador" debajo para que sepas que está buscando en internet
             contenedorResultados.innerHTML = htmlLocal + `
-                <div id="spinner-global" class="p-3 text-center text-xs text-gray-400 bg-white">
-                    <i class="fas fa-crosshairs fa-spin mr-1 text-blue-500"></i> Rastrendo red mundial...
+                <div id="spinner-global" class="p-4 text-center text-xs text-gray-500 bg-white border-t border-gray-100">
+                    <i class="fas fa-satellite-dish fa-spin mr-2 text-blue-500"></i> Rastreador mundial activado...
                 </div>
             `;
 
-
             // ------------------------------------------------------------------
-            // FASE 2: BÚSQUEDA MUNDIAL FRANCOTIRADOR (Trabaja en segundo plano)
+            // FASE 2: RED DE ARRASTRE MUNDIAL (150 PRODUCTOS)
             // ------------------------------------------------------------------
-            clearTimeout(temporizadorBuscador); // Reseteamos si sigues escribiendo
+            clearTimeout(temporizadorBuscador);
             
-            // Si escribes menos de 2 letras, no gastamos internet
             if (terminoLimpio.length < 2) {
                 document.getElementById('spinner-global').style.display = 'none';
-                if (resultadosLocales.length === 0) contenedorResultados.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Sigue escribiendo...</div>';
                 return;
             }
 
-            // Esperamos solo 350ms (muy rápido) y disparamos a internet
             temporizadorBuscador = setTimeout(async () => {
                 let resultadosMundiales = [];
                 try {
-                    // Bajamos a 30 productos para que el servidor responda EL DOBLE de rápido
-                    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termino)}&search_simple=1&action=process&json=1&page_size=30`;
+                    // Le pedimos a la API 150 productos para asegurarnos de que no se escape ninguno
+                    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termino)}&search_simple=1&action=process&json=1&page_size=150`;
                     const respuesta = await fetch(url);
                     const datos = await respuesta.json();
 
@@ -5271,42 +5267,58 @@
                         let productosTemporales = [];
 
                         datos.products.forEach(p => {
-                            const n = p.nutriments || {};
-                            if (p.product_name && n['energy-kcal_100g'] !== undefined) {
+                            if (p.product_name) {
+                                const n = p.nutriments || {};
                                 
-                                // SISTEMA DE PUNTOS (Scoring de Alta Precisión)
-                                let puntos = parseFloat(p.completeness) || 0; 
-                                const nombreProdLimpio = normalizarTexto(p.product_name);
-                                const etiquetasPaises = (p.countries_tags || []).join(' ').toLowerCase();
-                                const marcas = normalizarTexto(p.brands || '');
+                                // Rescate de Calorías: Si no hay kcal, intentamos convertir desde Kilojulios
+                                let kcalFinal = parseFloat(n['energy-kcal_100g']);
+                                if (isNaN(kcalFinal)) kcalFinal = parseFloat(n['energy_100g']) / 4.184;
+                                if (isNaN(kcalFinal)) kcalFinal = 0;
 
-                                if (etiquetasPaises.includes('spain') || etiquetasPaises.includes('espagne') || etiquetasPaises.includes('españa')) puntos += 50;
-                                if (nombreProdLimpio.includes(terminoLimpio)) puntos += 20;
-                                if (nombreProdLimpio.startsWith(terminoLimpio)) puntos += 15;
-                                if (marcas.includes(terminoLimpio)) puntos += 10;
+                                // Solo procesamos si tiene un nombre y algo de información nutricional
+                                if (kcalFinal >= 0) {
+                                    let puntos = 0; 
+                                    const nombreProdLimpio = normalizarTexto(p.product_name);
+                                    const etiquetasPaises = (p.countries_tags || []).join(' ').toLowerCase();
+                                    const marcas = normalizarTexto(p.brands || '');
 
-                                productosTemporales.push({
-                                    name: p.product_name + (p.brands ? ` (${p.brands.split(',')[0]})` : ''),
-                                    cal: parseFloat(n['energy-kcal_100g'] || 0), prot: parseFloat(n.proteins_100g || 0),
-                                    carbs: parseFloat(n.carbohydrates_100g || 0), fat: parseFloat(n.fat_100g || 0),
-                                    sat: parseFloat(n['saturated-fat_100g'] || 0), img: p.image_front_small_url || '',
-                                    score: puntos 
-                                });
+                                    // Ranking de Puntos
+                                    if (etiquetasPaises.includes('spain') || etiquetasPaises.includes('espana') || etiquetasPaises.includes('espagne')) puntos += 100;
+                                    if (nombreProdLimpio === terminoLimpio) puntos += 80; // Coincidencia exacta
+                                    if (nombreProdLimpio.startsWith(terminoLimpio)) puntos += 40;
+                                    if (nombreProdLimpio.includes(terminoLimpio)) puntos += 20;
+                                    if (marcas.includes(terminoLimpio)) puntos += 30;
+                                    
+                                    puntos += parseFloat(p.completeness) * 10 || 0;
+
+                                    productosTemporales.push({
+                                        name: p.product_name + (p.brands ? ` (${p.brands.split(',')[0]})` : ''),
+                                        cal: kcalFinal,
+                                        prot: parseFloat(n.proteins_100g || 0),
+                                        carbs: parseFloat(n.carbohydrates_100g || 0),
+                                        fat: parseFloat(n.fat_100g || 0),
+                                        sat: parseFloat(n['saturated-fat_100g'] || 0),
+                                        img: p.image_front_small_url || '',
+                                        score: puntos 
+                                    });
+                                }
                             }
                         });
 
-                        // Ordenamos y sacamos los 10 mejores
+                        // Ordenamos todos los productos por puntos (España primero)
                         productosTemporales.sort((a, b) => b.score - a.score);
-                        resultadosMundiales = productosTemporales.slice(0, 10);
+                        
+                        // Mostramos los 50 mejores resultados (una lista larga para que elijas)
+                        resultadosMundiales = productosTemporales.slice(0, 50);
                     }
                 } catch (error) {
                     console.error("Error en OpenFoodFacts:", error);
                 }
 
-                // Sustituimos el cargador pequeñito por la lista mundial real
+                // Dibujar la lista mundial
                 let htmlMundial = '';
                 if (resultadosMundiales.length > 0) {
-                    htmlMundial += '<div class="px-3 py-1.5 bg-blue-100 text-[10px] font-black text-blue-600 uppercase tracking-widest sticky top-0 border-t border-blue-200"><i class="fas fa-globe mr-1"></i> Base de Datos Mundial</div>';
+                    htmlMundial += '<div class="px-3 py-1.5 bg-blue-100 text-[10px] font-black text-blue-600 uppercase tracking-widest sticky top-0 border-t border-blue-200 shadow-sm"><i class="fas fa-globe mr-1"></i> Base de Datos Mundial (Desliza para ver más)</div>';
                     resultadosMundiales.forEach(alimento => {
                         const objCodificado = encodeURIComponent(JSON.stringify(alimento));
                         const imgHtml = alimento.img 
@@ -5325,16 +5337,15 @@
                         `;
                     });
                 } else if (resultadosLocales.length === 0) {
-                    htmlMundial = '<div class="p-4 text-center text-sm text-gray-500 font-bold">No hemos encontrado nada 🥲</div>';
+                    htmlMundial = '<div class="p-5 text-center text-sm text-gray-500 font-bold bg-white rounded-b-xl">No hemos encontrado nada 🥲<br><span class="text-xs font-normal text-gray-400 mt-1 block">Prueba con palabras más sencillas</span></div>';
                 }
 
-                // Magia: Reemplazar SOLO el spinner sin borrar tu base local
                 const spinner = document.getElementById('spinner-global');
                 if (spinner) {
                     spinner.outerHTML = htmlMundial;
                 }
 
-            }, 350); 
+            }, 400); 
         }
 
     </script>
