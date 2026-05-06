@@ -127,6 +127,86 @@
     </style>
 </head>
 <body>
+    <div id="onboarding-modal" class="fixed inset-0 bg-slate-900 bg-opacity-95 z-[999] hidden flex-col overflow-y-auto">
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-500 text-3xl">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h2 class="text-2xl font-black text-slate-800">¡Bienvenido a FitTracker AI!</h2>
+                    <p class="text-sm text-gray-500 mt-2">Para crear tu motor biológico perfecto y darte las calorías exactas, necesitamos algunos datos iniciales.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Género</label>
+                            <select id="onb-genero" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500">
+                                <option value="Hombre">Hombre</option>
+                                <option value="Mujer">Mujer</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Edad</label>
+                            <input type="number" id="onb-edad" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 25">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Peso (kg)</label>
+                            <input type="number" id="onb-peso" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 75">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Altura (cm)</label>
+                            <input type="number" id="onb-altura" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 175">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Grasa (%)</label>
+                            <input type="number" id="onb-grasa" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 15">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Músculo (kg)</label>
+                            <input type="number" id="onb-musculo" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 35">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Max Run (km)</label>
+                            <input type="number" id="onb-run" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Opcional">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Max Bici (km)</label>
+                            <input type="number" id="onb-bike" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Opcional">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-gray-600 uppercase">Objetivo Principal</label>
+                        <select id="onb-objetivo" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500">
+                            <option value="Perder Grasa">Perder Grasa</option>
+                            <option value="Mantenimiento" selected>Mantenimiento</option>
+                            <option value="Ganar Masa Muscular">Ganar Masa Muscular</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-8 space-y-3">
+                    <button onclick="guardarOnboarding()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all text-lg">
+                        Generar Perfil Biológico
+                    </button>
+                    <button onclick="omitirOnboarding()" class="w-full bg-gray-100 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-200 active:scale-95 transition-all">
+                        Omitir por ahora
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6" style="display: flex;">
     <h1 class="text-4xl font-black text-white italic mb-2">FIT<span class="text-primary">TRACKER</span></h1>
     <p class="text-gray-400 mb-8 text-center text-sm">Inicia sesión para cargar o crear tu perfil biológico en la nube</p>
@@ -974,21 +1054,24 @@
                 showLoginError("Error de acceso", msgByCode[error.code] || `${error.code || "Error desconocido"}: ${error.message || "No se pudo completar el login."}`);
             }
         }
-
-        // Escuchar cambios de estado (Login/Logout)
+// Escuchar cambios de estado (Login/Logout) CON ONBOARDING
         auth.onAuthStateChanged(async (user) => {
             authStateHandled = true;
             if (user) {
                 setAuthDebug(`onAuthStateChanged OK (${user.uid})`);
-                await completarSesionConUsuario(user);
+                // AQUÍ LA MAGIA: Pasamos por el filtro antes de entrar
+                await verificarUsuarioNuevo(user);
             } else {
                 currentUser = null;
                 USER_BIO = null;
                 authReady = false;
                 setAuthDebug("onAuthStateChanged: sin usuario");
                 document.getElementById('login-screen').style.display = 'flex'; 
+                document.getElementById('onboarding-modal').classList.add('hidden');
+                document.getElementById('onboarding-modal').classList.remove('flex');
             }
         });
+        
 
        async function loginConGoogle() {
             if (window.location.protocol === 'file:') {
@@ -5432,6 +5515,113 @@
                     agregarAlimentoAlMotor(alimento, result.value);
                 }
             });
+        }
+        // ==========================================================================================
+        // 🧬 SISTEMA DE ONBOARDING (NUEVOS USUARIOS)
+        // ==========================================================================================
+
+        async function verificarUsuarioNuevo(user) {
+            try {
+                // Buscamos si el usuario ya existe en tu base de datos de Firebase
+                const docRef = db.collection('usuarios').doc(user.uid);
+                const docSnap = await docRef.get();
+
+                if (!docSnap.exists) {
+                    // Si no existe, es su primer día. Creamos el documento y abrimos el formulario.
+                    await docRef.set({
+                        email: user.email,
+                        nombre: user.displayName,
+                        perfilCompletado: false // Esta es la llave clave
+                    });
+                    document.getElementById('onboarding-modal').classList.remove('hidden');
+                    document.getElementById('onboarding-modal').classList.add('flex');
+                } else {
+                    const datos = docSnap.data();
+                    if (datos.perfilCompletado === false) {
+                        // Existe pero la última vez cerró la app sin acabar el formulario
+                        document.getElementById('onboarding-modal').classList.remove('hidden');
+                        document.getElementById('onboarding-modal').classList.add('flex');
+                    } else {
+                        // ¡ES JORGE O PEPE! Tienen su perfil completado, entran directos a la app
+                        arrancarAplicacion(user); // Llama a tu función normal que carga la app
+                    }
+                }
+            } catch (error) {
+                console.error("Error al verificar usuario:", error);
+            }
+        }
+
+        function omitirOnboarding() {
+            Swal.fire({
+                title: '¿Omitir configuración?',
+                text: "Si omites este paso, los cálculos de calorías y macros no serán exactos y la aplicación usará datos genéricos. Siempre podrás modificar esto más adelante en 'Editar Perfil Biológico'.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: 'Sí, omitir',
+                cancelButtonText: 'Volver al formulario'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const user = firebase.auth().currentUser;
+                    if (user) {
+                        // Guardamos datos básicos por defecto para que la app no explote con "NaN"
+                        await db.collection('usuarios').doc(user.uid).update({
+                            perfilCompletado: true,
+                            genero: 'Hombre', edad: 25, peso: 70, altura: 170,
+                            grasa: 15, musculo: 30, maxRun: 0, maxBike: 0,
+                            objetivo: 'Mantenimiento'
+                        });
+                        
+                        document.getElementById('onboarding-modal').classList.add('hidden');
+                        document.getElementById('onboarding-modal').classList.remove('flex');
+                        Swal.fire('Perfil genérico creado', 'Recuerda actualizar tus datos más adelante.', 'info');
+                        arrancarAplicacion(user); // Arrancamos la app
+                    }
+                }
+            });
+        }
+
+        async function guardarOnboarding() {
+            const edad = parseInt(document.getElementById('onb-edad').value);
+            const peso = parseFloat(document.getElementById('onb-peso').value);
+            const altura = parseInt(document.getElementById('onb-altura').value);
+            
+            // Validamos que al menos ponga lo más importante
+            if (!edad || !peso || !altura) {
+                Swal.fire('Faltan datos', 'Por favor, rellena al menos tu edad, peso y altura para que el motor pueda arrancar.', 'error');
+                return;
+            }
+
+            const user = firebase.auth().currentUser;
+            if (user) {
+                // Guardamos todos los campos en Firebase listos para que "Editar Perfil" los lea luego
+                await db.collection('usuarios').doc(user.uid).update({
+                    perfilCompletado: true,
+                    genero: document.getElementById('onb-genero').value,
+                    edad: edad,
+                    peso: peso,
+                    altura: altura,
+                    grasa: parseFloat(document.getElementById('onb-grasa').value) || 0,
+                    musculo: parseFloat(document.getElementById('onb-musculo').value) || 0,
+                    maxRun: parseFloat(document.getElementById('onb-run').value) || 0,
+                    maxBike: parseFloat(document.getElementById('onb-bike').value) || 0,
+                    objetivo: document.getElementById('onb-objetivo').value
+                });
+
+                document.getElementById('onboarding-modal').classList.add('hidden');
+                document.getElementById('onboarding-modal').classList.remove('flex');
+                
+                Swal.fire({
+                    title: '¡Perfil Creado!',
+                    text: 'Motor biológico calibrado.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                arrancarAplicacion(user); // Arrancamos la app
+            }
         }
     </script>
 </body>
