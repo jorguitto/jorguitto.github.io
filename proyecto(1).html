@@ -5175,13 +5175,42 @@
             }
         }
 // ==========================================================================================
-        // 🚀 BUSCADOR PRO: ANTI-FALTAS Y GUARDIA DE TRÁFICO (VERSIÓN LIGERA ANTI-BLOQUEO)
+        // 🚀 BUSCADOR PRO: MODO MARTILLO (AUTO-REINTENTO) Y ANTI-FALTAS
         // ==========================================================================================
         let temporizadorBuscador = null;
         let guardiaDeTrafico = null; 
 
         function normalizarTexto(texto) {
             return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        }
+
+        // EL MODO MARTILLO: Una función que golpea la puerta del servidor hasta 5 veces si falla
+        async function fetchConReintentos(url, senal, maxIntentos = 5) {
+            for (let intento = 1; intento <= maxIntentos; intento++) {
+                try {
+                    const respuesta = await fetch(url, { signal: senal });
+                    // Si el servidor responde bien, salimos del bucle y devolvemos los datos
+                    if (respuesta.ok) {
+                        return await respuesta.json(); 
+                    }
+                    // Si responde pero con error (ej: servidor saturado), lanzamos un error para forzar el reintento
+                    throw new Error("Servidor saturado"); 
+                } catch (error) {
+                    // Si el usuario siguió escribiendo una letra nueva, cancelamos todo (eso es bueno)
+                    if (error.name === 'AbortError') throw error; 
+                    
+                    // Si ya hemos gastado los 5 intentos, nos rendimos y tiramos el error
+                    if (intento === maxIntentos) throw error; 
+                    
+                    // Si falló pero nos quedan intentos, actualizamos el texto y esperamos un poquito antes de volver a golpear
+                    const spinner = document.getElementById('spinner-global');
+                    if (spinner) {
+                        spinner.innerHTML = `<i class="fas fa-hammer fa-bounce mr-2 text-blue-500"></i> Forzando conexión (Intento ${intento} de ${maxIntentos})...`;
+                    }
+                    // Esperamos medio segundo antes del siguiente "golpe"
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            }
         }
 
         async function searchGlobal(query) {
@@ -5245,7 +5274,7 @@
             `;
 
             // ------------------------------------------------------------------
-            // FASE 2: RED MUNDIAL (CON GUARDIA DE TRÁFICO ANTI-ATASCOS)
+            // FASE 2: RED MUNDIAL (CON MODO MARTILLO AUTOMÁTICO)
             // ------------------------------------------------------------------
             clearTimeout(temporizadorBuscador);
             
@@ -5258,26 +5287,22 @@
             // Esperamos 500ms
             temporizadorBuscador = setTimeout(async () => {
                 
-                if (guardiaDeTrafico) {
-                    guardiaDeTrafico.abort();
-                }
+                if (guardiaDeTrafico) guardiaDeTrafico.abort();
                 guardiaDeTrafico = new AbortController(); 
                 const senal = guardiaDeTrafico.signal;
 
                 let resultadosMundiales = [];
                 try {
                     let terminoAPI = terminoLimpio;
-                    // Singularizador inteligente
                     if (terminoAPI.length > 4) {
                         if (terminoAPI.endsWith('es')) terminoAPI = terminoAPI.slice(0, -2);
                         else if (terminoAPI.endsWith('s')) terminoAPI = terminoAPI.slice(0, -1);
                     }
 
-                    // Le quitamos el "sort_by" a la API y bajamos a 80 productos para que NO se sature jamás
                     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(terminoAPI)}&search_simple=1&action=process&json=1&page_size=80`;
                     
-                    const respuesta = await fetch(url, { signal: senal });
-                    const datos = await respuesta.json();
+                    // ¡AQUÍ ESTÁ LA MAGIA! Llamamos a la función que reintenta sola hasta 5 veces
+                    const datos = await fetchConReintentos(url, senal, 5);
 
                     if (datos.products && datos.products.length > 0) {
                         let temp = [];
@@ -5288,7 +5313,6 @@
                                 if (isNaN(kcal)) kcal = parseFloat(n['energy_100g']) / 4.184;
                                 if (isNaN(kcal) || kcal < 0) kcal = 0; 
 
-                                // El ordenador hace el cálculo de puntos localmente (mucho más rápido y sin bloquearse)
                                 let score = 0;
                                 const nombreP = normalizarTexto(p.product_name);
                                 const paises = (p.countries_tags || []).join(' ').toLowerCase();
@@ -5310,7 +5334,6 @@
                             }
                         });
                         
-                        // Ordenamos aquí en tu móvil, sin molestar al servidor
                         temp.sort((a, b) => b.score - a.score);
                         resultadosMundiales = temp.slice(0, 40); 
                     }
@@ -5341,11 +5364,11 @@
 
                 } catch (e) { 
                     if (e.name === 'AbortError') {
-                        // Búsqueda cancelada silenciosamente por nueva letra, todo OK.
+                        // Ignoramos si fue cancelado por escribir otra letra
                     } else {
                         console.error("Error API:", e);
                         const spinner = document.getElementById('spinner-global');
-                        if (spinner) spinner.innerHTML = '<div class="p-4 text-center text-xs text-orange-500 font-bold"><i class="fas fa-exclamation-triangle mb-1 block"></i>La base de datos mundial está lenta ahora mismo. Intenta en unos segundos.</div>';
+                        if (spinner) spinner.innerHTML = '<div class="p-4 text-center text-xs text-orange-500 font-bold"><i class="fas fa-exclamation-triangle mb-1 block"></i>La base de datos mundial rechazó la conexión 5 veces seguidas.</div>';
                     }
                 }
             }, 500); 
@@ -5397,7 +5420,6 @@
                 }
             });
         }
-
     </script>
 </body>
 </html>
