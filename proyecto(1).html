@@ -5174,8 +5174,9 @@
                 elBar.style.width = porcentaje + '%';
             }
         }
+
 // ==========================================================================================
-        // 🚀 BUSCADOR PRO: LOCAL SIEMPRE PRIMERO + MODO FRANCOTIRADOR GLOBAL (SIN MUROS)
+        // 🚀 BUSCADOR PRO: ANTI-FALTAS, PLURALES Y ORDENADO POR POPULARIDAD
         // ==========================================================================================
         let temporizadorBuscador = null;
 
@@ -5196,6 +5197,8 @@
             }
 
             contenedorResultados.classList.remove('hidden');
+            contenedorResultados.style.maxHeight = "450px";
+            contenedorResultados.style.overflowY = "auto";
 
             // ------------------------------------------------------------------
             // FASE 1: BÚSQUEDA LOCAL (INSTANTÁNEA)
@@ -5209,27 +5212,21 @@
                                 const nombreLocal = normalizarTexto(alimento.name);
                                 if (nombreLocal.includes(terminoLimpio)) {
                                     resultadosLocales.push({
-                                        name: alimento.name, 
-                                        cal: alimento.cal, 
-                                        prot: alimento.prot,
-                                        carbs: alimento.carb || alimento.carbs || 0, 
-                                        fat: alimento.fat,
-                                        sat: alimento.sat || 0, 
-                                        azucar: alimento.azucar || 0,
-                                        img: '' 
+                                        name: alimento.name, cal: alimento.cal, prot: alimento.prot,
+                                        carbs: alimento.carb || alimento.carbs || 0, fat: alimento.fat,
+                                        sat: alimento.sat || 0, azucar: alimento.azucar || 0, img: '' 
                                     });
                                 }
                             }
                         });
                     }
                 }
-            } catch (err) { console.error("Error local:", err); }
+            } catch (err) {}
 
-            // Pintamos lo local inmediatamente
             let htmlLocal = '';
             if (resultadosLocales.length > 0) {
                 htmlLocal += '<div class="px-3 py-1.5 bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-widest sticky top-0"><i class="fas fa-database mr-1"></i> Mi Base de Datos</div>';
-                resultadosLocales.slice(0, 10).forEach(alimento => {
+                resultadosLocales.slice(0, 15).forEach(alimento => {
                     const objCodificado = encodeURIComponent(JSON.stringify(alimento));
                     htmlLocal += `
                         <div class="p-3 border-b border-gray-50 hover:bg-blue-50 active:bg-blue-100 cursor-pointer transition flex justify-between items-center" onclick="seleccionarDesdeBuscador('${objCodificado}')">
@@ -5240,15 +5237,15 @@
                 });
             }
 
-            // Mostramos local + Spinner de espera para lo global
+            // Pintamos lo local inmediatamente + un spinner asegurando que la red está trabajando
             contenedorResultados.innerHTML = htmlLocal + `
                 <div id="spinner-global" class="p-4 text-center text-xs text-gray-500 bg-white border-t border-gray-100">
-                    <i class="fas fa-crosshairs fa-spin mr-2 text-blue-500"></i> Buscando en el mundo...
+                    <i class="fas fa-satellite-dish fa-spin mr-2 text-blue-500"></i> Buscando en bases mundiales...
                 </div>
             `;
 
             // ------------------------------------------------------------------
-            // FASE 2: MODO FRANCOTIRADOR (API MUNDIAL)
+            // FASE 2: RED MUNDIAL (CON SINGULARIZADOR Y ORDEN DE POPULARIDAD)
             // ------------------------------------------------------------------
             clearTimeout(temporizadorBuscador);
             if (terminoLimpio.length < 2) {
@@ -5260,51 +5257,62 @@
             temporizadorBuscador = setTimeout(async () => {
                 let resultadosMundiales = [];
                 try {
-                    // Usamos una búsqueda más agresiva (page_size 100)
-                    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termino)}&search_simple=1&action=process&json=1&page_size=100`;
+                    // EL SINGULARIZADOR: Si buscas "bombones", la API buscará "bombon" para no perderse nada.
+                    let terminoAPI = terminoLimpio;
+                    if (terminoAPI.length > 4) {
+                        if (terminoAPI.endsWith('es')) terminoAPI = terminoAPI.slice(0, -2);
+                        else if (terminoAPI.endsWith('s')) terminoAPI = terminoAPI.slice(0, -1);
+                    }
+
+                    // EL FILTRO DE POPULARIDAD: sort_by=unique_scans_n trae lo más famoso del mundo primero.
+                    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(terminoAPI)}&search_simple=1&action=process&sort_by=unique_scans_n&json=1&page_size=100`;
                     const respuesta = await fetch(url);
                     const datos = await respuesta.json();
 
                     if (datos.products && datos.products.length > 0) {
                         let temp = [];
                         datos.products.forEach(p => {
-                            const n = p.nutriments || {};
-                            let kcal = parseFloat(n['energy-kcal_100g']) || (parseFloat(n['energy_100g']) / 4.184) || 0;
-                            
-                            if (p.product_name && kcal > 0) {
+                            if (p.product_name) {
+                                const n = p.nutriments || {};
+                                let kcal = parseFloat(n['energy-kcal_100g']);
+                                if (isNaN(kcal)) kcal = parseFloat(n['energy_100g']) / 4.184;
+                                if (isNaN(kcal) || kcal < 0) kcal = 0; // Si no tiene calorías, le ponemos 0 pero no lo borramos
+
                                 let score = 0;
                                 const nombreP = normalizarTexto(p.product_name);
                                 const paises = (p.countries_tags || []).join(' ').toLowerCase();
+                                const marcas = normalizarTexto(p.brands || '');
 
-                                // Scoring: Prioridad España
+                                // Prioridad España (+200)
                                 if (paises.includes('spain') || paises.includes('españa')) score += 200;
+                                
+                                // Premiar coincidencias exactas con lo que escribiste
                                 if (nombreP.includes(terminoLimpio)) score += 50;
                                 if (nombreP.startsWith(terminoLimpio)) score += 30;
+                                if (marcas.includes(terminoLimpio)) score += 40;
+
+                                score += parseFloat(p.completeness) * 10 || 0;
 
                                 temp.push({
                                     name: p.product_name + (p.brands ? ` (${p.brands.split(',')[0]})` : ''),
-                                    cal: kcal,
-                                    prot: parseFloat(n.proteins_100g || 0),
-                                    carbs: parseFloat(n.carbohydrates_100g || 0),
-                                    fat: parseFloat(n.fat_100g || 0),
-                                    sat: parseFloat(n['saturated-fat_100g'] || 0),
-                                    azucar: parseFloat(n.sugars_100g || 0),
-                                    img: p.image_front_small_url || '',
-                                    score: score
+                                    cal: kcal, prot: parseFloat(n.proteins_100g || 0), carbs: parseFloat(n.carbohydrates_100g || 0),
+                                    fat: parseFloat(n.fat_100g || 0), sat: parseFloat(n['saturated-fat_100g'] || 0),
+                                    azucar: parseFloat(n.sugars_100g || 0), img: p.image_front_small_url || '', score: score
                                 });
                             }
                         });
+                        
                         temp.sort((a, b) => b.score - a.score);
-                        resultadosMundiales = temp.slice(0, 40);
+                        resultadosMundiales = temp.slice(0, 50); // Sacamos una lista larga de 50
                     }
                 } catch (e) { console.error("Error API:", e); }
 
                 let htmlMundial = '';
                 if (resultadosMundiales.length > 0) {
-                    htmlMundial += '<div class="px-3 py-1.5 bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-widest border-t border-blue-100"><i class="fas fa-globe mr-1"></i> Resultados Globales</div>';
+                    htmlMundial += '<div class="px-3 py-1.5 bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-widest border-t border-blue-100 shadow-sm sticky top-0"><i class="fas fa-globe mr-1"></i> Resultados Globales (Desliza)</div>';
                     resultadosMundiales.forEach(alimento => {
                         const objCodificado = encodeURIComponent(JSON.stringify(alimento));
-                        const img = alimento.img ? `<img src="${alimento.img}" class="w-10 h-10 rounded-lg object-cover">` : `<div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-200"><i class="fas fa-box"></i></div>`;
+                        const img = alimento.img ? `<img src="${alimento.img}" class="w-10 h-10 rounded-lg object-cover bg-white border border-gray-100">` : `<div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-200"><i class="fas fa-box"></i></div>`;
                         htmlMundial += `
                             <div class="p-3 border-b border-gray-50 hover:bg-blue-50 active:bg-blue-100 cursor-pointer transition flex items-center gap-3" onclick="seleccionarDesdeBuscador('${objCodificado}')">
                                 ${img}
@@ -5316,8 +5324,9 @@
                             </div>
                         `;
                     });
-                } else if (resultadosLocales.length === 0) {
-                    htmlMundial = '<div class="p-5 text-center text-gray-400 text-sm">No se encontraron resultados</div>';
+                } else {
+                    // Si no encuentra nada, te avisa en vez de desaparecer
+                    htmlMundial = '<div class="p-4 text-center text-xs text-gray-400 bg-gray-50 rounded-b-xl border-t border-gray-100">Búsqueda global finalizada: No hay más coincidencias en la red.</div>';
                 }
 
                 const spinner = document.getElementById('spinner-global');
@@ -5326,16 +5335,14 @@
         }
 
         // ==========================================================================================
-        // 🛠️ SELECCIÓN DESDE BUSCADOR (CONECTADO AL MOTOR DEL ESCÁNER)
+        // 🛠️ SELECCIÓN DESDE BUSCADOR (CONECTADO AL MOTOR)
         // ==========================================================================================
         function seleccionarDesdeBuscador(alimentoCodificado) {
             const alimento = JSON.parse(decodeURIComponent(alimentoCodificado));
             
-            // Ocultamos buscador
             document.getElementById('searchResults').classList.add('hidden');
             document.getElementById('globalSearch').value = '';
 
-            // Abrimos el modal con el formato exacto del escáner
             Swal.fire({
                 title: alimento.name,
                 imageUrl: alimento.img || null,
@@ -5369,12 +5376,10 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Llamamos a tu función de motor para que sume todo y guarde en Firebase
                     agregarAlimentoAlMotor(alimento, result.value);
                 }
             });
         }
-
 
     </script>
 </body>
