@@ -1004,33 +1004,19 @@
             if (typeof updateDay === "function") updateDay();
         }
 
-       async function initAuthFlow() {
+        async function initAuthFlow() {
             auth.useDeviceLanguage();
-            // HEMOS BORRADO EL setPersistence() PARA QUE FIREBASE MANTENGA LA SESIÓN SOLÓ.
-
             try {
-                setAuthDebug("Procesando getRedirectResult...");
-                const redirectResult = await auth.getRedirectResult();
-                if (redirectResult && redirectResult.user) {
-                    console.log("Redirect auth completado:", redirectResult.user.uid);
-                    setAuthDebug(`Redirect OK (${redirectResult.user.uid})`);
-                    try { sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY); } catch (_) {}
-                    if (!auth.currentUser) {
-                        await verificarUsuarioNuevo(redirectResult.user);
-                    }
-                } else {
-                    const pending = (() => {
-                        try { return sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1"; } catch (_) { return false; }
-                    })();
-                    if (pending && !auth.currentUser) {
-                        setAuthDebug("Redirect sin usuario. Revisa Google Provider.");
-                        try { sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY); } catch (_) {}
-                    }
-                }
+                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             } catch (error) {
-                console.error("Error en getRedirectResult:", error);
+                console.error("No se pudo fijar persistencia LOCAL:", error);
+                try {
+                    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+                    setAuthDebug("Persistencia fallback: SESSION");
+                } catch (fallbackError) {
+                    console.error("No se pudo fijar persistencia SESSION:", fallbackError);
+                }
             }
-        }
 
             try {
                 setAuthDebug("Procesando getRedirectResult...");
@@ -1087,8 +1073,7 @@
         });
         
 
-       
-    async function loginConGoogle() {
+       async function loginConGoogle() {
             if (window.location.protocol === 'file:') {
                 showLoginError(
                     "No se puede iniciar sesión desde archivo local",
@@ -1103,17 +1088,19 @@
             auth.languageCode = 'es';
 
             try {
+                // Al quitar el "await setPersistence" de aquí, la ventana se abre
+                // en el mismo instante del toque, superando la seguridad de Safari.
                 setAuthDebug("Intentando signInWithPopup directo");
                 const popupResult = await auth.signInWithPopup(provider);
                 
                 if (popupResult && popupResult.user) {
                     setAuthDebug(`Popup OK (${popupResult.user.uid})`);
-                    // AHORA PASA POR EL FILTRO PARA SABER SI DEBE ABRIR EL ONBOARDING O ENTRAR DIRECTO
-                    await verificarUsuarioNuevo(popupResult.user);
+                    await completarSesionConUsuario(popupResult.user);
                 }
             } catch (error) {
                 console.error("Error Auth:", error);
                 
+                // Si el navegador de todas formas bloquea la ventana, avisamos amigablemente
                 if (error.code === "auth/popup-blocked" || error.code === "auth/cancelled-popup-request") {
                     Swal.fire({
                         title: 'Ventana bloqueada',
@@ -1125,6 +1112,7 @@
                 }
             }
         }
+
         async function logoutUsuario() {
             try {
                 await auth.signOut();
@@ -5532,27 +5520,32 @@
         // 🧬 SISTEMA DE ONBOARDING (NUEVOS USUARIOS)
         // ==========================================================================================
 
-       async function verificarUsuarioNuevo(user) {
+        async function verificarUsuarioNuevo(user) {
             try {
+                // Buscamos si el usuario ya existe en tu base de datos de Firebase
                 const docRef = db.collection('usuarios').doc(user.uid);
                 const docSnap = await docRef.get();
 
-                // Si el usuario no existe en la base de datos o su perfil no está completado
-                if (!docSnap.exists || docSnap.data().perfilCompletado !== true) {
-                    // Sacamos la pantalla oscura de bienvenida
-                    document.getElementById('login-screen').style.display = 'none';
+                if (!docSnap.exists) {
+                    // Si no existe, es su primer día. Creamos el documento y abrimos el formulario.
+                    await docRef.set({
+                        email: user.email,
+                        nombre: user.displayName,
+                        perfilCompletado: false // Esta es la llave clave
+                    });
                     document.getElementById('onboarding-modal').classList.remove('hidden');
                     document.getElementById('onboarding-modal').classList.add('flex');
                 } else {
-                    // Si es un usuario de siempre, le dejamos entrar directo
-                    await completarSesionConUsuario(user);
+                    const datos = docSnap.data();
+                    if (datos.perfilCompletado === false) {
+                        // Existe pero la última vez cerró la app sin acabar el formulario
+                        document.getElementById('onboarding-modal').classList.remove('hidden');
+                        document.getElementById('onboarding-modal').classList.add('flex');
+                    } else {
+                        // ¡ES JORGE O PEPE! Tienen su perfil completado, entran directos a la app
+                        arrancarAplicacion(user); // Llama a tu función normal que carga la app
+                    }
                 }
-            } catch (error) {
-                console.error("Error al verificar perfil. Entrando por defecto para evitar bloqueo:", error);
-                // MAGIA: Si hay un micro-corte de red al recargar, te dejamos entrar en vez de dejarte tirado en el login
-                await completarSesionConUsuario(user);
-            }
-        }
             } catch (error) {
                 console.error("Error al verificar usuario:", error);
             }
