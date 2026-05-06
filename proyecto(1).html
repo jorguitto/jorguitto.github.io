@@ -1055,22 +1055,26 @@
             }
         }
 // Escuchar cambios de estado (Login/Logout) CON ONBOARDING
-        auth.onAuthStateChanged(async (user) => {
-            authStateHandled = true;
-            if (user) {
-                setAuthDebug(`onAuthStateChanged OK (${user.uid})`);
-                // AQUÍ LA MAGIA: Pasamos por el filtro antes de entrar
-                await verificarUsuarioNuevo(user);
-            } else {
-                currentUser = null;
-                USER_BIO = null;
-                authReady = false;
-                setAuthDebug("onAuthStateChanged: sin usuario");
-                document.getElementById('login-screen').style.display = 'flex'; 
-                document.getElementById('onboarding-modal').classList.add('hidden');
-                document.getElementById('onboarding-modal').classList.remove('flex');
+async function verificarUsuarioNuevo(user) {
+            try {
+                const docRef = db.collection('usuarios').doc(user.uid);
+                const docSnap = await docRef.get();
+                
+                // Si el usuario existe y ya guardó sus datos
+                if (docSnap.exists && docSnap.data().perfilCompletado) {
+                    await completarSesionConUsuario(user);
+                } else {
+                    // Es un usuario nuevo: Ocultamos login y mostramos onboarding
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('onboarding-modal').classList.remove('hidden');
+                    document.getElementById('onboarding-modal').classList.add('flex');
+                }
+            } catch (error) {
+                console.error("Error al verificar usuario:", error);
+                // Si falla la red, entraremos normal para no bloquear al usuario
+                await completarSesionConUsuario(user);
             }
-        });
+        }
         
 
        async function loginConGoogle() {
