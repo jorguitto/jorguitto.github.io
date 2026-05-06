@@ -5174,189 +5174,136 @@
                 elBar.style.width = porcentaje + '%';
             }
         }
-        
-// ==========================================================================================
-        // 🔍 BUSCADOR PRO: LOCAL + API MUNDIAL OPENFOODFACTS
+        // ==========================================================================================
+        // 🎯 BUSCADOR MODO FRANCOTIRADOR: RANKING INTELIGENTE + ESPAÑA PRIORIDAD
         // ==========================================================================================
         let temporizadorBuscador = null;
 
-       async function searchGlobal(query) {
-            const contenedorResultados = document.getElementById('searchResults');
-            const termino = query.trim().toLowerCase();
+        // Función auxiliar para quitar acentos y hacer la búsqueda a prueba de errores
+        function normalizarTexto(texto) {
+            return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        }
 
-            // Si borras el texto, ocultamos la caja
-            if (termino.length === 0) {
+        async function searchGlobal(query) {
+            const contenedorResultados = document.getElementById('searchResults');
+            const termino = query.trim();
+            const terminoLimpio = normalizarTexto(termino);
+
+            if (terminoLimpio.length === 0) {
                 contenedorResultados.innerHTML = '';
                 contenedorResultados.classList.add('hidden');
                 return;
             }
 
-            // Mostramos que estamos buscando...
-            contenedorResultados.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 font-bold"><i class="fas fa-spinner fa-spin mr-2 text-blue-500"></i>Buscando...</div>';
+            contenedorResultados.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 font-bold"><i class="fas fa-crosshairs fa-spin mr-2 text-blue-500"></i>Rastreando bases de datos...</div>';
             contenedorResultados.classList.remove('hidden');
 
-            // Frenamos la búsqueda hasta que el usuario deje de teclear (Medio segundo)
             clearTimeout(temporizadorBuscador);
             temporizadorBuscador = setTimeout(async () => {
                 
                 let resultadosLocales = [];
                 let resultadosMundiales = [];
 
-                // 1. BÚSQUEDA LOCAL (En tu foodDatabase) - ¡CORREGIDO!
+                // 1. BÚSQUEDA LOCAL (A prueba de mayúsculas y acentos)
                 try {
                     for (const categoria in foodDatabase) {
-                        // Verificamos que la categoría exista para no romper el código
                         if (foodDatabase[categoria]) {
                             foodDatabase[categoria].forEach(alimento => {
-                                // Si el nombre del alimento incluye lo que has escrito (ej: "pera")
-                                if (alimento.name && alimento.name.toLowerCase().includes(termino)) {
-                                    resultadosLocales.push({
-                                        name: alimento.name,
-                                        cal: alimento.cal,
-                                        prot: alimento.prot,
-                                        carbs: alimento.carb || alimento.carbs || 0, 
-                                        fat: alimento.fat,
-                                        sat: alimento.sat || 0,
-                                        img: '' 
-                                    });
+                                if (alimento.name) {
+                                    const nombreLocal = normalizarTexto(alimento.name);
+                                    if (nombreLocal.includes(terminoLimpio)) {
+                                        resultadosLocales.push({
+                                            name: alimento.name,
+                                            cal: alimento.cal,
+                                            prot: alimento.prot,
+                                            carbs: alimento.carb || alimento.carbs || 0, 
+                                            fat: alimento.fat,
+                                            sat: alimento.sat || 0,
+                                            img: '' 
+                                        });
+                                    }
                                 }
                             });
                         }
                     }
                 } catch (err) {
-                    console.error("Error al buscar en la base de datos local:", err);
+                    console.error("Error local:", err);
                 }
 
-                // 2. BÚSQUEDA MUNDIAL (API OpenFoodFacts)
-                // Solo buscamos en internet si la palabra tiene 3 letras o más para no saturar la API
-                if (termino.length >= 3) {
+                // 2. BÚSQUEDA MUNDIAL CON SISTEMA DE PUNTUACIÓN (Scoring)
+                if (terminoLimpio.length >= 2) {
                     try {
-                        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termino)}&search_simple=1&action=process&json=1&page_size=8`;
+                        // Buscamos en todo el mundo, pero nos traemos 50 resultados para poder cribarlos nosotros
+                        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termino)}&search_simple=1&action=process&json=1&page_size=50`;
                         const respuesta = await fetch(url);
                         const datos = await respuesta.json();
 
                         if (datos.products && datos.products.length > 0) {
+                            let productosTemporales = [];
+
                             datos.products.forEach(p => {
                                 const n = p.nutriments || {};
-                                // Solo añadimos si tiene un nombre y calorías registradas
+                                
+                                // Filtro básico: Que tenga nombre y calorías
                                 if (p.product_name && n['energy-kcal_100g'] !== undefined) {
-                                    resultadosMundiales.push({
+                                    
+                                    // --- INICIO DEL SISTEMA DE PUNTOS ---
+                                    let puntos = parseFloat(p.completeness) || 0; // Base: calidad de la ficha (0 a 1)
+                                    const nombreProdLimpio = normalizarTexto(p.product_name);
+                                    const etiquetasPaises = (p.countries_tags || []).join(' ').toLowerCase();
+                                    const marcas = normalizarTexto(p.brands || '');
+
+                                    // A. Prioridad Absoluta: ESPAÑA (+50 puntos)
+                                    if (etiquetasPaises.includes('spain') || etiquetasPaises.includes('espagne') || etiquetasPaises.includes('españa')) {
+                                        puntos += 50;
+                                    }
+
+                                    // B. Exactitud en el nombre (+20 puntos)
+                                    if (nombreProdLimpio.includes(terminoLimpio)) {
+                                        puntos += 20;
+                                    }
+                                    
+                                    // C. Si empieza exactamente por lo que buscas (+15 puntos extra)
+                                    if (nombreProdLimpio.startsWith(terminoLimpio)) {
+                                        puntos += 15;
+                                    }
+
+                                    // D. Si coinciden marcas (ej: si el usuario pone "nestle caja roja") (+10 puntos)
+                                    if (marcas.includes(terminoLimpio)) {
+                                        puntos += 10;
+                                    }
+                                    // --- FIN DEL SISTEMA DE PUNTOS ---
+
+                                    productosTemporales.push({
                                         name: p.product_name + (p.brands ? ` (${p.brands.split(',')[0]})` : ''),
                                         cal: parseFloat(n['energy-kcal_100g'] || 0),
                                         prot: parseFloat(n.proteins_100g || 0),
                                         carbs: parseFloat(n.carbohydrates_100g || 0),
                                         fat: parseFloat(n.fat_100g || 0),
                                         sat: parseFloat(n['saturated-fat_100g'] || 0),
-                                        img: p.image_front_small_url || ''
+                                        img: p.image_front_small_url || '',
+                                        score: puntos // Guardamos la puntuación
                                     });
                                 }
                             });
+
+                            // Ordenamos los 50 productos de mayor a menor puntuación
+                            productosTemporales.sort((a, b) => b.score - a.score);
+
+                            // Nos quedamos SOLO con los 12 mejores francotirados
+                            resultadosMundiales = productosTemporales.slice(0, 12);
                         }
                     } catch (error) {
-                        console.error("Error al conectar con OpenFoodFacts en el buscador:", error);
+                        console.error("Error en OpenFoodFacts:", error);
                     }
                 }
 
-                // 3. RENDERIZAR RESULTADOS
+                // 3. RENDERIZAR RESULTADOS (Llama a tu función mostrarResultadosMixtos)
                 mostrarResultadosMixtos(resultadosLocales, resultadosMundiales);
 
-            }, 500); // 500ms de margen
+            }, 600);
         }
 
-        function mostrarResultadosMixtos(locales, mundiales) {
-            const contenedorResultados = document.getElementById('searchResults');
-            
-            if (locales.length === 0 && mundiales.length === 0) {
-                contenedorResultados.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 font-bold">No hemos encontrado nada 🥲<br><span class="text-xs font-normal">Prueba con otras palabras</span></div>';
-                return;
-            }
-
-            let html = '';
-
-            // Dibujar resultados Locales
-            if (locales.length > 0) {
-                html += '<div class="px-3 py-1.5 bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-widest sticky top-0"><i class="fas fa-database mr-1"></i> Mi Base de Datos</div>';
-                locales.slice(0, 10).forEach(alimento => {
-                    const objCodificado = encodeURIComponent(JSON.stringify(alimento));
-                    html += `
-                        <div class="p-3 border-b border-gray-50 hover:bg-blue-50 active:bg-blue-100 cursor-pointer transition flex justify-between items-center" onclick="seleccionarDesdeBuscador('${objCodificado}')">
-                            <span class="text-sm font-bold text-slate-700 truncate mr-2">${alimento.name}</span>
-                            <span class="text-xs font-black text-orange-500 shrink-0">${alimento.cal.toFixed(0)} kcal</span>
-                        </div>
-                    `;
-                });
-            }
-
-            // Dibujar resultados Mundiales (API)
-            if (mundiales.length > 0) {
-                html += '<div class="px-3 py-1.5 bg-blue-100 text-[10px] font-black text-blue-600 uppercase tracking-widest sticky top-0 border-t border-blue-200"><i class="fas fa-globe mr-1"></i> Base de Datos Mundial</div>';
-                mundiales.forEach(alimento => {
-                    const objCodificado = encodeURIComponent(JSON.stringify(alimento));
-                    const imgHtml = alimento.img 
-                        ? `<img src="${alimento.img}" class="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0">` 
-                        : `<div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-300 shrink-0"><i class="fas fa-box"></i></div>`;
-
-                    html += `
-                        <div class="p-3 border-b border-gray-50 hover:bg-blue-50 active:bg-blue-100 cursor-pointer transition flex items-center gap-3" onclick="seleccionarDesdeBuscador('${objCodificado}')">
-                            ${imgHtml}
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-bold text-slate-700 truncate">${alimento.name}</p>
-                                <p class="text-[10px] text-gray-400 mt-0.5 truncate">${alimento.prot.toFixed(0)}g P • ${alimento.carbs.toFixed(0)}g C • ${alimento.fat.toFixed(0)}g G</p>
-                            </div>
-                            <span class="text-xs font-black text-orange-500 shrink-0">${alimento.cal.toFixed(0)} kcal</span>
-                        </div>
-                    `;
-                });
-            }
-
-            contenedorResultados.innerHTML = html;
-        }
-
-        // 4. ACCIÓN AL HACER CLIC EN UN RESULTADO (Copia la interfaz del Escáner)
-        function seleccionarDesdeBuscador(alimentoCodificado) {
-            const alimento = JSON.parse(decodeURIComponent(alimentoCodificado));
-            
-            // Ocultamos el buscador para dejar la pantalla limpia
-            document.getElementById('searchResults').classList.add('hidden');
-            document.getElementById('globalSearch').value = '';
-
-            // Usamos la misma ventana bonita que hiciste para el escáner
-            Swal.fire({
-                title: alimento.name,
-                imageUrl: alimento.img || null, // Si no tiene imagen (local), no la pone
-                imageHeight: alimento.img ? 120 : null,
-                html: `
-                    <div class="grid grid-cols-2 gap-2 text-[11px] mt-2 text-left">
-                        <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal.toFixed(1)}</div>
-                        <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot.toFixed(1)}g</div>
-                        <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs.toFixed(1)}g</div>
-                        <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat.toFixed(1)}g</div>
-                    </div>
-                    
-                    <div class="mt-5 text-left border-t border-gray-100 pt-3">
-                        <label class="text-xs font-black text-slate-700 uppercase">¿Cuántos gramos vas a comer?</label>
-                        <input type="number" id="gramos-input-buscador" class="w-full mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xl font-black text-center text-slate-800 focus:border-blue-500 outline-none" placeholder="Ej: 100" value="100">
-                    </div>
-                `,
-                showCancelButton: true,
-                confirmButtonColor: '#1e293b',
-                cancelButtonColor: '#ef4444',
-                confirmButtonText: '<i class="fas fa-check"></i> Añadir a mi dieta',
-                cancelButtonText: 'Cancelar',
-                preConfirm: () => {
-                    const gramos = document.getElementById('gramos-input-buscador').value;
-                    if (!gramos || gramos <= 0) {
-                        Swal.showValidationMessage('Introduce una cantidad válida');
-                    }
-                    return gramos;
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // LLama a la función de tu código para sumar los macros
-                    agregarAlimentoAlMotor(alimento, result.value);
-                }
-            });
-        }
     </script>
 </body>
 </html>
