@@ -766,6 +766,14 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        
+        // PARCHE DE AUTORREPARACIÓN: Si la memoria falla, la borra y empieza de cero
+        try {
+            await db.clearPersistence();
+        } catch (e) {
+            console.log("No se pudo limpiar la persistencia o no era necesario", e);
+        }
+
         db.settings({
             experimentalAutoDetectLongPolling: true,
             useFetchStreams: false
@@ -1085,9 +1093,10 @@
         }
 
         initAuthFlow();
-    async function cargarDatosUsuario(uid) {
+
+        async function cargarDatosUsuario(uid) {
             try {
-                // Eliminado el bloque de db.enableNetwork() que causaba el conflicto
+        
                 const docRef = db.collection('usuarios').doc(uid);
                 const docSnap = await docRef.get({ source: "server" });
                 
@@ -1132,7 +1141,6 @@
                 );
             }
         }
-       
 
         async function guardarDatosUsuario() {
             if (!currentUser || !USER_BIO) return;
@@ -1275,7 +1283,7 @@
         async function cargarPersistenciaDesdeNube(uid) {
             const todayId = getTodayDocId();
             try {
-                // Eliminado el bloque de db.enableNetwork() que causaba el conflicto
+                try { await db.enableNetwork(); } catch (_) {}
                 const daySnap = await db.collection('usuarios')
                     .doc(uid)
                     .collection('dias')
@@ -1297,45 +1305,6 @@
                     }
                 }
             }
-
-            try {
-                const historySnap = await db.collection('usuarios')
-                    .doc(uid)
-                    .collection('historial')
-                    .orderBy('dateKey', 'desc')
-                    .get({ source: "server" });
-                history = historySnap.docs.map((doc) => ({ ...doc.data(), firestoreId: doc.id }));
-            } catch (error) {
-                console.error("Error cargando historial en nube:", error);
-                if (isFirestoreOfflineError(error) && currentUser) {
-                    try {
-                        const list = await firestoreRestRequest("GET", `usuarios/${uid}/historial`, null, { allow404: true });
-                        if (!list || !list.documents) {
-                            history = [];
-                            return;
-                        }
-                        history = list.documents.map((d) => {
-                            const fields = d.fields || {};
-                            const recordJson = fromFsValue(fields.record_json);
-                            const firestoreId = d.name ? d.name.split('/').pop() : null;
-                            if (recordJson) {
-                                try {
-                                    const parsed = JSON.parse(recordJson);
-                                    parsed.firestoreId = parsed.firestoreId || firestoreId;
-                                    return parsed;
-                                } catch (_) {}
-                            }
-                            const out = {};
-                            Object.keys(fields).forEach((k) => { out[k] = fromFsValue(fields[k]); });
-                            out.firestoreId = firestoreId;
-                            return out;
-                        }).sort((a, b) => (b.dateKey || "").localeCompare(a.dateKey || ""));
-                    } catch (restErr) {
-                        console.error("Error REST cargando historial:", restErr);
-                    }
-                }
-            }
-        }
 
             try {
                 const historySnap = await db.collection('usuarios')
