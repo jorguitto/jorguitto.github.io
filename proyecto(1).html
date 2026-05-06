@@ -5174,12 +5174,11 @@
                 elBar.style.width = porcentaje + '%';
             }
         }
-
 // ==========================================================================================
-        // 🚀 BUSCADOR PRO: ANTI-FALTAS, RANKING Y GUARDIA DE TRÁFICO (ABORT CONTROLLER)
+        // 🚀 BUSCADOR PRO: ANTI-FALTAS Y GUARDIA DE TRÁFICO (VERSIÓN LIGERA ANTI-BLOQUEO)
         // ==========================================================================================
         let temporizadorBuscador = null;
-        let guardiaDeTrafico = null; // <--- EL NUEVO GUARDIA QUE EVITA LOS ATASCOS
+        let guardiaDeTrafico = null; 
 
         function normalizarTexto(texto) {
             return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -5194,7 +5193,7 @@
                 contenedorResultados.innerHTML = '';
                 contenedorResultados.classList.add('hidden');
                 clearTimeout(temporizadorBuscador);
-                if (guardiaDeTrafico) guardiaDeTrafico.abort(); // Cancelamos si borraste todo
+                if (guardiaDeTrafico) guardiaDeTrafico.abort(); 
                 return;
             }
 
@@ -5241,12 +5240,12 @@
 
             contenedorResultados.innerHTML = htmlLocal + `
                 <div id="spinner-global" class="p-4 text-center text-xs text-gray-500 bg-white border-t border-gray-100">
-                    <i class="fas fa-satellite-dish fa-spin mr-2 text-blue-500"></i> Conectando al satélite...
+                    <i class="fas fa-satellite-dish fa-spin mr-2 text-blue-500"></i> Buscando en bases mundiales...
                 </div>
             `;
 
             // ------------------------------------------------------------------
-            // FASE 2: RED MUNDIAL (CON GUARDIA DE TRÁFICO)
+            // FASE 2: RED MUNDIAL (CON GUARDIA DE TRÁFICO ANTI-ATASCOS)
             // ------------------------------------------------------------------
             clearTimeout(temporizadorBuscador);
             
@@ -5256,27 +5255,27 @@
                 return;
             }
 
-            // Esperamos 500ms (medio segundo) desde que dejaste de teclear para no molestar a la API
+            // Esperamos 500ms
             temporizadorBuscador = setTimeout(async () => {
                 
-                // ¡MAGIA! Si había una búsqueda vieja cargando en internet, la "matamos"
                 if (guardiaDeTrafico) {
                     guardiaDeTrafico.abort();
                 }
-                guardiaDeTrafico = new AbortController(); // Creamos un guardia nuevo para esta búsqueda
+                guardiaDeTrafico = new AbortController(); 
                 const senal = guardiaDeTrafico.signal;
 
                 let resultadosMundiales = [];
                 try {
                     let terminoAPI = terminoLimpio;
+                    // Singularizador inteligente
                     if (terminoAPI.length > 4) {
                         if (terminoAPI.endsWith('es')) terminoAPI = terminoAPI.slice(0, -2);
                         else if (terminoAPI.endsWith('s')) terminoAPI = terminoAPI.slice(0, -1);
                     }
 
-                    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(terminoAPI)}&search_simple=1&action=process&sort_by=unique_scans_n&json=1&page_size=100`;
+                    // Le quitamos el "sort_by" a la API y bajamos a 80 productos para que NO se sature jamás
+                    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(terminoAPI)}&search_simple=1&action=process&json=1&page_size=80`;
                     
-                    // Le pasamos la "señal" del guardia a la petición de internet
                     const respuesta = await fetch(url, { signal: senal });
                     const datos = await respuesta.json();
 
@@ -5289,6 +5288,7 @@
                                 if (isNaN(kcal)) kcal = parseFloat(n['energy_100g']) / 4.184;
                                 if (isNaN(kcal) || kcal < 0) kcal = 0; 
 
+                                // El ordenador hace el cálculo de puntos localmente (mucho más rápido y sin bloquearse)
                                 let score = 0;
                                 const nombreP = normalizarTexto(p.product_name);
                                 const paises = (p.countries_tags || []).join(' ').toLowerCase();
@@ -5310,11 +5310,11 @@
                             }
                         });
                         
+                        // Ordenamos aquí en tu móvil, sin molestar al servidor
                         temp.sort((a, b) => b.score - a.score);
-                        resultadosMundiales = temp.slice(0, 50); 
+                        resultadosMundiales = temp.slice(0, 40); 
                     }
 
-                    // Dibujamos resultados SOLO si la búsqueda no ha sido cancelada
                     let htmlMundial = '';
                     if (resultadosMundiales.length > 0) {
                         htmlMundial += '<div class="px-3 py-1.5 bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-widest border-t border-blue-100 shadow-sm sticky top-0"><i class="fas fa-globe mr-1"></i> Resultados Globales (Desliza)</div>';
@@ -5333,24 +5333,24 @@
                             `;
                         });
                     } else {
-                        htmlMundial = '<div class="p-4 text-center text-xs text-gray-400 bg-gray-50 rounded-b-xl border-t border-gray-100">Búsqueda global finalizada: No hay más coincidencias en la red.</div>';
+                        htmlMundial = '<div class="p-4 text-center text-xs text-gray-400 bg-gray-50 rounded-b-xl border-t border-gray-100">Búsqueda global finalizada: No hay coincidencias en la red.</div>';
                     }
 
                     const spinner = document.getElementById('spinner-global');
                     if (spinner) spinner.outerHTML = htmlMundial;
 
                 } catch (e) { 
-                    // Si el error es porque cancelamos nosotros la petición (porque seguiste escribiendo), lo ignoramos.
                     if (e.name === 'AbortError') {
-                        console.log("Búsqueda anterior cancelada para dar paso a la nueva.");
+                        // Búsqueda cancelada silenciosamente por nueva letra, todo OK.
                     } else {
                         console.error("Error API:", e);
                         const spinner = document.getElementById('spinner-global');
-                        if (spinner) spinner.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-bold"><i class="fas fa-wifi text-gray-300 mb-2 text-xl block"></i>Servidor saturado. Intenta de nuevo.</div>';
+                        if (spinner) spinner.innerHTML = '<div class="p-4 text-center text-xs text-orange-500 font-bold"><i class="fas fa-exclamation-triangle mb-1 block"></i>La base de datos mundial está lenta ahora mismo. Intenta en unos segundos.</div>';
                     }
                 }
-            }, 500); // 500 milisegundos de espera para dejarte terminar la palabra
+            }, 500); 
         }
+
         // ==========================================================================================
         // 🛠️ SELECCIÓN DESDE BUSCADOR (CONECTADO AL MOTOR)
         // ==========================================================================================
