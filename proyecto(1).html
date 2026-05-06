@@ -5175,7 +5175,7 @@
             }
         }
 // ==========================================================================================
-        // ⚡️ BUSCADOR MASIVO: RED DE ARRASTRE (150 PRODUCTOS) + RANKING ESPAÑA
+        // 🚀 BUSCADOR PRO: LOCAL SIEMPRE PRIMERO + MODO FRANCOTIRADOR GLOBAL (SIN MUROS)
         // ==========================================================================================
         let temporizadorBuscador = null;
 
@@ -5195,13 +5195,10 @@
                 return;
             }
 
-            // Hacemos que el contenedor pueda hacer scroll si la lista es muy larga
             contenedorResultados.classList.remove('hidden');
-            contenedorResultados.style.maxHeight = "400px";
-            contenedorResultados.style.overflowY = "auto";
 
             // ------------------------------------------------------------------
-            // FASE 1: BÚSQUEDA LOCAL INSTANTÁNEA
+            // FASE 1: BÚSQUEDA LOCAL (INSTANTÁNEA)
             // ------------------------------------------------------------------
             let resultadosLocales = [];
             try {
@@ -5212,23 +5209,27 @@
                                 const nombreLocal = normalizarTexto(alimento.name);
                                 if (nombreLocal.includes(terminoLimpio)) {
                                     resultadosLocales.push({
-                                        name: alimento.name, cal: alimento.cal, prot: alimento.prot,
-                                        carbs: alimento.carb || alimento.carbs || 0, fat: alimento.fat,
-                                        sat: alimento.sat || 0, img: '' 
+                                        name: alimento.name, 
+                                        cal: alimento.cal, 
+                                        prot: alimento.prot,
+                                        carbs: alimento.carb || alimento.carbs || 0, 
+                                        fat: alimento.fat,
+                                        sat: alimento.sat || 0, 
+                                        azucar: alimento.azucar || 0,
+                                        img: '' 
                                     });
                                 }
                             }
                         });
                     }
                 }
-            } catch (err) {
-                console.error("Error local:", err);
-            }
+            } catch (err) { console.error("Error local:", err); }
 
+            // Pintamos lo local inmediatamente
             let htmlLocal = '';
             if (resultadosLocales.length > 0) {
                 htmlLocal += '<div class="px-3 py-1.5 bg-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-widest sticky top-0"><i class="fas fa-database mr-1"></i> Mi Base de Datos</div>';
-                resultadosLocales.slice(0, 15).forEach(alimento => {
+                resultadosLocales.slice(0, 10).forEach(alimento => {
                     const objCodificado = encodeURIComponent(JSON.stringify(alimento));
                     htmlLocal += `
                         <div class="p-3 border-b border-gray-50 hover:bg-blue-50 active:bg-blue-100 cursor-pointer transition flex justify-between items-center" onclick="seleccionarDesdeBuscador('${objCodificado}')">
@@ -5239,114 +5240,141 @@
                 });
             }
 
+            // Mostramos local + Spinner de espera para lo global
             contenedorResultados.innerHTML = htmlLocal + `
                 <div id="spinner-global" class="p-4 text-center text-xs text-gray-500 bg-white border-t border-gray-100">
-                    <i class="fas fa-satellite-dish fa-spin mr-2 text-blue-500"></i> Rastreador mundial activado...
+                    <i class="fas fa-crosshairs fa-spin mr-2 text-blue-500"></i> Buscando en el mundo...
                 </div>
             `;
 
             // ------------------------------------------------------------------
-            // FASE 2: RED DE ARRASTRE MUNDIAL (150 PRODUCTOS)
+            // FASE 2: MODO FRANCOTIRADOR (API MUNDIAL)
             // ------------------------------------------------------------------
             clearTimeout(temporizadorBuscador);
-            
             if (terminoLimpio.length < 2) {
-                document.getElementById('spinner-global').style.display = 'none';
+                const spinner = document.getElementById('spinner-global');
+                if (spinner) spinner.style.display = 'none';
                 return;
             }
 
             temporizadorBuscador = setTimeout(async () => {
                 let resultadosMundiales = [];
                 try {
-                    // Le pedimos a la API 150 productos para asegurarnos de que no se escape ninguno
-                    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termino)}&search_simple=1&action=process&json=1&page_size=150`;
+                    // Usamos una búsqueda más agresiva (page_size 100)
+                    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termino)}&search_simple=1&action=process&json=1&page_size=100`;
                     const respuesta = await fetch(url);
                     const datos = await respuesta.json();
 
                     if (datos.products && datos.products.length > 0) {
-                        let productosTemporales = [];
-
+                        let temp = [];
                         datos.products.forEach(p => {
-                            if (p.product_name) {
-                                const n = p.nutriments || {};
-                                
-                                // Rescate de Calorías: Si no hay kcal, intentamos convertir desde Kilojulios
-                                let kcalFinal = parseFloat(n['energy-kcal_100g']);
-                                if (isNaN(kcalFinal)) kcalFinal = parseFloat(n['energy_100g']) / 4.184;
-                                if (isNaN(kcalFinal)) kcalFinal = 0;
+                            const n = p.nutriments || {};
+                            let kcal = parseFloat(n['energy-kcal_100g']) || (parseFloat(n['energy_100g']) / 4.184) || 0;
+                            
+                            if (p.product_name && kcal > 0) {
+                                let score = 0;
+                                const nombreP = normalizarTexto(p.product_name);
+                                const paises = (p.countries_tags || []).join(' ').toLowerCase();
 
-                                // Solo procesamos si tiene un nombre y algo de información nutricional
-                                if (kcalFinal >= 0) {
-                                    let puntos = 0; 
-                                    const nombreProdLimpio = normalizarTexto(p.product_name);
-                                    const etiquetasPaises = (p.countries_tags || []).join(' ').toLowerCase();
-                                    const marcas = normalizarTexto(p.brands || '');
+                                // Scoring: Prioridad España
+                                if (paises.includes('spain') || paises.includes('españa')) score += 200;
+                                if (nombreP.includes(terminoLimpio)) score += 50;
+                                if (nombreP.startsWith(terminoLimpio)) score += 30;
 
-                                    // Ranking de Puntos
-                                    if (etiquetasPaises.includes('spain') || etiquetasPaises.includes('espana') || etiquetasPaises.includes('espagne')) puntos += 100;
-                                    if (nombreProdLimpio === terminoLimpio) puntos += 80; // Coincidencia exacta
-                                    if (nombreProdLimpio.startsWith(terminoLimpio)) puntos += 40;
-                                    if (nombreProdLimpio.includes(terminoLimpio)) puntos += 20;
-                                    if (marcas.includes(terminoLimpio)) puntos += 30;
-                                    
-                                    puntos += parseFloat(p.completeness) * 10 || 0;
-
-                                    productosTemporales.push({
-                                        name: p.product_name + (p.brands ? ` (${p.brands.split(',')[0]})` : ''),
-                                        cal: kcalFinal,
-                                        prot: parseFloat(n.proteins_100g || 0),
-                                        carbs: parseFloat(n.carbohydrates_100g || 0),
-                                        fat: parseFloat(n.fat_100g || 0),
-                                        sat: parseFloat(n['saturated-fat_100g'] || 0),
-                                        img: p.image_front_small_url || '',
-                                        score: puntos 
-                                    });
-                                }
+                                temp.push({
+                                    name: p.product_name + (p.brands ? ` (${p.brands.split(',')[0]})` : ''),
+                                    cal: kcal,
+                                    prot: parseFloat(n.proteins_100g || 0),
+                                    carbs: parseFloat(n.carbohydrates_100g || 0),
+                                    fat: parseFloat(n.fat_100g || 0),
+                                    sat: parseFloat(n['saturated-fat_100g'] || 0),
+                                    azucar: parseFloat(n.sugars_100g || 0),
+                                    img: p.image_front_small_url || '',
+                                    score: score
+                                });
                             }
                         });
-
-                        // Ordenamos todos los productos por puntos (España primero)
-                        productosTemporales.sort((a, b) => b.score - a.score);
-                        
-                        // Mostramos los 50 mejores resultados (una lista larga para que elijas)
-                        resultadosMundiales = productosTemporales.slice(0, 50);
+                        temp.sort((a, b) => b.score - a.score);
+                        resultadosMundiales = temp.slice(0, 40);
                     }
-                } catch (error) {
-                    console.error("Error en OpenFoodFacts:", error);
-                }
+                } catch (e) { console.error("Error API:", e); }
 
-                // Dibujar la lista mundial
                 let htmlMundial = '';
                 if (resultadosMundiales.length > 0) {
-                    htmlMundial += '<div class="px-3 py-1.5 bg-blue-100 text-[10px] font-black text-blue-600 uppercase tracking-widest sticky top-0 border-t border-blue-200 shadow-sm"><i class="fas fa-globe mr-1"></i> Base de Datos Mundial (Desliza para ver más)</div>';
+                    htmlMundial += '<div class="px-3 py-1.5 bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-widest border-t border-blue-100"><i class="fas fa-globe mr-1"></i> Resultados Globales</div>';
                     resultadosMundiales.forEach(alimento => {
                         const objCodificado = encodeURIComponent(JSON.stringify(alimento));
-                        const imgHtml = alimento.img 
-                            ? `<img src="${alimento.img}" class="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0">` 
-                            : `<div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-300 shrink-0"><i class="fas fa-box"></i></div>`;
-
+                        const img = alimento.img ? `<img src="${alimento.img}" class="w-10 h-10 rounded-lg object-cover">` : `<div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-200"><i class="fas fa-box"></i></div>`;
                         htmlMundial += `
                             <div class="p-3 border-b border-gray-50 hover:bg-blue-50 active:bg-blue-100 cursor-pointer transition flex items-center gap-3" onclick="seleccionarDesdeBuscador('${objCodificado}')">
-                                ${imgHtml}
+                                ${img}
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-bold text-slate-700 truncate">${alimento.name}</p>
-                                    <p class="text-[10px] text-gray-400 mt-0.5 truncate">${alimento.prot.toFixed(0)}g P • ${alimento.carbs.toFixed(0)}g C • ${alimento.fat.toFixed(0)}g G</p>
+                                    <p class="text-[10px] text-gray-400 mt-0.5 truncate">${alimento.prot.toFixed(1)}g P • ${alimento.carbs.toFixed(1)}g C • ${alimento.fat.toFixed(1)}g G</p>
                                 </div>
                                 <span class="text-xs font-black text-orange-500 shrink-0">${alimento.cal.toFixed(0)} kcal</span>
                             </div>
                         `;
                     });
                 } else if (resultadosLocales.length === 0) {
-                    htmlMundial = '<div class="p-5 text-center text-sm text-gray-500 font-bold bg-white rounded-b-xl">No hemos encontrado nada 🥲<br><span class="text-xs font-normal text-gray-400 mt-1 block">Prueba con palabras más sencillas</span></div>';
+                    htmlMundial = '<div class="p-5 text-center text-gray-400 text-sm">No se encontraron resultados</div>';
                 }
 
                 const spinner = document.getElementById('spinner-global');
-                if (spinner) {
-                    spinner.outerHTML = htmlMundial;
-                }
-
-            }, 400); 
+                if (spinner) spinner.outerHTML = htmlMundial;
+            }, 450);
         }
+
+        // ==========================================================================================
+        // 🛠️ SELECCIÓN DESDE BUSCADOR (CONECTADO AL MOTOR DEL ESCÁNER)
+        // ==========================================================================================
+        function seleccionarDesdeBuscador(alimentoCodificado) {
+            const alimento = JSON.parse(decodeURIComponent(alimentoCodificado));
+            
+            // Ocultamos buscador
+            document.getElementById('searchResults').classList.add('hidden');
+            document.getElementById('globalSearch').value = '';
+
+            // Abrimos el modal con el formato exacto del escáner
+            Swal.fire({
+                title: alimento.name,
+                imageUrl: alimento.img || null,
+                imageHeight: alimento.img ? 120 : null,
+                html: `
+                    <div class="grid grid-cols-2 gap-2 text-[11px] mt-2 text-left">
+                        <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal.toFixed(1)}</div>
+                        <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot.toFixed(1)}g</div>
+                        <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs.toFixed(1)}g</div>
+                        <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat.toFixed(1)}g</div>
+                        <div class="bg-yellow-100 p-2 rounded border border-yellow-200 text-yellow-800"><b>🧈 G. Sat:</b> ${alimento.sat.toFixed(1)}g</div>
+                        <div class="bg-blue-50 p-2 rounded border border-blue-100 text-blue-700"><b>🍬 Azúcar:</b> ${alimento.azucar.toFixed(1)}g</div>
+                    </div>
+                    
+                    <div class="mt-5 text-left border-t border-gray-100 pt-3">
+                        <label class="text-xs font-black text-slate-700 uppercase">¿Cuántos gramos has consumido?</label>
+                        <input type="number" id="gramos-input-modal" class="w-full mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xl font-black text-center text-slate-800 focus:border-blue-500 outline-none" placeholder="Ej: 100" value="100">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#1e293b',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'Añadir a mi dieta',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    const gramos = document.getElementById('gramos-input-modal').value;
+                    if (!gramos || gramos <= 0) {
+                        Swal.showValidationMessage('Introduce una cantidad válida');
+                    }
+                    return gramos;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Llamamos a tu función de motor para que sume todo y guarde en Firebase
+                    agregarAlimentoAlMotor(alimento, result.value);
+                }
+            });
+        }
+
 
     </script>
 </body>
