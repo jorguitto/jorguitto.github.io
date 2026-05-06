@@ -766,14 +766,6 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        
-        // PARCHE DE AUTORREPARACIÓN: Si la memoria falla, la borra y empieza de cero
-        try {
-            await db.clearPersistence();
-        } catch (e) {
-            console.log("No se pudo limpiar la persistencia o no era necesario", e);
-        }
-
         db.settings({
             experimentalAutoDetectLongPolling: true,
             useFetchStreams: false
@@ -1096,7 +1088,11 @@
 
         async function cargarDatosUsuario(uid) {
             try {
-        
+                try {
+                    await db.enableNetwork();
+                } catch (enErr) {
+                    console.warn("enableNetwork:", enErr);
+                }
                 const docRef = db.collection('usuarios').doc(uid);
                 const docSnap = await docRef.get({ source: "server" });
                 
