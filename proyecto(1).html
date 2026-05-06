@@ -994,7 +994,7 @@
             if (window.location.protocol === 'file:') {
                 showLoginError(
                     "No se puede iniciar sesión desde archivo local",
-                    "Firebase Auth con Google no funciona en file://. Abre este HTML en http://localhost (Live Server o servidor local) y añade localhost en Authorized domains."
+                    "Abre este HTML en un servidor (localhost o hosting)."
                 );
                 return;
             }
@@ -1005,35 +1005,28 @@
             auth.languageCode = 'es';
 
             try {
-                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            } catch (error) {
-                try {
-                    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-                } catch (_) {}
-            }
-
-            try {
-                // Quitamos la separación de móvil/desktop y usamos siempre Popup
-                setAuthDebug("Intentando signInWithPopup");
+                // Al quitar el "await setPersistence" de aquí, la ventana se abre
+                // en el mismo instante del toque, superando la seguridad de Safari.
+                setAuthDebug("Intentando signInWithPopup directo");
                 const popupResult = await auth.signInWithPopup(provider);
                 
                 if (popupResult && popupResult.user) {
                     setAuthDebug(`Popup OK (${popupResult.user.uid})`);
                     await completarSesionConUsuario(popupResult.user);
-                    return;
                 }
             } catch (error) {
                 console.error("Error Auth:", error);
                 
-                // Si el navegador bloquea el popup, ENTONCES usamos el redirect como plan B
+                // Si el navegador de todas formas bloquea la ventana, avisamos amigablemente
                 if (error.code === "auth/popup-blocked" || error.code === "auth/cancelled-popup-request") {
-                    setAuthDebug("Popup bloqueado/cancelado. Usando redirect como plan B");
-                    try { sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1"); } catch (_) {}
-                    await auth.signInWithRedirect(provider);
-                    return;
+                    Swal.fire({
+                        title: 'Ventana bloqueada',
+                        text: 'Tu navegador ha bloqueado la ventana de inicio de sesión de Google. Por favor, permite las ventanas emergentes (pop-ups) para esta página.',
+                        icon: 'warning'
+                    });
+                } else {
+                    showLoginError("Error de Acceso", error.message || "No se pudo iniciar sesión.");
                 }
-
-                showLoginError("Error de Acceso", `${error.message || "No se pudo iniciar sesión con Google."}`);
             }
         }
 
