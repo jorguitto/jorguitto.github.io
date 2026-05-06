@@ -1092,47 +1092,49 @@ async function verificarUsuarioNuevo(user) {
     }
 }
         
+async function loginConGoogle() {
+    if (window.location.protocol === 'file:') {
+        showLoginError(
+            "No se puede iniciar sesión desde archivo local",
+            "Abre este HTML en un servidor (localhost o hosting)."
+        );
+        return;
+    }
 
-       async function loginConGoogle() {
-            if (window.location.protocol === 'file:') {
-                showLoginError(
-                    "No se puede iniciar sesión desde archivo local",
-                    "Abre este HTML en un servidor (localhost o hosting)."
-                );
-                return;
-            }
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    provider.addScope('email');
+    auth.languageCode = 'es';
 
-            const provider = new firebase.auth.GoogleAuthProvider();
-            provider.setCustomParameters({ prompt: 'select_account' });
-            provider.addScope('email');
-            auth.languageCode = 'es';
-
-            try {
-                // Al quitar el "await setPersistence" de aquí, la ventana se abre
-                // en el mismo instante del toque, superando la seguridad de Safari.
-                setAuthDebug("Intentando signInWithPopup directo");
-                const popupResult = await auth.signInWithPopup(provider);
-                
-                if (popupResult && popupResult.user) {
-                    setAuthDebug(`Popup OK (${popupResult.user.uid})`);
-                    await completarSesionConUsuario(popupResult.user);
-                }
-            } catch (error) {
-                console.error("Error Auth:", error);
-                
-                // Si el navegador de todas formas bloquea la ventana, avisamos amigablemente
-                if (error.code === "auth/popup-blocked" || error.code === "auth/cancelled-popup-request") {
-                    Swal.fire({
-                        title: 'Ventana bloqueada',
-                        text: 'Tu navegador ha bloqueado la ventana de inicio de sesión de Google. Por favor, permite las ventanas emergentes (pop-ups) para esta página.',
-                        icon: 'warning'
-                    });
-                } else {
-                    showLoginError("Error de Acceso", error.message || "No se pudo iniciar sesión.");
-                }
-            }
+    try {
+        // Al quitar el "await setPersistence" de aquí, la ventana se abre
+        // en el mismo instante del toque, superando la seguridad de Safari.
+        setAuthDebug("Intentando signInWithPopup directo");
+        const popupResult = await auth.signInWithPopup(provider);
+        
+        if (popupResult && popupResult.user) {
+            setAuthDebug(`Popup OK (${popupResult.user.uid})`);
+            
+            // ¡ESTA ES LA LÍNEA QUE CAMBIA! 
+            // Pasamos por el filtro para ver si es nuevo o veterano
+            await verificarUsuarioNuevo(popupResult.user);
         }
-
+    } catch (error) {
+        console.error("Error Auth:", error);
+        
+        // Si el navegador de todas formas bloquea la ventana, avisamos amigablemente
+        if (error.code === "auth/popup-blocked" || error.code === "auth/cancelled-popup-request") {
+            Swal.fire({
+                title: 'Ventana bloqueada',
+                text: 'Tu navegador ha bloqueado la ventana de inicio de sesión de Google. Por favor, permite las ventanas emergentes (pop-ups) para esta página.',
+                icon: 'warning'
+            });
+        } else {
+            showLoginError("Error de Acceso", error.message || "No se pudo iniciar sesión.");
+        }
+    }
+}
+      
         async function logoutUsuario() {
             try {
                 await auth.signOut();
