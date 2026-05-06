@@ -5180,7 +5180,7 @@
         // ==========================================================================================
         let temporizadorBuscador = null;
 
-        async function searchGlobal(query) {
+       async function searchGlobal(query) {
             const contenedorResultados = document.getElementById('searchResults');
             const termino = query.trim().toLowerCase();
 
@@ -5192,7 +5192,7 @@
             }
 
             // Mostramos que estamos buscando...
-            contenedorResultados.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 font-bold"><i class="fas fa-spinner fa-spin mr-2 text-blue-500"></i>Buscando en la red...</div>';
+            contenedorResultados.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 font-bold"><i class="fas fa-spinner fa-spin mr-2 text-blue-500"></i>Buscando...</div>';
             contenedorResultados.classList.remove('hidden');
 
             // Frenamos la búsqueda hasta que el usuario deje de teclear (Medio segundo)
@@ -5202,25 +5202,33 @@
                 let resultadosLocales = [];
                 let resultadosMundiales = [];
 
-                // 1. BÚSQUEDA LOCAL (En tu foodDatabase)
-                for (const categoria in foodDatabase) {
-                    foodDatabase[category].forEach(alimento => {
-                        if (alimento.name.toLowerCase().includes(termino)) {
-                            resultadosLocales.push({
-                                name: alimento.name,
-                                cal: alimento.cal,
-                                prot: alimento.prot,
-                                carbs: alimento.carb || alimento.carbs, // Por si acaso hay mezcla de nombres en tu DB
-                                fat: alimento.fat,
-                                sat: alimento.sat || 0,
-                                img: '' // La DB local no suele tener imagen
+                // 1. BÚSQUEDA LOCAL (En tu foodDatabase) - ¡CORREGIDO!
+                try {
+                    for (const categoria in foodDatabase) {
+                        // Verificamos que la categoría exista para no romper el código
+                        if (foodDatabase[categoria]) {
+                            foodDatabase[categoria].forEach(alimento => {
+                                // Si el nombre del alimento incluye lo que has escrito (ej: "pera")
+                                if (alimento.name && alimento.name.toLowerCase().includes(termino)) {
+                                    resultadosLocales.push({
+                                        name: alimento.name,
+                                        cal: alimento.cal,
+                                        prot: alimento.prot,
+                                        carbs: alimento.carb || alimento.carbs || 0, 
+                                        fat: alimento.fat,
+                                        sat: alimento.sat || 0,
+                                        img: '' 
+                                    });
+                                }
                             });
                         }
-                    });
+                    }
+                } catch (err) {
+                    console.error("Error al buscar en la base de datos local:", err);
                 }
 
                 // 2. BÚSQUEDA MUNDIAL (API OpenFoodFacts)
-                // Solo buscamos en internet si la palabra tiene 3 letras o más
+                // Solo buscamos en internet si la palabra tiene 3 letras o más para no saturar la API
                 if (termino.length >= 3) {
                     try {
                         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(termino)}&search_simple=1&action=process&json=1&page_size=8`;
@@ -5230,7 +5238,7 @@
                         if (datos.products && datos.products.length > 0) {
                             datos.products.forEach(p => {
                                 const n = p.nutriments || {};
-                                // Solo añadimos si tiene un nombre y tiene calorías registradas
+                                // Solo añadimos si tiene un nombre y calorías registradas
                                 if (p.product_name && n['energy-kcal_100g'] !== undefined) {
                                     resultadosMundiales.push({
                                         name: p.product_name + (p.brands ? ` (${p.brands.split(',')[0]})` : ''),
