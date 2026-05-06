@@ -29,16 +29,23 @@
         body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 50px; }
         .container { max-width: 1100px; margin: 0 auto; padding: 15px; }
 
-        /* --- CABECERA --- */
-        header { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; padding: 20px; background: var(--surface-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+        /* --- CABECERA Y MENÚ DESPLEGABLE --- */
+        header { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; padding: 20px; background: var(--surface-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); z-index: 10; position: relative;}
         @media (min-width: 768px) { header { flex-direction: row; justify-content: space-between; align-items: center; } }
         
-        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary-color); display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .nav-tabs { display: flex; gap: 10px; width: 100%; overflow-x: auto; }
         @media (min-width: 768px) { .nav-tabs { width: auto; } }
         
         .tab-btn { flex: 1; padding: 12px 20px; border: none; background: #edf2f7; color: var(--text-light); font-weight: 600; cursor: pointer; border-radius: var(--radius-md); transition: 0.2s; font-size: 0.95rem; white-space: nowrap; }
         .tab-btn.active { background: var(--primary-color); color: white; box-shadow: var(--shadow-md); }
+
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; top: 100%; left: 0; background-color: var(--surface-color); min-width: 230px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-color); margin-top: 5px; }
+       .dropdown-content.show-menu { display: block; animation: fadeIn 0.2s; }
+        .dropdown-content a { color: var(--text-main); padding: 15px 20px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.95rem; transition: background 0.2s; }
+        .dropdown-content a:hover { background-color: #f8fafc; color: var(--primary-color); }
+        .dropdown-content a.active-link { background-color: #eff6ff; color: var(--primary-color); border-left: 4px solid var(--primary-color); }
 
         /* --- VISTAS --- */
         .view-section { display: none; animation: fadeIn 0.3s; }
@@ -49,57 +56,25 @@
         .card { background: var(--surface-color); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-md); margin-bottom: 20px; }
         .card-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--bg-color); padding-bottom: 15px; }
 
-        /* --- TABLA CON SCROLL PARA MÓVILES (ESTILO BOTONES CUADRADOS) --- */
+        /* --- TABLA --- */
         .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; border-radius: var(--radius-md); }
-        
         .habit-table { width: 100%; min-width: 700px; border-collapse: separate; border-spacing: 0; }
-        
         .habit-table th { background: #f8fafc; color: var(--text-main); font-weight: 600; padding: 12px 5px; text-align: center; border-bottom: 2px solid var(--border-color); font-size: 0.9rem; }
         .day-percent { display: block; font-size: 0.75rem; color: var(--primary-color); margin-top: 3px; font-weight: 700; }
-        
         .habit-table td { padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--border-color); vertical-align: middle; background: var(--surface-color); }
-        
-        /* Columna fija en móvil */
-        .habit-table th:first-child, .habit-table td:first-child { 
-            position: sticky; 
-            left: 0; 
-            z-index: 2; 
-            text-align: left; 
-            padding-left: 15px;
-            box-shadow: 4px 0 6px -2px rgba(0,0,0,0.05);
-        }
-        
+        .habit-table th:first-child, .habit-table td:first-child { position: sticky; left: 0; z-index: 2; text-align: left; padding-left: 15px; box-shadow: 4px 0 6px -2px rgba(0,0,0,0.05); }
         .habit-name-cell { font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; }
 
-        /* Los Botones Cuadrados que te gustaban */
-        .check-btn { 
-            width: 45px; 
-            height: 45px; 
-            border-radius: 12px; 
-            border: none;
-            background: #edf2f7; 
-            cursor: pointer; 
-            display: inline-flex; 
-            justify-content: center; 
-            align-items: center; 
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            color: transparent; 
-            font-size: 1.2rem; 
-        }
+        /* --- BOTONES CUADRADOS --- */
+        .check-btn { width: 45px; height: 45px; border-radius: 12px; border: none; background: #edf2f7; cursor: pointer; display: inline-flex; justify-content: center; align-items: center; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); color: transparent; font-size: 1.2rem; }
         .check-btn:hover { background: #e2e8f0; transform: scale(1.05); }
-        .check-btn.completed { 
-            background: var(--success-color); 
-            color: white; 
-            transform: scale(1.1); 
-            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); 
-        }
+        .check-btn.completed { background: var(--success-color); color: white; transform: scale(1.1); box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); }
 
         /* --- DASHBOARD Y GRÁFICOS --- */
         .stats-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .stat-box { background: linear-gradient(135deg, var(--primary-color), #3498db); color: white; border-radius: var(--radius-lg); padding: 20px; text-align: center; box-shadow: var(--shadow-md); }
         .stat-value { font-size: 2.2rem; font-weight: 800; display: block; }
         .stat-label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
-
         .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 800px) { .dashboard-grid { grid-template-columns: 1fr 1fr; } }
         .chart-wrapper { position: relative; height: 280px; width: 100%; padding: 10px; }
@@ -117,9 +92,19 @@
         .btn-success { background: var(--success-color); color: white; }
         .btn-danger { background: transparent; color: var(--text-light); border: 1px solid var(--border-color); }
         .btn-danger:hover { color: var(--danger-color); border-color: var(--danger-color); }
-        
         .action-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         @media (min-width: 768px) { .action-group { flex-direction: row; justify-content: flex-end; } }
+
+        /* --- MODAL DE HÁBITOS (ONBOARDING Y EDICIÓN) --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 999; display: none; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-box { background: white; border-radius: 20px; width: 100%; max-width: 500px; padding: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto; }
+        .habit-input-group { display: flex; gap: 10px; margin-bottom: 10px; animation: fadeIn 0.3s; }
+        .habit-input { flex: 1; padding: 15px; border: 2px solid var(--bg-color); border-radius: var(--radius-md); font-size: 1rem; outline: none; background: #f8fafc; font-weight: 600; color: var(--text-main); }
+        .habit-input:focus { border-color: var(--primary-color); background: white; }
+        .btn-remove { background: #fee2e2; color: #ef4444; border: none; width: 50px; border-radius: var(--radius-md); cursor: pointer; transition: 0.2s; }
+        .btn-remove:hover { background: #ef4444; color: white; }
+        .btn-add-habit { background: transparent; color: var(--primary-color); border: 2px dashed var(--primary-color); padding: 15px; border-radius: var(--radius-md); cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; transition: 0.2s; }
+        .btn-add-habit:hover { background: #eff6ff; }
 
         /* --- PDF EXPORT --- */
         .pdf-mode { background: white; padding: 20px; }
@@ -132,16 +117,26 @@
 <body>
 
 <div class="container">
-    <header>
-        <div class="logo"><i class="fas fa-chart-pie"></i> Mi Tracker</div>
+    <header class="no-export">
+      <div class="dropdown">
+            <div class="logo" onclick="toggleMenuApp()">
+                <i class="fas fa-layer-group"></i> TRACKER <span style="color: var(--text-light); font-weight: 400;">PRO</span>
+                <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: var(--text-light); margin-left: 5px;"></i>
+            </div>
+            <div id="miMenuDesplegable" class="dropdown-content">
+                <a href="proyecto.html"><i class="fas fa-heartbeat" style="width: 20px;"></i> FitTracker (Nutrición)</a>
+                <a href="#" class="active-link"><i class="fas fa-check-square" style="width: 20px;"></i> Hábitos (Tracker)</a>
+            </div>
+        </div>
+
         <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('current')"><i class="fas fa-calendar-check"></i> Esta Semana</button>
-            <button class="tab-btn" onclick="switchTab('history')"><i class="fas fa-folder-open"></i> Mis PDFs</button>
+            <button class="tab-btn active" onclick="switchTab('current')" id="tab-current"><i class="fas fa-calendar-check"></i> Esta Semana</button>
+            <button class="tab-btn" onclick="switchTab('history')" id="tab-history"><i class="fas fa-folder-open"></i> Mis PDFs</button>
+            <button class="tab-btn" onclick="openHabitEditor()" style="background: var(--surface-color); border: 1px solid var(--border-color);"><i class="fas fa-cog"></i> Mis Hábitos</button>
         </div>
     </header>
 
     <div id="view-current" class="view-section active">
-        
         <div id="pdf-export-zone">
             <h1 class="export-title">Resumen de Hábitos</h1>
 
@@ -163,8 +158,7 @@
                 </div>
                 
                 <div class="table-responsive">
-                    <table class="habit-table" id="habit-table">
-                        </table>
+                    <table class="habit-table" id="habit-table"></table>
                 </div>
             </div>
 
@@ -174,7 +168,7 @@
                 </div>
                 <div class="dashboard-grid">
                     <div>
-                        <h3 style="text-align: center; color: var(--text-light); font-size: 1rem; margin-bottom: 10px;">Progreso por Hábito (La clásica)</h3>
+                        <h3 style="text-align: center; color: var(--text-light); font-size: 1rem; margin-bottom: 10px;">Progreso por Hábito</h3>
                         <div class="chart-wrapper"><canvas id="barChart"></canvas></div>
                     </div>
                     <div>
@@ -196,68 +190,158 @@
             <div class="card-header">
                 <h2 style="font-size: 1.2rem;">Semanas Guardadas</h2>
             </div>
-            <div id="history-container" class="history-list">
-                </div>
+            <div id="history-container" class="history-list"></div>
         </div>
     </div>
+</div>
 
+<div id="habit-onboarding-modal" class="modal-overlay">
+    <div class="modal-box">
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="width: 60px; height: 60px; background: #eff6ff; color: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 15px;">
+                <i class="fas fa-list-check"></i>
+            </div>
+            <h2 style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 5px;">Tus Hábitos</h2>
+            <p style="color: var(--text-light); font-size: 0.9rem;">Configura la lista de cosas que quieres lograr cada día. Puedes añadir y borrar los que quieras.</p>
+        </div>
+
+        <div id="onboarding-habits-list">
+            </div>
+
+        <button onclick="addHabitInputRow('')" class="btn-add-habit">
+            <i class="fas fa-plus"></i> Añadir otro hábito
+        </button>
+
+        <button onclick="guardarMisHabitos()" class="btn btn-primary" style="width: 100%; margin-top: 25px; padding: 15px; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);">
+            <i class="fas fa-save"></i> Guardar y Aplicar
+        </button>
+    </div>
 </div>
 
 <script>
-    // --- CONFIGURACIÓN BASE ---
-    const habitsConfig = [
-        { id: 'comidas', name: 'Comidas Sanas', icon: 'fa-apple-alt', color: '#2ecc71' },
-        { id: 'agua', name: 'Beber Agua', icon: 'fa-tint', color: '#3498db' },
-        { id: 'ejercicio', name: 'Ejercicio', icon: 'fa-running', color: '#e67e22' },
-        { id: 'estudio', name: 'Estudio Efic.', icon: 'fa-book', color: '#9b59b6' },
-        { id: 'proyecto', name: 'Proyecto X', icon: 'fa-star', color: '#f1c40f' },
-        { id: 'suplementos', name: 'Suplementos', icon: 'fa-capsules', color: '#95a5a6' }
-    ];
+    // --- VARIABLES Y DATOS BASE ---
+    let habitsConfig = [];
+    const defaultHabitsList = ["Comidas Sanas", "Beber Agua", "Ejercicio", "Estudio Eficaz", "Proyecto X", "Suplementos"];
+    const iconPalette = ['fa-check-circle', 'fa-star', 'fa-fire', 'fa-bolt', 'fa-leaf', 'fa-heart', 'fa-dumbbell', 'fa-book'];
+    const colorPalette = ['#2ecc71', '#3498db', '#e67e22', '#9b59b6', '#f1c40f', '#e74c3c', '#1abc9c', '#34495e'];
     
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    
     let currentData = {};
     let charts = { bar: null, line: null };
 
     // --- INICIALIZACIÓN ---
     function init() {
+        // Cargar configuración de hábitos
+        const savedHabits = localStorage.getItem('trackerPro_habitsConfig');
+        
+        if (savedHabits) {
+            habitsConfig = JSON.parse(savedHabits);
+            startApp();
+        } else {
+            // Usuario nuevo -> Mostrar modal de bienvenida
+            openHabitEditor(true);
+        }
+    }
+
+    function startApp() {
         loadData();
         renderTable();
         updateDashboard();
         renderHistory();
     }
 
-    function loadData() {
-        const saved = localStorage.getItem('trackerPro_current');
-        if (saved) {
-            currentData = JSON.parse(saved);
-        } else {
-            habitsConfig.forEach(h => {
-                currentData[h.id] = [false, false, false, false, false, false, false];
-            });
-        }
+    // --- LÓGICA DE HÁBITOS (ONBOARDING Y EDICIÓN) ---
+    function openHabitEditor(isNewUser = false) {
+        document.getElementById('habit-onboarding-modal').style.display = 'flex';
+        const contenedor = document.getElementById('onboarding-habits-list');
+        contenedor.innerHTML = '';
+        
+        let listToRender = habitsConfig.length > 0 ? habitsConfig.map(h => h.name) : defaultHabitsList;
+        
+        listToRender.forEach(name => {
+            addHabitInputRow(name);
+        });
     }
 
-    // --- RENDERIZAR TABLA CLÁSICA CON BOTONES CUADRADOS ---
+    function addHabitInputRow(valor = '') {
+        const contenedor = document.getElementById('onboarding-habits-list');
+        const div = document.createElement('div');
+        div.className = 'habit-input-group';
+        div.innerHTML = `
+            <input type="text" class="habit-input" value="${valor}" placeholder="Ej: Leer 10 páginas">
+            <button class="btn-remove" onclick="this.parentElement.remove()"><i class="fas fa-trash"></i></button>
+        `;
+        contenedor.appendChild(div);
+    }
+
+    function guardarMisHabitos() {
+        const inputs = document.querySelectorAll('.habit-input');
+        let newHabitsConfig = [];
+        
+        inputs.forEach((input, index) => {
+            const val = input.value.trim();
+            if(val !== '') {
+                // Si el hábito ya existía con ese nombre, mantenemos su ID, icono y color
+                const existing = habitsConfig.find(h => h.name.toLowerCase() === val.toLowerCase());
+                if (existing) {
+                    newHabitsConfig.push(existing);
+                } else {
+                    // Es un hábito nuevo, le asignamos ID y colores
+                    newHabitsConfig.push({
+                        id: 'habit_' + Date.now() + '_' + index,
+                        name: val,
+                        icon: iconPalette[index % iconPalette.length],
+                        color: colorPalette[index % colorPalette.length]
+                    });
+                }
+            }
+        });
+
+        if (newHabitsConfig.length === 0) {
+            alert("¡No puedes dejar la tabla vacía! Añade al menos un hábito.");
+            return;
+        }
+
+        habitsConfig = newHabitsConfig;
+        localStorage.setItem('trackerPro_habitsConfig', JSON.stringify(habitsConfig));
+        document.getElementById('habit-onboarding-modal').style.display = 'none';
+        
+        startApp(); // Reiniciar motor con nuevos hábitos
+    }
+
+    function loadData() {
+        const saved = localStorage.getItem('trackerPro_current');
+        let parsedData = saved ? JSON.parse(saved) : {};
+        currentData = {};
+
+        // Sincronizar datos: mantener lo que ya estaba marcado, crear vacíos para nuevos
+        habitsConfig.forEach(h => {
+            if (parsedData[h.id]) {
+                currentData[h.id] = parsedData[h.id];
+            } else {
+                currentData[h.id] = [false, false, false, false, false, false, false];
+            }
+        });
+        localStorage.setItem('trackerPro_current', JSON.stringify(currentData));
+    }
+
+    // --- RENDERIZAR TABLA CLÁSICA ---
     function renderTable() {
         const table = document.getElementById('habit-table');
         
-        // Calcular porcentajes diarios para la cabecera
         let dailyPercents = [0,0,0,0,0,0,0];
         for(let d=0; d<7; d++) {
             let dayTotal = 0;
             habitsConfig.forEach(h => { if(currentData[h.id][d]) dayTotal++; });
-            dailyPercents[d] = Math.round((dayTotal / habitsConfig.length) * 100);
+            dailyPercents[d] = habitsConfig.length > 0 ? Math.round((dayTotal / habitsConfig.length) * 100) : 0;
         }
 
-        // Generar Cabecera
-        let html = `<thead><tr><th style="text-align: left; padding-left: 15px;">Hábitos</th>`;
+        let html = `<thead><tr><th style="text-align: left; padding-left: 15px;">Mis Hábitos</th>`;
         days.forEach((day, i) => {
             html += `<th id="th-day-${i}">${day} <span class="day-percent" id="perc-day-${i}">${dailyPercents[i]}%</span></th>`;
         });
         html += `</tr></thead><tbody>`;
 
-        // Generar Filas y Botones Cuadrados
         habitsConfig.forEach((habit) => {
             html += `<tr>`;
             html += `<td class="habit-name-cell"><i class="fas ${habit.icon}" style="color: ${habit.color}; font-size: 1.2rem; width: 25px; text-align: center;"></i> <span>${habit.name}</span></td>`;
@@ -286,43 +370,38 @@
         
         if(tab === 'current') {
             document.getElementById('view-current').classList.add('active');
-            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('tab-current').classList.add('active');
         } else {
             document.getElementById('view-history').classList.add('active');
-            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('tab-history').classList.add('active');
             renderHistory();
         }
     }
 
-    // --- LÓGICA DE CLICS ---
+    // --- LÓGICA DE CLICS EN BOTONES CUADRADOS ---
     function toggleHabit(habitId, dayIndex, btnElement) {
-        // Cambiar estado en los datos
         currentData[habitId][dayIndex] = !currentData[habitId][dayIndex];
-        
-        // Animación del botón cuadrado
         btnElement.classList.toggle('completed');
         
-        // Actualizar el porcentaje de ESE día arriba en la cabecera
         let dayTotal = 0;
         habitsConfig.forEach(h => { if(currentData[h.id][dayIndex]) dayTotal++; });
         let newPercent = Math.round((dayTotal / habitsConfig.length) * 100);
         document.getElementById(`perc-day-${dayIndex}`).innerText = `${newPercent}%`;
 
-        // Guardar y actualizar gráficos
         localStorage.setItem('trackerPro_current', JSON.stringify(currentData));
         updateDashboard();
     }
 
-    // --- CÁLCULOS PARA GRÁFICOS ---
+    // --- CÁLCULOS GRÁFICOS ---
     function calculateStats() {
         let totalChecks = 0;
         let possibleChecks = habitsConfig.length * 7;
+        let barData = [];
         
-        let barData = []; // Para la gráfica de barras
         habitsConfig.forEach(h => {
             let habitChecks = currentData[h.id].filter(Boolean).length;
             totalChecks += habitChecks;
-            barData.push(Math.round((habitChecks / 7) * 100)); // Porcentaje de éxito de ese hábito en la semana
+            barData.push(Math.round((habitChecks / 7) * 100));
         });
 
         let lineData = [0, 0, 0, 0, 0, 0, 0];
@@ -330,21 +409,17 @@
             habitsConfig.forEach(h => { if(currentData[h.id][d]) lineData[d]++; });
         }
 
-        let globalScore = Math.round((totalChecks / possibleChecks) * 100);
+        let globalScore = possibleChecks > 0 ? Math.round((totalChecks / possibleChecks) * 100) : 0;
         return { totalChecks, globalScore, barData, lineData };
     }
 
-    // --- DIBUJAR GRÁFICOS ---
     function updateDashboard() {
         const stats = calculateStats();
-        
-        // Actualizar números gigantes
         document.getElementById('score-display').innerText = `${stats.globalScore}%`;
         document.getElementById('completed-display').innerText = stats.totalChecks;
 
         Chart.defaults.font.family = 'Segoe UI';
 
-        // 1. Vuelve la Gráfica de Barras Clásica
         const ctxBar = document.getElementById('barChart').getContext('2d');
         if (charts.bar) charts.bar.destroy();
         charts.bar = new Chart(ctxBar, {
@@ -354,23 +429,16 @@
                 datasets: [{
                     label: '% Completado',
                     data: stats.barData,
-                    backgroundColor: habitsConfig.map(h => h.color + '99'), // Color con transparencia
+                    backgroundColor: habitsConfig.map(h => h.color + '99'),
                     borderColor: habitsConfig.map(h => h.color),
-                    borderWidth: 2,
-                    borderRadius: 5
+                    borderWidth: 2, borderRadius: 5
                 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true, max: 100 } },
-                plugins: { legend: { display: false } }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
         });
 
-        // 2. Gráfica de Línea de la semana
         const ctxLine = document.getElementById('lineChart').getContext('2d');
         if (charts.line) charts.line.destroy();
-        
         let gradient = ctxLine.createLinearGradient(0, 0, 0, 280);
         gradient.addColorStop(0, 'rgba(74, 144, 226, 0.5)');
         gradient.addColorStop(1, 'rgba(74, 144, 226, 0.0)');
@@ -378,24 +446,19 @@
         charts.line = new Chart(ctxLine, {
             type: 'line',
             data: {
-                labels: days.map(d => d.substring(0,3)), // Lun, Mar, Mié...
+                labels: days.map(d => d.substring(0,3)),
                 datasets: [{
                     label: 'Hábitos por día',
                     data: stats.lineData,
-                    borderColor: 'var(--primary-color)',
-                    backgroundColor: gradient,
+                    borderColor: 'var(--primary-color)', backgroundColor: gradient,
                     borderWidth: 3, fill: true, tension: 0.3, pointRadius: 5, pointBackgroundColor: 'white'
                 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { y: { min: 0, max: habitsConfig.length, ticks: { stepSize: 1 } }, x: { grid: { display: false } } },
-                plugins: { legend: { display: false } }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: habitsConfig.length, ticks: { stepSize: 1 } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
         });
     }
 
-    // --- ACCIONES Y GUARDADO ---
+    // --- ACCIONES GLOBALES ---
     function resetCurrentWeek() {
         if(confirm("¿Seguro que quieres borrar todas las marcas de esta semana?")) {
             localStorage.removeItem('trackerPro_current');
@@ -410,12 +473,14 @@
         if(confirm("¿Cerrar semana y archivarla? La tabla se quedará en blanco para el lunes.")) {
             let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
             
+            // Guardamos la configuración de los hábitos exactos de esa semana por si en el futuro cambian
             history.unshift({
                 id: Date.now(),
                 date: new Date().toLocaleDateString('es-ES', {day: '2-digit', month: 'short', year: 'numeric'}),
                 score: stats.globalScore,
                 checks: stats.totalChecks,
-                data: JSON.parse(JSON.stringify(currentData))
+                data: JSON.parse(JSON.stringify(currentData)),
+                habitsSnapshot: JSON.parse(JSON.stringify(habitsConfig)) 
             });
             
             localStorage.setItem('trackerPro_history', JSON.stringify(history));
@@ -436,7 +501,6 @@
         let html = '';
         history.forEach(record => {
             let color = record.score >= 80 ? 'var(--success-color)' : (record.score >= 50 ? '#f39c12' : 'var(--danger-color)');
-            
             html += `
                 <div class="history-item">
                     <div>
@@ -463,21 +527,11 @@
         }
     }
 
-    // --- MOTOR PDF ---
+    // --- MOTOR PDF (INCLUIDO) ---
     function generatePDF(element, filename) {
         element.classList.add('pdf-mode');
-        
-        const opt = {
-            margin:       10,
-            filename:     filename,
-            image:        { type: 'jpeg', quality: 1 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
-        
-        html2pdf().set(opt).from(element).save().then(() => {
-            element.classList.remove('pdf-mode');
-        });
+        const opt = { margin: 10, filename: filename, image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } };
+        html2pdf().set(opt).from(element).save().then(() => { element.classList.remove('pdf-mode'); });
     }
 
     function exportCurrentToPDF() {
@@ -488,10 +542,12 @@
     function exportHistoryRecord(id) {
         let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
         const record = history.find(r => r.id === id);
-        
         if(record) {
             const tempCurrent = JSON.stringify(currentData);
+            const tempHabits = JSON.stringify(habitsConfig);
+            
             currentData = record.data;
+            if(record.habitsSnapshot) habitsConfig = record.habitsSnapshot;
             renderTable(); updateDashboard();
             
             document.querySelector('.export-title').innerText = `Reporte Histórico - ${record.date}`;
@@ -503,6 +559,7 @@
                 
                 setTimeout(() => {
                     currentData = JSON.parse(tempCurrent);
+                    habitsConfig = JSON.parse(tempHabits);
                     renderTable(); updateDashboard();
                     document.querySelector('.export-title').innerText = `Resumen de Hábitos`;
                     switchTab('history');
@@ -512,6 +569,20 @@
     }
 
     window.onload = init;
+    // --- LÓGICA DEL MENÚ DESPLEGABLE ---
+    function toggleMenuApp() {
+        document.getElementById("miMenuDesplegable").classList.toggle("show-menu");
+    }
+
+    // Cierra el menú si tocas en cualquier otro lado de la pantalla
+    window.onclick = function(event) {
+        if (!event.target.closest('.dropdown')) {
+            const menu = document.getElementById("miMenuDesplegable");
+            if (menu && menu.classList.contains('show-menu')) {
+                menu.classList.remove('show-menu');
+            }
+        }
+    }
 </script>
 </body>
 </html>
