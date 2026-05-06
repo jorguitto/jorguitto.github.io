@@ -4957,71 +4957,224 @@
             const blob = doc.output('bloburl');
             window.open(blob, '_blank');
         }
-// ==========================================
-        // CÓDIGO DEL ESCÁNER DIRECTO (RÁPIDO Y EN ESPAÑOL)
-        // ==========================================
-        let html5QrCode = null;
+        // ==========================================================================================
+        // 📸 MOTOR DE ESCÁNER Y API DE ALIMENTOS (VERSIÓN ORIGINAL PERFECTA)
+        // ==========================================================================================
+        let escannerActivo = null;
 
-        async function iniciarEscaner() {
-            // Mostramos el contenedor visual
+        // 1. INICIAR LA CÁMARA (Versión estable)
+        function iniciarEscaner() {
             document.getElementById('contenedor-escaner').style.display = 'block';
             
-            // Si no existe, creamos la instancia directa (sin la interfaz fea en inglés)
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("lector-codigo");
-            }
+            escannerActivo = new Html5Qrcode("lector-codigo");
             
-            try {
-                // Forzamos el uso de la cámara trasera directamente
-                await html5QrCode.start(
-                    { facingMode: "environment" }, 
-                    {
-                        fps: 15, // Más imágenes por segundo = detección más rápida
-                        qrbox: { width: 280, height: 150 } // Rectángulo apaisado, ideal para códigos de barras de productos
-                    },
-                    (decodedText, decodedResult) => {
-                        // ÉXITO AL LEER EL CÓDIGO
-                        if (navigator.vibrate) navigator.vibrate(100); // Pequeña vibración en el móvil al detectar
-                        
-                        cerrarEscaner(); // Apagamos la cámara automáticamente
-                        
-                        // Aviso bonito en español
-                        Swal.fire({
-                            title: '¡Código detectado!',
-                            text: `EAN: ${decodedText}\n(Falta conectarlo a la API de alimentos)`,
-                            icon: 'success',
-                            confirmButtonColor: '#3b82f6',
-                            confirmButtonText: 'Vale'
-                        });
-                    },
-                    (errorMessage) => {
-                        // Ignoramos silenciosamente los fallos de lectura de los frames (para que no salgan letras rojas)
-                    }
-                );
-            } catch (err) {
-                console.error("Error iniciando cámara:", err);
-                cerrarEscaner();
-                Swal.fire({
-                    title: 'Error de Cámara',
-                    text: 'No se pudo abrir la cámara. Asegúrate de haberle dado permisos en tu navegador.',
-                    icon: 'error',
-                    confirmButtonColor: '#ef4444',
-                    confirmButtonText: 'Entendido'
-                });
+            escannerActivo.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 150 } }, // 10 FPS, enfoque seguro
+                (codigoEscaneado) => {
+                    // ¡Código detectado!
+                    cerrarEscaner(); // Apagamos la cámara
+                    buscarProductoPorCodigo(codigoEscaneado);
+                },
+                (errorMessage) => {
+                    // Ignorar errores de lectura en progreso
+                }
+            ).catch((err) => {
+                console.error("Error al iniciar la cámara", err);
+                Swal.fire('Error', 'Comprueba los permisos de la cámara.', 'error');
+            });
+        }
+
+        // 2. APAGAR LA CÁMARA
+        function cerrarEscaner() {
+            if (escannerActivo) {
+                escannerActivo.stop().then(() => {
+                    document.getElementById('contenedor-escaner').style.display = 'none';
+                    escannerActivo = null;
+                }).catch(err => console.error("Error al detener cámara", err));
+            } else {
+                document.getElementById('contenedor-escaner').style.display = 'none';
             }
         }
 
-        async function cerrarEscaner() {
-            // Apagado seguro de la cámara
-            if (html5QrCode && html5QrCode.isScanning) {
-                try {
-                    await html5QrCode.stop();
-                } catch (err) {
-                    console.error("Error deteniendo el escáner", err);
+        // 3. BUSCAR EN OPEN FOOD FACTS Y PEDIR GRAMOS
+        async function buscarProductoPorCodigo(codigo) {
+            const url = `https://world.openfoodfacts.org/api/v0/product/${codigo}.json`;
+            
+            try {
+                Swal.fire({ title: 'Analizando...', text: 'Buscando nutrientes', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                
+                const respuesta = await fetch(url);
+                const datos = await respuesta.json();
+                
+                if (datos.status === 1) {
+                    const p = datos.product;
+                    const n = p.nutriments || {};
+                    
+                    const alimento = {
+                        name: p.product_name || 'Producto sin nombre',
+                        cal: parseFloat(n['energy-kcal_100g'] || 0),
+                        prot: parseFloat(n.proteins_100g || 0),
+                        carbs: parseFloat(n.carbohydrates_100g || 0),
+                        fat: parseFloat(n.fat_100g || 0),
+                        sat: parseFloat(n['saturated-fat_100g'] || 0),
+                        azucar: parseFloat(n.sugars_100g || 0),
+                        img: p.image_front_url || ''
+                    };
+                    
+                    // INTERFAZ BONITA CON GRAMOS
+                    Swal.fire({
+                        title: alimento.name,
+                        imageUrl: alimento.img,
+                        imageHeight: 120,
+                        html: `
+                            <div class="grid grid-cols-2 gap-2 text-[11px] mt-2 text-left">
+                                <div class="bg-orange-50 p-2 rounded border border-orange-100 text-orange-700"><b>🔥 Kcal:</b> ${alimento.cal.toFixed(1)}</div>
+                                <div class="bg-green-50 p-2 rounded border border-green-100 text-green-700"><b>🥩 Prot:</b> ${alimento.prot.toFixed(1)}g</div>
+                                <div class="bg-red-50 p-2 rounded border border-red-100 text-red-700"><b>🍞 Carbs:</b> ${alimento.carbs.toFixed(1)}g</div>
+                                <div class="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-700"><b>🥑 Grasas:</b> ${alimento.fat.toFixed(1)}g</div>
+                                <div class="bg-yellow-100 p-2 rounded border border-yellow-200 text-yellow-800"><b>🧈 G. Sat:</b> ${alimento.sat.toFixed(1)}g</div>
+                                <div class="bg-blue-50 p-2 rounded border border-blue-100 text-blue-700"><b>🍬 Azúcar:</b> ${alimento.azucar.toFixed(1)}g</div>
+                            </div>
+                            
+                            <div class="mt-5 text-left border-t border-gray-100 pt-3">
+                                <label class="text-xs font-black text-slate-700 uppercase">¿Cuántos gramos vas a comer?</label>
+                                <input type="number" id="gramos-input" class="w-full mt-2 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xl font-black text-center text-slate-800 focus:border-blue-500 outline-none" placeholder="Ej: 30" value="100">
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonColor: '#1e293b',
+                        cancelButtonColor: '#ef4444',
+                        confirmButtonText: '<i class="fas fa-check"></i> Añadir a mi dieta',
+                        cancelButtonText: 'Cancelar',
+                        preConfirm: () => {
+                            const gramos = document.getElementById('gramos-input').value;
+                            if (!gramos || gramos <= 0) {
+                                Swal.showValidationMessage('Introduce una cantidad válida');
+                            }
+                            return gramos;
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            agregarAlimentoAlMotor(alimento, result.value);
+                        }
+                    });
+                    
+                } else {
+                    Swal.fire('No encontrado', 'Este producto no está en la base de datos pública.', 'info');
                 }
+            } catch (error) {
+                Swal.fire('Error', 'Fallo al conectar a internet.', 'error');
             }
-            document.getElementById('contenedor-escaner').style.display = 'none';
         }
+
+        // 4. AÑADIR A LA APP Y CREAR TARJETA CON BOTÓN DE BORRAR
+        function agregarAlimentoAlMotor(alimento100g, gramos) {
+            const factor = gramos / 100;
+            
+            const kcalFinal = Math.round(alimento100g.cal * factor);
+            const protFinal = Math.round(alimento100g.prot * factor);
+            const carbsFinal = Math.round(alimento100g.carbs * factor);
+            const fatFinal = Math.round(alimento100g.fat * factor);
+            const satFinal = Math.round(alimento100g.sat * factor);
+
+            actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', kcalFinal);
+            actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', protFinal);
+            actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', carbsFinal);
+            actualizarMacroHTML('val-fat', 'goal-fat', 'bar-fat', fatFinal);
+            actualizarMacroHTML('val-sat', 'goal-sat', 'bar-sat', satFinal);
+
+            const spanTotal = document.getElementById('total-consumed-kcal');
+            if (spanTotal) {
+                const totalActual = parseInt(spanTotal.innerText) || 0;
+                spanTotal.innerText = (totalActual + kcalFinal) + " kcal";
+            }
+
+            const lista = document.getElementById('addedFoodsList');
+            if (lista) {
+                const idUnico = 'food-scan-' + Date.now(); 
+                
+                const nuevaTarjeta = `
+                    <div id="${idUnico}" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center mb-2 animate-[fadeIn_0.3s_ease-out]">
+                        <div>
+                            <p class="text-xs font-bold text-slate-700 leading-tight">${alimento100g.name}</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5"><i class="fas fa-scale-balanced mr-1"></i>${gramos}g • ${protFinal}g P / ${carbsFinal}g C / ${fatFinal}g G</p>
+                        </div>
+                        <div class="flex items-center gap-3 text-right">
+                            <p class="text-sm font-black text-orange-500">${kcalFinal} kcal</p>
+                            <button onclick="eliminarAlimentoEscaneado('${idUnico}', ${kcalFinal}, ${protFinal}, ${carbsFinal}, ${fatFinal}, ${satFinal})" class="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                lista.innerHTML = nuevaTarjeta + lista.innerHTML; 
+            }
+
+            Swal.fire({
+                title: '¡Añadido!',
+                text: `Se han sumado ${kcalFinal} kcal a tu día.`,
+                icon: 'success',
+                timer: 1800,
+                showConfirmButton: false
+            });
+        }
+
+        // 5. ELIMINAR EL ALIMENTO SI TE EQUIVOCAS
+        function eliminarAlimentoEscaneado(idElemento, kcal, prot, carbs, fat, sat) {
+            Swal.fire({
+                title: '¿Eliminar alimento?',
+                text: "Se restarán las calorías y macros de tu progreso de hoy.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#1e293b',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const tarjeta = document.getElementById(idElemento);
+                    if (tarjeta) tarjeta.remove();
+
+                    actualizarMacroHTML('val-cals', 'goal-cals', 'bar-cals', -kcal);
+                    actualizarMacroHTML('val-prot', 'goal-prot', 'bar-prot', -prot);
+                    actualizarMacroHTML('val-carbs', 'goal-carbs', 'bar-carbs', -carbs);
+                    actualizarMacroHTML('val-fat', 'goal-fat', 'bar-fat', -fat);
+                    actualizarMacroHTML('val-sat', 'goal-sat', 'bar-sat', -sat);
+
+                    const spanTotal = document.getElementById('total-consumed-kcal');
+                    if (spanTotal) {
+                        const totalActual = parseInt(spanTotal.innerText) || 0;
+                        let nuevoTotal = totalActual - kcal;
+                        if (nuevoTotal < 0) nuevoTotal = 0; 
+                        spanTotal.innerText = nuevoTotal + " kcal";
+                    }
+                }
+            });
+        }
+
+        // 6. ACTUALIZAR LAS BARRAS
+        function actualizarMacroHTML(idVal, idGoal, idBar, cantidadSuma) {
+            const elVal = document.getElementById(idVal);
+            const elGoal = document.getElementById(idGoal);
+            const elBar = document.getElementById(idBar);
+            
+            if (elVal && elGoal && elBar) {
+                const actual = parseInt(elVal.innerText) || 0;
+                const meta = parseInt(elGoal.innerText) || 1;
+                
+                let nuevoActual = actual + cantidadSuma;
+                if (nuevoActual < 0) nuevoActual = 0; 
+                
+                elVal.innerText = nuevoActual;
+                
+                let porcentaje = (nuevoActual / meta) * 100;
+                if (porcentaje > 100) porcentaje = 100;
+                
+                elBar.style.width = porcentaje + '%';
+            }
+        }
+
     </script>
 </body>
 </html>
