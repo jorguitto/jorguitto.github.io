@@ -5175,7 +5175,7 @@
             }
         }
 // ==========================================================================================
-        // 🚀 BUSCADOR PRO: MODO MARTILLO (AUTO-REINTENTO) Y ANTI-FALTAS
+        // 🚀 BUSCADOR PRO: MODO APISONADORA (REINTENTOS INFINITOS + BOTÓN CANCELAR)
         // ==========================================================================================
         let temporizadorBuscador = null;
         let guardiaDeTrafico = null; 
@@ -5184,31 +5184,47 @@
             return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
         }
 
-        // EL MODO MARTILLO: Una función que golpea la puerta del servidor hasta 5 veces si falla
-        async function fetchConReintentos(url, senal, maxIntentos = 5) {
-            for (let intento = 1; intento <= maxIntentos; intento++) {
+        // 🛑 NUEVA FUNCIÓN: Para que el usuario pueda parar el ataque infinito
+        window.cancelarBusqueda = function() {
+            if (guardiaDeTrafico) guardiaDeTrafico.abort();
+            const contenedor = document.getElementById('searchResults');
+            contenedor.innerHTML = '';
+            contenedor.classList.add('hidden');
+            document.getElementById('globalSearch').value = '';
+        };
+
+        // 🔨 MODO APISONADORA: Bucle infinito hasta que entre o el usuario cancele
+        async function fetchConReintentosInfinitos(url, senal) {
+            let intento = 1;
+            while (true) { // Bucle infinito
                 try {
                     const respuesta = await fetch(url, { signal: senal });
-                    // Si el servidor responde bien, salimos del bucle y devolvemos los datos
                     if (respuesta.ok) {
-                        return await respuesta.json(); 
+                        return await respuesta.json(); // ¡Entramos! Devolvemos los datos y rompemos el bucle
                     }
-                    // Si responde pero con error (ej: servidor saturado), lanzamos un error para forzar el reintento
                     throw new Error("Servidor saturado"); 
                 } catch (error) {
-                    // Si el usuario siguió escribiendo una letra nueva, cancelamos todo (eso es bueno)
+                    // Si tú cancelas o tecleas otra letra, paramos el bucle al instante
                     if (error.name === 'AbortError') throw error; 
                     
-                    // Si ya hemos gastado los 5 intentos, nos rendimos y tiramos el error
-                    if (intento === maxIntentos) throw error; 
-                    
-                    // Si falló pero nos quedan intentos, actualizamos el texto y esperamos un poquito antes de volver a golpear
+                    // Actualizamos la pantalla para que veas el ataque en directo
                     const spinner = document.getElementById('spinner-global');
                     if (spinner) {
-                        spinner.innerHTML = `<i class="fas fa-hammer fa-bounce mr-2 text-blue-500"></i> Forzando conexión (Intento ${intento} de ${maxIntentos})...`;
+                        spinner.innerHTML = `
+                            <div class="flex flex-col items-center justify-center p-4 bg-red-50 border-t border-red-100 rounded-b-xl">
+                                <div class="text-red-500 mb-2"><i class="fas fa-hammer fa-bounce text-2xl"></i></div>
+                                <div class="font-black text-slate-700 text-sm">Forzando servidor (Intento ${intento})</div>
+                                <div class="text-[10px] text-red-400 mt-1 mb-3 text-center leading-tight">La base mundial está colapsada.<br>Golpeando hasta conseguir hueco...</div>
+                                <button onclick="cancelarBusqueda()" class="px-4 py-2 bg-red-500 text-white rounded-lg text-xs font-bold shadow-md hover:bg-red-600 active:scale-95 transition-all">
+                                    <i class="fas fa-times mr-1"></i> Detener ataque
+                                </button>
+                            </div>
+                        `;
                     }
-                    // Esperamos medio segundo antes del siguiente "golpe"
-                    await new Promise(r => setTimeout(r, 500));
+                    
+                    intento++;
+                    // Esperamos 800ms antes del siguiente golpe para no banear nuestra propia IP
+                    await new Promise(r => setTimeout(r, 800));
                 }
             }
         }
@@ -5269,12 +5285,12 @@
 
             contenedorResultados.innerHTML = htmlLocal + `
                 <div id="spinner-global" class="p-4 text-center text-xs text-gray-500 bg-white border-t border-gray-100">
-                    <i class="fas fa-satellite-dish fa-spin mr-2 text-blue-500"></i> Buscando en bases mundiales...
+                    <i class="fas fa-satellite-dish fa-spin mr-2 text-blue-500"></i> Localizando en la red mundial...
                 </div>
             `;
 
             // ------------------------------------------------------------------
-            // FASE 2: RED MUNDIAL (CON MODO MARTILLO AUTOMÁTICO)
+            // FASE 2: RED MUNDIAL (CON BUCLE INFINITO IMPARABLE)
             // ------------------------------------------------------------------
             clearTimeout(temporizadorBuscador);
             
@@ -5284,7 +5300,6 @@
                 return;
             }
 
-            // Esperamos 500ms
             temporizadorBuscador = setTimeout(async () => {
                 
                 if (guardiaDeTrafico) guardiaDeTrafico.abort();
@@ -5301,8 +5316,8 @@
 
                     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(terminoAPI)}&search_simple=1&action=process&json=1&page_size=80`;
                     
-                    // ¡AQUÍ ESTÁ LA MAGIA! Llamamos a la función que reintenta sola hasta 5 veces
-                    const datos = await fetchConReintentos(url, senal, 5);
+                    // ¡EL ATAQUE! Se quedará aquí atascado devolviendo golpes hasta que lo logre.
+                    const datos = await fetchConReintentosInfinitos(url, senal);
 
                     if (datos.products && datos.products.length > 0) {
                         let temp = [];
@@ -5364,11 +5379,9 @@
 
                 } catch (e) { 
                     if (e.name === 'AbortError') {
-                        // Ignoramos si fue cancelado por escribir otra letra
+                        // Cancelado a propósito
                     } else {
-                        console.error("Error API:", e);
-                        const spinner = document.getElementById('spinner-global');
-                        if (spinner) spinner.innerHTML = '<div class="p-4 text-center text-xs text-orange-500 font-bold"><i class="fas fa-exclamation-triangle mb-1 block"></i>La base de datos mundial rechazó la conexión 5 veces seguidas.</div>';
+                        console.error("Error definitivo:", e);
                     }
                 }
             }, 500); 
