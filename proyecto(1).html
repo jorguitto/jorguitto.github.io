@@ -4957,60 +4957,70 @@
             const blob = doc.output('bloburl');
             window.open(blob, '_blank');
         }
+// ==========================================
+        // CÓDIGO DEL ESCÁNER DIRECTO (RÁPIDO Y EN ESPAÑOL)
         // ==========================================
-        // CÓDIGO DEL ESCÁNER CORREGIDO
-        // ==========================================
-        let html5QrcodeScanner = null;
+        let html5QrCode = null;
 
-        function iniciarEscaner() {
-            // Mostramos el contenedor
+        async function iniciarEscaner() {
+            // Mostramos el contenedor visual
             document.getElementById('contenedor-escaner').style.display = 'block';
             
-            // 1. Evitamos escáneres fantasma duplicados
-            if (html5QrcodeScanner) {
-                console.warn("El escáner ya estaba inicializado.");
-                return;
+            // Si no existe, creamos la instancia directa (sin la interfaz fea en inglés)
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("lector-codigo");
             }
             
-            // 2. Iniciamos el lector en el div correcto ("lector-codigo")
-            html5QrcodeScanner = new Html5QrcodeScanner("lector-codigo", { 
-                fps: 10, 
-                qrbox: {width: 250, height: 250},
-                rememberLastUsedCamera: true
-            }, false);
-            
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        }
-
-        function cerrarEscaner() {
-            // 3. Apagado seguro de la cámara
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().then(() => {
-                    html5QrcodeScanner = null;
-                    document.getElementById('contenedor-escaner').style.display = 'none';
-                }).catch(error => {
-                    console.error("Error al apagar el escáner: ", error);
-                    html5QrcodeScanner = null;
-                    document.getElementById('contenedor-escaner').style.display = 'none';
+            try {
+                // Forzamos el uso de la cámara trasera directamente
+                await html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    {
+                        fps: 15, // Más imágenes por segundo = detección más rápida
+                        qrbox: { width: 280, height: 150 } // Rectángulo apaisado, ideal para códigos de barras de productos
+                    },
+                    (decodedText, decodedResult) => {
+                        // ÉXITO AL LEER EL CÓDIGO
+                        if (navigator.vibrate) navigator.vibrate(100); // Pequeña vibración en el móvil al detectar
+                        
+                        cerrarEscaner(); // Apagamos la cámara automáticamente
+                        
+                        // Aviso bonito en español
+                        Swal.fire({
+                            title: '¡Código detectado!',
+                            text: `EAN: ${decodedText}\n(Falta conectarlo a la API de alimentos)`,
+                            icon: 'success',
+                            confirmButtonColor: '#3b82f6',
+                            confirmButtonText: 'Vale'
+                        });
+                    },
+                    (errorMessage) => {
+                        // Ignoramos silenciosamente los fallos de lectura de los frames (para que no salgan letras rojas)
+                    }
+                );
+            } catch (err) {
+                console.error("Error iniciando cámara:", err);
+                cerrarEscaner();
+                Swal.fire({
+                    title: 'Error de Cámara',
+                    text: 'No se pudo abrir la cámara. Asegúrate de haberle dado permisos en tu navegador.',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'Entendido'
                 });
-            } else {
-                document.getElementById('contenedor-escaner').style.display = 'none';
             }
         }
 
-        function onScanSuccess(decodedText, decodedResult) {
-            // Aquí pones lo que quieres que pase al detectar un código
-            console.log(`Código leído: ${decodedText}`);
-            
-            // Puedes buscar el alimento en tu base de datos aquí
-            // Ejemplo: buscarAlimentoPorCodigo(decodedText);
-            
-            // Si quieres que se cierre solo al leer un código, descomenta esto:
-            // cerrarEscaner(); 
-        }
-
-        function onScanFailure(error) {
-            // No hacemos nada, es normal que falle mientras intenta enfocar
+        async function cerrarEscaner() {
+            // Apagado seguro de la cámara
+            if (html5QrCode && html5QrCode.isScanning) {
+                try {
+                    await html5QrCode.stop();
+                } catch (err) {
+                    console.error("Error deteniendo el escáner", err);
+                }
+            }
+            document.getElementById('contenedor-escaner').style.display = 'none';
         }
     </script>
 </body>
