@@ -648,12 +648,30 @@
         container.innerHTML = html;
     }
 
-    function deleteHistoryRecord(id) {
+    async function deleteHistoryRecord(id) {
         if(confirm("¿Borrar este PDF/registro para siempre?")) {
             let history = JSON.parse(localStorage.getItem(storageKey('history')) || "[]");
+            const toDelete = history.find(r => r.id === id);
             history = history.filter(r => r.id !== id);
             localStorage.setItem(storageKey('history'), JSON.stringify(history));
-            saveTrackerCloudSnapshot();
+            if (toDelete && toDelete.weekId && currentUser) {
+                try {
+                    await db.collection('usuarios')
+                        .doc(currentUser.uid)
+                        .collection('tracker_semanas')
+                        .doc(toDelete.weekId)
+                        .delete();
+                } catch (e) {
+                    console.error("No se pudo borrar semana enlazada en FitTracker:", e);
+                }
+                try {
+                    const pending = JSON.parse(localStorage.getItem('fittracker_tracker_week_payload') || "null");
+                    if (pending && pending.weekId === toDelete.weekId) {
+                        localStorage.removeItem('fittracker_tracker_week_payload');
+                    }
+                } catch (_) {}
+            }
+            await saveTrackerCloudSnapshot();
             renderHistory();
         }
     }
