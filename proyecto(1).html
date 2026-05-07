@@ -207,7 +207,7 @@
             </div>
         </div>
     </div>
-<div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6" style="display: none;">
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6" style="display: none;">
     <h1 class="text-4xl font-black text-white italic mb-2">FIT<span class="text-primary">TRACKER</span></h1>
     <p class="text-gray-400 mb-8 text-center text-sm">Inicia sesión para cargar o crear tu perfil biológico en la nube</p>
     
@@ -1055,39 +1055,32 @@
             }
         }
 // Escuchar cambios de estado (Login/Logout) CON ONBOARDING
-auth.onAuthStateChanged(async (user) => {
+    
+        auth.onAuthStateChanged(async (user) => {
     authStateHandled = true;
-    const loginScreen = document.getElementById('login-screen');
-    const onboardingModal = document.getElementById('onboarding-modal');
 
     if (user) {
         setAuthDebug(`onAuthStateChanged OK (${user.uid})`);
-        
-        try {
-            // Pasamos por el filtro antes de entrar
-            await verificarUsuarioNuevo(user);
 
-            // OCULTAMOS EL LOGIN. El usuario ha recargado, pero la sesión persiste.
-            loginScreen.style.display = 'none';
+        // 🔥 OCULTAR LOGIN INMEDIATAMENTE
+        document.getElementById('login-screen').style.display = 'none';
 
-        } catch (error) {
-            console.error("Error al reanudar la sesión", error);
-            loginScreen.style.display = 'flex';
-        }
+        // 🔥 CARGAR SESIÓN SIEMPRE
+        await completarSesionConUsuario(user);
 
     } else {
-        // No hay usuario (Logout manual o sesión caducada real)
         currentUser = null;
         USER_BIO = null;
         authReady = false;
+
         setAuthDebug("onAuthStateChanged: sin usuario");
-        
-        loginScreen.style.display = 'flex'; 
-        onboardingModal.classList.add('hidden');
-        onboardingModal.classList.remove('flex');
+
+        document.getElementById('login-screen').style.display = 'flex'; 
+
+        document.getElementById('onboarding-modal').classList.add('hidden');
+        document.getElementById('onboarding-modal').classList.remove('flex');
     }
 });
-        
 
        async function loginConGoogle() {
             if (window.location.protocol === 'file:') {
@@ -5559,7 +5552,7 @@ auth.onAuthStateChanged(async (user) => {
                         document.getElementById('onboarding-modal').classList.add('flex');
                     } else {
                         // ¡ES JORGE O PEPE! Tienen su perfil completado, entran directos a la app
-                        arrancarAplicacion(user); // Llama a tu función normal que carga la app
+                        await completarSesionConUsuario(user); // Llama a tu función normal que carga la app
                     }
                 }
             } catch (error) {
@@ -5592,7 +5585,7 @@ auth.onAuthStateChanged(async (user) => {
                         document.getElementById('onboarding-modal').classList.add('hidden');
                         document.getElementById('onboarding-modal').classList.remove('flex');
                         Swal.fire('Perfil genérico creado', 'Recuerda actualizar tus datos más adelante.', 'info');
-                        arrancarAplicacion(user); // Arrancamos la app
+                        await completarSesionConUsuario(user); // Arrancamos la app
                     }
                 }
             });
