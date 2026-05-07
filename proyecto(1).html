@@ -3847,11 +3847,8 @@
                 Object.keys(MICRO_DEFS).filter(k => MICRO_DEFS[k].type === type).forEach(k => {
                     const def = MICRO_DEFS[k];
                     const val = totals[k];
-                    // Ajuste RDA por peso/genero
-                    let rda = def.base;
-                    if (USER_BIO.genero === 'hombre' && k === 'zinc') rda = 11;
-                    if (USER_BIO.genero === 'mujer' && k === 'zinc') rda = 8;
-                    if (USER_BIO.genero === 'mujer' && k === 'iron') rda = 18;
+                    // Ajuste objetivo por sexo/edad/peso/meta
+                    let rda = getMicronutrientTarget(k);
                     
                     const pct = Math.min((val / rda) * 100, 100);
                     let color = 'bg-blue-500';
@@ -4142,101 +4139,124 @@
             updateDay();
         }
 
+        function getMicronutrientTarget(key) {
+            const def = MICRO_DEFS[key];
+            if (!def || !USER_BIO) return def ? def.base : 0;
+            let target = def.base;
+            const sex = (USER_BIO.genero || '').toLowerCase();
+            const age = Number(USER_BIO.edad) || 25;
+            const weight = Number(USER_BIO.peso) || 70;
+            const goal = USER_BIO.goal || 'maintenance';
+
+            if (key === 'iron') target = sex === 'mujer' ? 18 : 8;
+            if (key === 'zinc') target = sex === 'mujer' ? 8 : 11;
+            if (key === 'vitC') target += Math.max(0, (weight - 70) * 0.5);
+            if (key === 'magnesium') target += Math.max(0, (weight - 70) * 1.5);
+            if (key === 'calcium' && age >= 50) target = 1200;
+            if (key === 'vitD' && age >= 50) target = 20;
+            if (key === 'vitB12' && age >= 50) target = 2.8;
+            if (goal === 'fat_loss' && (key === 'vitB1' || key === 'vitB6' || key === 'vitB9')) target *= 1.1;
+            return target;
+        }
+
         function calculateDynamicGoals() {
             if (!USER_BIO) return;
-            const BMR = ENGINE.getBMR();
             const climate = ENGINE.getClimateStress();
-            const profile = ENGINE.getBioProfile(USER_BIO.edad, USER_BIO.genero) || { water: 35, min: 18, max: 99 };
+            const sex = (USER_BIO.genero || 'hombre').toLowerCase();
+            const age = Number(USER_BIO.edad) || 25;
+            const weight = Number(USER_BIO.peso) || 70;
+            const height = Number(USER_BIO.altura) || 170;
+            const bodyFat = Number(USER_BIO.grasa) || 0;
+            const goal = USER_BIO.goal || 'maintenance';
             const goalSpeed = USER_BIO.goalSpeed || "moderate";
-            const fatFreeMass = USER_BIO.grasa > 0 ? (USER_BIO.peso * (1 - (USER_BIO.grasa / 100))) : (USER_BIO.peso * 0.8);
-            const safetyFloorByGender = USER_BIO.genero === 'mujer' ? 1200 : 1500;
-            const safetyFloorByFFM = fatFreeMass * 22; // aproximación conservadora de disponibilidad energética mínima
+            const leanMass = bodyFat > 0 ? (weight * (1 - (bodyFat / 100))) : (weight * 0.8);
+
+            const mifflin = (10 * weight) + (6.25 * height) - (5 * age) + (sex === 'mujer' ? -161 : 5);
+            const katch = 370 + (21.6 * leanMass);
+            const bmr = bodyFat > 0 ? ((mifflin * 0.35) + (katch * 0.65)) : mifflin;
+
+            const steps = Number(todayData.steps) || 0;
+            const standing = Number(todayData.standingHours) || 0;
+            const sleepHours = Number(todayData.sleepHours) || 7;
+            const sleepQuality = Number(todayData.sleepQuality) || 80;
+            const sleepRecovery = (Math.max(0, sleepHours - 6) * 0.01) + ((sleepQuality - 70) * 0.0015);
+            const activityFactor = 1.2 + Math.min(0.25, steps / 40000) + Math.min(0.08, standing * 0.01) + sleepRecovery;
+
+            let tdee = bmr * activityFactor + climate.termogenesisKcal;
+            let activityCals = 0;
+            const runCals = (Number(todayData.runCals) > 0) ? Number(todayData.runCals) : ((Number(todayData.runKm) || 0) * weight * 1.03);
+            const bikeCals = (Number(todayData.bikeCals) > 0) ? Number(todayData.bikeCals) : ((Number(todayData.bikeKm) || 0) * weight * 0.4);
+            const gymCals = Number(todayData.gymCals) || 0;
+            activityCals += runCals + bikeCals + gymCals;
+            tdee += activityCals;
+
+            const studyHours = (todayData.studySessions || []).reduce((a, b) => a + (Number(b.hours) || 0), 0);
+            const studyCals = (todayData.studySessions || []).reduce((a, b) => a + ((Number(b.hours) || 0) * ((Number(b.focus) || 1) * 18)), 0);
+            tdee += studyCals;
+            tdee += Math.max(0, (Number(todayData.mobileHours) || 0) - 2) * 6;
+
+            const goalDeltaPct = {
+                fat_loss: { slow: -0.10, moderate: -0.18, fast: -0.25 },
+                maintenance: { slow: 0, moderate: 0, fast: 0 },
+                muscle_gain: { slow: 0.05, moderate: 0.10, fast: 0.15 }
+            };
+            const deltaPct = ((goalDeltaPct[goal] || goalDeltaPct.maintenance)[goalSpeed]) || 0;
+            let targetCals = tdee * (1 + deltaPct);
+
+            const safetyFloorByGender = sex === 'mujer' ? 1200 : 1500;
+            const safetyFloorByFFM = leanMass * 22;
             const calorieSafetyFloor = Math.max(safetyFloorByGender, safetyFloorByFFM);
-            
-            let g = { 
-                cals: (BMR * 1.3) + climate.termogenesisKcal, // añade actividad basal diaria para evitar metas demasiado bajas
-                prot: (USER_BIO.masaMuscular > 0 ? 2.2 : 1.8) * USER_BIO.peso,
-                fat: 0.9 * USER_BIO.peso, 
-                sat: 25, 
-                carbs: 0, 
-                // BUG FIX: Usar ml/kg específico de la tabla médica
-                water: (USER_BIO.peso * (profile.water || 35)) 
+            targetCals = Math.max(targetCals, calorieSafetyFloor);
+
+            let proteinPerKg = (goal === 'fat_loss') ? 2.2 : (goal === 'muscle_gain' ? 1.9 : 1.7);
+            if (activityCals > 500) proteinPerKg += 0.15;
+            if (age > 55) proteinPerKg += 0.1;
+            let protein = proteinPerKg * weight;
+
+            let fatPerKg = sex === 'mujer' ? 0.85 : 0.75;
+            if (goal === 'fat_loss') fatPerKg -= 0.05;
+            let fat = Math.max(fatPerKg * weight, sex === 'mujer' ? 50 : 45);
+
+            const remainingForCarbs = targetCals - ((protein * 4) + (fat * 9));
+            let carbs = Math.max(remainingForCarbs / 4, 120 + Math.round((activityCals / 250) * 10));
+            if (remainingForCarbs < 0) {
+                fat = Math.max(fat - (Math.abs(remainingForCarbs) / 9), sex === 'mujer' ? 45 : 40);
+                carbs = 120;
+            }
+            const sat = Math.min((targetCals * 0.10) / 9, fat * 0.35);
+
+            let baseMlKg = sex === 'mujer' ? 31 : 35;
+            if (age >= 55) baseMlKg -= 2;
+            if (age >= 70) baseMlKg -= 2;
+            if (bodyFat > 30) baseMlKg -= 1;
+            const tempAvg = [CLIMA_REAL.temp, CLIMA_REAL.tempMax, CLIMA_REAL.tempMin].filter(v => v != null).reduce((a, b, _, arr) => a + b / arr.length, climate.temp);
+            const tempDelta = tempAvg - 22;
+            let weatherFactor = 1 + (tempDelta * 0.015);
+            if (weatherFactor < 0.88) weatherFactor = 0.88;
+            let water = (weight * baseMlKg) * weatherFactor;
+            water += (activityCals * 1.2);
+            water += (steps * 0.015);
+            water += (studyHours * 120);
+            if (sleepHours < 6) water += 250;
+
+            let g = {
+                cals: targetCals,
+                prot: protein,
+                fat: fat,
+                sat: sat,
+                carbs: carbs,
+                water: water
             };
 
-            // Ajuste por temperatura > 25°C (Dr. AI Rule)
-            if (climate.temp > 25) {
-                g.water = g.water * 1.15;
-            }
-
-            if(USER_BIO.genero === 'mujer') {
-                g.fat = 1.0 * USER_BIO.peso;
-                g.prot = 1.8 * USER_BIO.peso;
-            }
-
-            // AJUSTE POR OBJETIVO BIOLÓGICO
-            if (USER_BIO.goal === 'fat_loss') {
-                const deficitMap = { slow: 250, moderate: 450, fast: 650 };
-                g.cals -= (deficitMap[goalSpeed] || 450);
-                g.prot = 2.4 * USER_BIO.peso; // Proteína alta para proteger músculo
-                g.fat = 0.7 * USER_BIO.peso; // Grasa moderada-baja
-            } else if (USER_BIO.goal === 'muscle_gain') {
-                const surplusMap = { slow: 150, moderate: 250, fast: 350 };
-                g.cals += (surplusMap[goalSpeed] || 250);
-                g.prot = 2.0 * USER_BIO.peso; // Proteína óptima
-                g.carbs += 50; // Extra energía para entrenar
-            }
-
             waterDetails = [];
-            waterDetails.push({ txt: `Base (${USER_BIO.peso}kg)`, val: `${Math.round(USER_BIO.peso * 35)}ml` });
-            waterDetails.push({ txt: `Bio-Rango (${profile.min}-${profile.max})`, val: `${profile.water} ml/kg` });
-            if(climate.waterFactor > 1) waterDetails.push({ txt: `Calor (${climate.temp}°C)`, val: `+${Math.round((climate.waterFactor-1)*100)}%` });
-
-            if (todayData.steps > 0) {
-                const neatCals = todayData.steps * 0.045; 
-                g.cals += neatCals;
-                g.water += (todayData.steps * 0.05); 
+            waterDetails.push({ txt: `Base (${weight}kg)`, val: `${Math.round(weight * baseMlKg)}ml` });
+            if (CLIMA_REAL.tempMax != null || CLIMA_REAL.tempMin != null) {
+                waterDetails.push({ txt: `Clima ${climate.temp}° (Máx ${CLIMA_REAL.tempMax ?? '?'} / Mín ${CLIMA_REAL.tempMin ?? '?'})`, val: `${Math.round((weatherFactor - 1) * 100)}%` });
+            } else {
+                waterDetails.push({ txt: `Clima (${climate.temp}°C)`, val: `${Math.round((weatherFactor - 1) * 100)}%` });
             }
-
-            let activityCals = 0;
-            if(todayData.runKm > 0 || todayData.runCals > 0) {
-                // Usar manual si existe, sino calcular
-                const cost = todayData.runCals > 0 ? todayData.runCals : (todayData.runKm * USER_BIO.peso * 1.03);
-                activityCals += cost;
-                if (todayData.runKm > 0) {
-                    g.water += (todayData.runKm * 80 * climate.waterFactor);
-                    waterDetails.push({ txt: `Run (${todayData.runKm}km)`, val: `+${Math.round(todayData.runKm * 80 * climate.waterFactor)}ml` });
-                }
-            }
-            if(todayData.bikeKm > 0 || todayData.bikeCals > 0) {
-                const cost = todayData.bikeCals > 0 ? todayData.bikeCals : (todayData.bikeKm * USER_BIO.peso * 0.4); // Aprox bici
-                activityCals += cost;
-            }
-            if(todayData.gymCals > 0) {
-                activityCals += parseFloat(todayData.gymCals) || 0;
-                g.water += (todayData.gymTime * 10);
-                waterDetails.push({ txt: `Gym (${todayData.gymTime}min)`, val: `${todayData.gymTime * 10}ml` });
-            }
-
-            // Ajuste Neuro (Carga Cognitiva)
-            let studyWaterNeed = 0;
-            if (todayData.studySessions) {
-                todayData.studySessions.forEach(s => {
-                    // Foco 1: 50ml/h, Foco 2: 100ml/h, Foco 3: 150ml/h
-                    studyWaterNeed += s.hours * (s.focus * 50);
-                });
-            }
-
-            if (studyWaterNeed > 0) {
-                g.water += studyWaterNeed;
-                const totalHours = todayData.studySessions.reduce((a,b)=>a+b.hours, 0);
-                waterDetails.push({ txt: `Estudio (${totalHours}h)`, val: `+${Math.round(studyWaterNeed)}ml` });
-            }
-
-            g.cals += activityCals;
-            g.cals = Math.max(g.cals, calorieSafetyFloor);
-
-            const remainingCals = g.cals - ((g.prot * 4) + (g.fat * 9));
-            g.carbs = Math.max(remainingCals / 4, 150); 
+            if (activityCals > 0) waterDetails.push({ txt: `Deporte (${Math.round(activityCals)} kcal)`, val: `+${Math.round(activityCals * 1.2)}ml` });
+            if (studyHours > 0) waterDetails.push({ txt: `Estudio (${studyHours.toFixed(1)}h)`, val: `+${Math.round(studyHours * 120)}ml` });
 
             // NUTRICIÓN ADVICE
             nutritionAdvice = "";
@@ -6239,4 +6259,3 @@
     </script>
 </body>
 </html>
-
