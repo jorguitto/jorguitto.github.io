@@ -8,6 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
     <style>
         /* --- VARIABLES --- */
@@ -112,9 +115,26 @@
         .pdf-mode .table-responsive { overflow: visible; }
         .export-title { display: none; text-align: center; color: var(--primary-color); margin-bottom: 20px; font-size: 1.8rem; }
         .pdf-mode .export-title { display: block; }
+
+        .auth-gate {
+            position: fixed; inset: 0; background: rgba(15,23,42,0.94); z-index: 9999;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .auth-gate-box {
+            background: #fff; border-radius: 18px; max-width: 460px; width: 100%; padding: 24px; text-align: center;
+        }
     </style>
 </head>
 <body>
+<div id="auth-gate" class="auth-gate">
+    <div class="auth-gate-box">
+        <h2 style="font-size:1.4rem; margin-bottom:10px; color:#1e293b;">Acceso protegido</h2>
+        <p style="color:#64748b; margin-bottom:18px;">Tracker solo se puede usar si ya has iniciado sesión en FitTracker.</p>
+        <button class="btn btn-primary" onclick="window.location.href='proyecto(1).html'" style="width:100%;">
+            Ir a FitTracker para iniciar sesión
+        </button>
+    </div>
+</div>
 
 <div class="container">
     <header class="no-export">
@@ -220,6 +240,20 @@
 
 <script>
     // --- VARIABLES Y DATOS BASE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCgCwGwkMUTI9PhyWHBv6DXxhkHgf8Rjzg",
+        authDomain: "fittracker-a347a.firebaseapp.com",
+        projectId: "fittracker-a347a",
+        storageBucket: "fittracker-a347a.firebasestorage.app",
+        messagingSenderId: "251475812729",
+        appId: "1:251475812729:web:d1ed26b4262091f11f8fa8",
+        measurementId: "G-K0R3K5EBT0"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let currentUser = null;
+
     let habitsConfig = [];
     const defaultHabitsList = ["Comidas Sanas", "Beber Agua", "Ejercicio", "Estudio Eficaz", "Proyecto X", "Suplementos"];
     const iconPalette = ['fa-check-circle', 'fa-star', 'fa-fire', 'fa-bolt', 'fa-leaf', 'fa-heart', 'fa-dumbbell', 'fa-book'];
@@ -228,19 +262,85 @@
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     let currentData = {};
     let charts = { bar: null, line: null };
+    let trackerCloudBooted = false;
+
+    function storageKey(suffix) {
+        const uid = currentUser ? currentUser.uid : "anon";
+        return `trackerPro_${uid}_${suffix}`;
+    }
+
+    async function saveTrackerCloudSnapshot() {
+        if (!currentUser) return;
+        try {
+            await db.collection('usuarios').doc(currentUser.uid).set({
+                tracker: {
+                    habitsConfig,
+                    currentData,
+                    history: JSON.parse(localStorage.getItem(storageKey('history')) || "[]"),
+                    updatedAt: new Date().toISOString()
+                }
+            }, { merge: true });
+        } catch (e) {
+            console.error("No se pudo guardar tracker en nube:", e);
+        }
+    }
+
+    async function syncWeekToFitTracker(payload) {
+        if (!currentUser || !payload || !payload.weekId) return false;
+        try {
+            await db.collection('usuarios')
+                .doc(currentUser.uid)
+                .collection('tracker_semanas')
+                .doc(payload.weekId)
+                .set({
+                    ...payload,
+                    source: 'tracker',
+                    linkedToFitTrackerAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            return true;
+        } catch (e) {
+            console.error("No se pudo enlazar semana con FitTracker:", e);
+            return false;
+        }
+    }
 
     // --- INICIALIZACIÓN ---
-    function init() {
-        // Cargar configuración de hábitos
-        const savedHabits = localStorage.getItem('trackerPro_habitsConfig');
-        
-        if (savedHabits) {
-            habitsConfig = JSON.parse(savedHabits);
-            startApp();
-        } else {
-            // Usuario nuevo -> Mostrar modal de bienvenida
-            openHabitEditor(true);
-        }
+    async function init() {
+        if (trackerCloudBooted) return;
+        trackerCloudBooted = true;
+        auth.onAuthStateChanged(async (user) => {
+            currentUser = user;
+            if (!user) {
+                document.getElementById('auth-gate').style.display = 'flex';
+                return;
+            }
+            document.getElementById('auth-gate').style.display = 'none';
+            try {
+                const snap = await db.collection('usuarios').doc(user.uid).get();
+                const tracker = (snap.exists && snap.data() && snap.data().tracker) ? snap.data().tracker : null;
+                if (tracker && Array.isArray(tracker.habitsConfig) && tracker.habitsConfig.length) {
+                    habitsConfig = tracker.habitsConfig;
+                    localStorage.setItem(storageKey('habitsConfig'), JSON.stringify(habitsConfig));
+                } else {
+                    const savedHabits = localStorage.getItem(storageKey('habitsConfig'));
+                    if (savedHabits) habitsConfig = JSON.parse(savedHabits);
+                }
+                if (tracker && tracker.currentData) {
+                    localStorage.setItem(storageKey('current'), JSON.stringify(tracker.currentData));
+                }
+                if (tracker && Array.isArray(tracker.history)) {
+                    localStorage.setItem(storageKey('history'), JSON.stringify(tracker.history));
+                }
+            } catch (e) {
+                console.error("No se pudo cargar tracker nube:", e);
+            }
+
+            if (habitsConfig.length > 0) {
+                startApp();
+            } else {
+                openHabitEditor(true);
+            }
+        });
     }
 
     function startApp() {
@@ -248,6 +348,7 @@
         renderTable();
         updateDashboard();
         renderHistory();
+        saveTrackerCloudSnapshot();
     }
 
     // --- LÓGICA DE HÁBITOS (ONBOARDING Y EDICIÓN) ---
@@ -303,14 +404,15 @@
         }
 
         habitsConfig = newHabitsConfig;
-        localStorage.setItem('trackerPro_habitsConfig', JSON.stringify(habitsConfig));
+        localStorage.setItem(storageKey('habitsConfig'), JSON.stringify(habitsConfig));
         document.getElementById('habit-onboarding-modal').style.display = 'none';
         
+        saveTrackerCloudSnapshot();
         startApp(); // Reiniciar motor con nuevos hábitos
     }
 
     function loadData() {
-        const saved = localStorage.getItem('trackerPro_current');
+        const saved = localStorage.getItem(storageKey('current'));
         let parsedData = saved ? JSON.parse(saved) : {};
         currentData = {};
 
@@ -322,7 +424,7 @@
                 currentData[h.id] = [false, false, false, false, false, false, false];
             }
         });
-        localStorage.setItem('trackerPro_current', JSON.stringify(currentData));
+        localStorage.setItem(storageKey('current'), JSON.stringify(currentData));
     }
 
     // --- RENDERIZAR TABLA CLÁSICA ---
@@ -388,7 +490,8 @@
         let newPercent = Math.round((dayTotal / habitsConfig.length) * 100);
         document.getElementById(`perc-day-${dayIndex}`).innerText = `${newPercent}%`;
 
-        localStorage.setItem('trackerPro_current', JSON.stringify(currentData));
+        localStorage.setItem(storageKey('current'), JSON.stringify(currentData));
+        saveTrackerCloudSnapshot();
         updateDashboard();
     }
 
@@ -461,37 +564,64 @@
     // --- ACCIONES GLOBALES ---
     function resetCurrentWeek() {
         if(confirm("¿Seguro que quieres borrar todas las marcas de esta semana?")) {
-            localStorage.removeItem('trackerPro_current');
+            localStorage.removeItem(storageKey('current'));
+            saveTrackerCloudSnapshot();
             loadData(); renderTable(); updateDashboard();
         }
     }
 
-    function saveWeekToHistory() {
+    async function saveWeekToHistory() {
         const stats = calculateStats();
         if(stats.totalChecks === 0) { alert("¡Aún no has marcado nada!"); return; }
 
         if(confirm("¿Cerrar semana y archivarla? La tabla se quedará en blanco para el lunes.")) {
-            let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
+            let history = JSON.parse(localStorage.getItem(storageKey('history')) || "[]");
+            const now = new Date();
+            const day = now.getDay(); // 0 domingo
+            const diffToMonday = (day + 6) % 7;
+            const weekStart = new Date(now);
+            weekStart.setDate(now.getDate() - diffToMonday);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            const fmt = (d) => d.toISOString().slice(0, 10);
+            const weekId = `${fmt(weekStart)}_${fmt(weekEnd)}`;
             
             // Guardamos la configuración de los hábitos exactos de esa semana por si en el futuro cambian
             history.unshift({
                 id: Date.now(),
-                date: new Date().toLocaleDateString('es-ES', {day: '2-digit', month: 'short', year: 'numeric'}),
+                date: `${weekStart.toLocaleDateString('es-ES')} - ${weekEnd.toLocaleDateString('es-ES')}`,
+                weekId,
+                weekStart: fmt(weekStart),
+                weekEnd: fmt(weekEnd),
                 score: stats.globalScore,
                 checks: stats.totalChecks,
                 data: JSON.parse(JSON.stringify(currentData)),
                 habitsSnapshot: JSON.parse(JSON.stringify(habitsConfig)) 
             });
             
-            localStorage.setItem('trackerPro_history', JSON.stringify(history));
-            localStorage.removeItem('trackerPro_current');
-            loadData(); renderTable(); updateDashboard(); switchTab('history');
+            localStorage.setItem(storageKey('history'), JSON.stringify(history));
+            localStorage.removeItem(storageKey('current'));
+            const trackerWeekPayload = {
+                weekId,
+                weekStart: fmt(weekStart),
+                weekEnd: fmt(weekEnd),
+                score: stats.globalScore,
+                checks: stats.totalChecks,
+                habitsSnapshot: JSON.parse(JSON.stringify(habitsConfig)),
+                data: JSON.parse(JSON.stringify(currentData)),
+                generatedAt: new Date().toISOString()
+            };
+            localStorage.setItem('fittracker_tracker_week_payload', JSON.stringify(trackerWeekPayload));
+            await syncWeekToFitTracker(trackerWeekPayload);
+            loadData(); // Regenera semana actual vacía tras cerrar la anterior
+            await saveTrackerCloudSnapshot();
+            renderTable(); updateDashboard(); switchTab('history');
         }
     }
 
     function renderHistory() {
         const container = document.getElementById('history-container');
-        let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
+        let history = JSON.parse(localStorage.getItem(storageKey('history')) || "[]");
         
         if (history.length === 0) {
             container.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--text-light);">Aún no hay semanas guardadas.</p>';
@@ -520,9 +650,10 @@
 
     function deleteHistoryRecord(id) {
         if(confirm("¿Borrar este PDF/registro para siempre?")) {
-            let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
+            let history = JSON.parse(localStorage.getItem(storageKey('history')) || "[]");
             history = history.filter(r => r.id !== id);
-            localStorage.setItem('trackerPro_history', JSON.stringify(history));
+            localStorage.setItem(storageKey('history'), JSON.stringify(history));
+            saveTrackerCloudSnapshot();
             renderHistory();
         }
     }
@@ -540,7 +671,7 @@
     }
 
     function exportHistoryRecord(id) {
-        let history = JSON.parse(localStorage.getItem('trackerPro_history')) || [];
+        let history = JSON.parse(localStorage.getItem(storageKey('history')) || "[]");
         const record = history.find(r => r.id === id);
         if(record) {
             const tempCurrent = JSON.stringify(currentData);
