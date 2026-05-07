@@ -124,9 +124,24 @@
             width: auto;
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));
         }
+        .splash-rotate { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div id="splash-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#1e293b; z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 0.5s;">
+        <h1 class="text-5xl font-black text-white italic mb-6 tracking-tight">FIT<span class="text-primary">TRACKER</span></h1>
+        <i class="fas fa-circle-notch text-primary text-4xl splash-rotate"></i>
+        <p style="color:rgba(255,255,255,0.6); font-size:0.8rem; margin-top:1rem;">Cargando motor biológico...</p>
+    </div>
+    <div id="app-selector" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0f172a; z-index:9999; display:none; flex-direction:column; align-items:center; justify-content:center; gap:2rem; padding:1.5rem;">
+        <h2 class="text-white text-3xl font-black tracking-tight italic">FIT<span class="text-primary">TRACKER</span></h2>
+        <p class="text-slate-400 text-center text-sm">Elige qué app quieres abrir</p>
+        <div class="w-full max-w-sm grid grid-cols-1 gap-3">
+            <button onclick="seleccionarApp('fittracker')" class="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all">Abrir FITTRACKER</button>
+            <button onclick="seleccionarApp('tracker')" class="w-full bg-slate-700 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-600 active:scale-95 transition-all">Abrir TRACKER</button>
+        </div>
+    </div>
     <div id="onboarding-modal" class="fixed inset-0 bg-slate-900 bg-opacity-95 z-[999] hidden flex-col overflow-y-auto">
         <div class="min-h-screen flex items-center justify-center p-4">
             <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl">
@@ -194,6 +209,24 @@
                             <option value="Ganar Masa Muscular">Ganar Masa Muscular</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-600 uppercase">Ritmo del objetivo</label>
+                        <select id="onb-goal-speed" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500">
+                            <option value="slow">Lento (más sostenible)</option>
+                            <option value="moderate" selected>Intermedio</option>
+                            <option value="fast">Rápido (más exigente)</option>
+                        </select>
+                        <p class="text-[11px] text-gray-500 mt-1">Rápido puede ser más duro para energía, hambre y recuperación.</p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-600 uppercase">Ubicación actual</label>
+                        <div class="mt-1 flex gap-2">
+                            <input id="onb-location" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500" placeholder="Se detectará automáticamente">
+                            <button type="button" onclick="usarUbicacionActualOnboarding()" class="bg-blue-100 text-blue-700 font-bold px-3 rounded-xl text-xs whitespace-nowrap">Detectar</button>
+                        </div>
+                        <div id="onb-location-suggestions" class="mt-1 bg-white border border-gray-200 rounded-lg hidden max-h-36 overflow-y-auto"></div>
+                        <p id="onb-location-status" class="text-[11px] text-gray-500 mt-1">Pulsa Detectar para usar temperatura exacta de tu zona.</p>
+                    </div>
                 </div>
 
                 <div class="mt-8 space-y-3">
@@ -220,9 +253,15 @@
 
     <header class="fixed top-0 w-full bg-white/90 backdrop-blur-xl z-40 border-b border-gray-100 px-6 py-4 flex justify-between items-center shadow-sm">
         <button onclick="navigateTo('registro')" class="text-gray-400 hover:text-primary transition"><i class="fas fa-history text-xl"></i></button>
-        <div class="text-center">
-            <h1 class="text-lg font-black text-slate-800 tracking-tighter italic">FIT<span class="text-primary">TRACKER</span></h1>
+        <div class="text-center relative">
+            <button onclick="toggleAppMenu()" class="text-lg font-black text-slate-800 tracking-tighter italic">
+                FIT<span class="text-primary">TRACKER</span>
+            </button>
             <p id="season-indicator" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Sincronizando...</p>
+            <div id="app-switcher-menu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-50 text-left">
+                <button onclick="abrirAppDesdeMenu('fittracker')" class="block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-t-xl">Abrir FITTRACKER</button>
+                <button onclick="abrirAppDesdeMenu('tracker')" class="block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-b-xl">Abrir TRACKER</button>
+            </div>
         </div>
         <div class="flex items-center gap-3">
             <button onclick="editUserProfile()" class="text-gray-400 hover:text-blue-500 transition"><i class="fas fa-user-circle text-xl"></i></button>
@@ -968,20 +1007,60 @@
             return out;
         }
 
+        async function syncTrackerWeekFromPending() {
+            if (!currentUser) return;
+            const raw = localStorage.getItem('fittracker_tracker_week_payload');
+            if (!raw) return;
+            try {
+                const payload = JSON.parse(raw);
+                if (!payload || !payload.weekId) return;
+                await db.collection('usuarios')
+                    .doc(currentUser.uid)
+                    .collection('tracker_semanas')
+                    .doc(payload.weekId)
+                    .set({
+                        ...payload,
+                        linkedToFitTrackerAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                trackerWeeks = [{ ...payload, firestoreId: payload.weekId }, ...trackerWeeks.filter(w => (w.weekId || w.firestoreId) !== payload.weekId)];
+                localStorage.removeItem('fittracker_tracker_week_payload');
+            } catch (e) {
+                console.error("No se pudo sincronizar semana Tracker -> FitTracker:", e);
+            }
+        }
+
+        async function refreshTrackerWeeksFromCloud() {
+            if (!currentUser) return;
+            try {
+                const trackerSnap = await db.collection('usuarios')
+                    .doc(currentUser.uid)
+                    .collection('tracker_semanas')
+                    .orderBy('weekStart', 'desc')
+                    .get({ source: "server" });
+                trackerWeeks = trackerSnap.docs.map((doc) => ({ ...doc.data(), firestoreId: doc.id }));
+            } catch (error) {
+                console.error("Error refrescando semanas tracker:", error);
+            }
+        }
+
         function getDefaultUserBio() {
             return {
                 nombre: (currentUser && currentUser.displayName) ? currentUser.displayName : "Atleta",
                 genero: "hombre",
+                fechaNacimiento: "",
                 edad: 18,
                 altura: 168,
                 peso: 60,
                 grasa: 12,
                 masaMuscular: 50,
                 ubicacion: "España",
+                lat: null,
+                lon: null,
                 maxRunKm: 5,
                 maxGymTime: 60,
                 maxBikeKm: 25,
-                goal: "maintenance"
+                goal: "maintenance",
+                goalSpeed: "moderate"
             };
         }
 
@@ -998,10 +1077,16 @@
             if (!USER_BIO) {
                 USER_BIO = getDefaultUserBio();
             }
+            if (USER_BIO.fechaNacimiento) {
+                USER_BIO.edad = calcularEdad(USER_BIO.fechaNacimiento);
+            }
+            await initWeatherFromUserBio();
             loadDay();
             updateHistoryUI();
             authReady = true;
             if (typeof updateDay === "function") updateDay();
+            verificarCumpleanos();
+            await syncTrackerWeekFromPending();
         }
 
         async function initAuthFlow() {
@@ -1026,7 +1111,7 @@
                     setAuthDebug(`Redirect OK (${redirectResult.user.uid})`);
                     try { sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY); } catch (_) {}
                     if (!auth.currentUser) {
-                        await completarSesionConUsuario(redirectResult.user);
+                        await verificarUsuarioNuevo(redirectResult.user);
                     }
                 } else {
                     const pending = (() => {
@@ -1057,30 +1142,22 @@
 // Escuchar cambios de estado (Login/Logout) CON ONBOARDING
     
         auth.onAuthStateChanged(async (user) => {
-    authStateHandled = true;
+            authStateHandled = true;
 
-    if (user) {
-        setAuthDebug(`onAuthStateChanged OK (${user.uid})`);
-
-        // 🔥 OCULTAR LOGIN INMEDIATAMENTE
-        document.getElementById('login-screen').style.display = 'none';
-
-        // 🔥 CARGAR SESIÓN SIEMPRE
-        await completarSesionConUsuario(user);
-
-    } else {
-        currentUser = null;
-        USER_BIO = null;
-        authReady = false;
-
-        setAuthDebug("onAuthStateChanged: sin usuario");
-
-        document.getElementById('login-screen').style.display = 'flex'; 
-
-        document.getElementById('onboarding-modal').classList.add('hidden');
-        document.getElementById('onboarding-modal').classList.remove('flex');
-    }
-});
+            if (user) {
+                setAuthDebug(`onAuthStateChanged OK (${user.uid})`);
+                document.getElementById('login-screen').style.display = 'none';
+                await verificarUsuarioNuevo(user);
+            } else {
+                currentUser = null;
+                USER_BIO = null;
+                authReady = false;
+                setAuthDebug("onAuthStateChanged: sin usuario");
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('onboarding-modal').classList.add('hidden');
+                document.getElementById('onboarding-modal').classList.remove('flex');
+            }
+        });
 
        async function loginConGoogle() {
             if (window.location.protocol === 'file:') {
@@ -1104,7 +1181,7 @@
                 
                 if (popupResult && popupResult.user) {
                     setAuthDebug(`Popup OK (${popupResult.user.uid})`);
-                    await completarSesionConUsuario(popupResult.user);
+                    await verificarUsuarioNuevo(popupResult.user);
                 }
             } catch (error) {
                 console.error("Error Auth:", error);
@@ -1408,9 +1485,208 @@
                     }
                 }
             }
+
+            try {
+                const trackerSnap = await db.collection('usuarios')
+                    .doc(uid)
+                    .collection('tracker_semanas')
+                    .orderBy('weekStart', 'desc')
+                    .get({ source: "server" });
+                trackerWeeks = trackerSnap.docs.map((doc) => ({ ...doc.data(), firestoreId: doc.id }));
+            } catch (error) {
+                console.error("Error cargando semanas tracker:", error);
+                trackerWeeks = [];
+            }
         }
 
         const MONTH_NAMES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+        const CLIMA_REAL = { temp: null, tempMax: null, tempMin: null, icon: '⛅', weatherCode: null, source: 'fallback' };
+        let weatherIntervalId = null;
+        let appBooted = false;
+        let onboardingLocation = null;
+        let onbLocTimer = null;
+
+        function weatherCodeToIcon(code) {
+            if (code === 0) return '☀️';
+            if ([1, 2].includes(code)) return '🌤️';
+            if (code === 3) return '☁️';
+            if ([45, 48].includes(code)) return '🌫️';
+            if ([51, 53, 55, 56, 57].includes(code)) return '🌦️';
+            if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return '🌧️';
+            if ([71, 73, 75, 77, 85, 86].includes(code)) return '❄️';
+            if ([95, 96, 99].includes(code)) return '⛈️';
+            return '⛅';
+        }
+
+        async function fetchWeatherByCoords(lat, lon) {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=1`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Weather API ${res.status}`);
+            const data = await res.json();
+            const current = data.current_weather || {};
+            const daily = data.daily || {};
+            const temp = Number(current.temperature);
+            const weatherCode = Number(current.weathercode);
+            CLIMA_REAL.temp = Number.isFinite(temp) ? Math.round(temp) : null;
+            CLIMA_REAL.tempMax = Number.isFinite(Number(daily.temperature_2m_max && daily.temperature_2m_max[0])) ? Math.round(Number(daily.temperature_2m_max[0])) : null;
+            CLIMA_REAL.tempMin = Number.isFinite(Number(daily.temperature_2m_min && daily.temperature_2m_min[0])) ? Math.round(Number(daily.temperature_2m_min[0])) : null;
+            CLIMA_REAL.weatherCode = Number.isFinite(weatherCode) ? weatherCode : null;
+            CLIMA_REAL.icon = weatherCodeToIcon(CLIMA_REAL.weatherCode);
+            CLIMA_REAL.source = 'live';
+            return CLIMA_REAL;
+        }
+
+        async function resolveLocationToCoords(query) {
+            if (!query || !query.trim()) return null;
+            const q = query.trim();
+            if (/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(q)) {
+                const [latS, lonS] = q.split(',');
+                return { lat: Number(latS), lon: Number(lonS), name: q };
+            }
+            const suggestions = await searchLocationSuggestions(q);
+            const first = suggestions[0];
+            if (!first) return null;
+            return {
+                lat: Number(first.lat),
+                lon: Number(first.lon),
+                name: first.name
+            };
+        }
+
+        async function searchLocationSuggestions(query) {
+            if (!query || query.trim().length < 2) return [];
+            const q = query.trim();
+            const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&q=${encodeURIComponent(q)}`;
+            try {
+                const res = await fetch(nominatimUrl, { headers: { "Accept-Language": "es" } });
+                if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+                const list = await res.json();
+                return (list || []).map((x) => ({
+                    lat: Number(x.lat),
+                    lon: Number(x.lon),
+                    name: x.display_name
+                })).filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lon));
+            } catch (_) {
+                const openMeteoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=es&format=json`;
+                const res2 = await fetch(openMeteoUrl);
+                if (!res2.ok) return [];
+                const data = await res2.json();
+                const arr = (data && data.results) || [];
+                return arr.map((x) => ({
+                    lat: Number(x.latitude),
+                    lon: Number(x.longitude),
+                    name: [x.name, x.admin1, x.country].filter(Boolean).join(', ')
+                })).filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lon));
+            }
+        }
+
+        async function ensureLocationCoordsInBio() {
+            if (!USER_BIO) return;
+            if (USER_BIO.lat != null && USER_BIO.lon != null) return;
+            if (!USER_BIO.ubicacion) return;
+            try {
+                const coords = await resolveLocationToCoords(USER_BIO.ubicacion);
+                if (!coords) return;
+                USER_BIO.lat = coords.lat;
+                USER_BIO.lon = coords.lon;
+                USER_BIO.ubicacion = coords.name || USER_BIO.ubicacion;
+            } catch (e) {
+                console.error("No se pudo resolver ubicacion:", e);
+            }
+        }
+
+        async function initWeatherFromUserBio() {
+            if (!USER_BIO) return;
+            await ensureLocationCoordsInBio();
+            if (USER_BIO.lat != null && USER_BIO.lon != null) {
+                try { await fetchWeatherByCoords(USER_BIO.lat, USER_BIO.lon); } catch (_) {}
+            }
+            if (!weatherIntervalId) {
+                weatherIntervalId = setInterval(async () => {
+                    if (USER_BIO && USER_BIO.lat != null && USER_BIO.lon != null) {
+                        try { await fetchWeatherByCoords(USER_BIO.lat, USER_BIO.lon); } catch (_) {}
+                    }
+                }, 15 * 60 * 1000);
+            }
+        }
+
+        async function usarUbicacionActualOnboarding() {
+            const statusEl = document.getElementById('onb-location-status');
+            if (!navigator.geolocation) {
+                statusEl.textContent = 'Tu navegador no soporta geolocalización.';
+                return;
+            }
+            statusEl.textContent = 'Detectando ubicación...';
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = Number(pos.coords.latitude.toFixed(5));
+                const lon = Number(pos.coords.longitude.toFixed(5));
+                onboardingLocation = { lat, lon };
+                document.getElementById('onb-location').value = `${lat}, ${lon}`;
+                try {
+                    const clima = await fetchWeatherByCoords(lat, lon);
+                    statusEl.textContent = `Ubicación detectada. Tiempo actual: ${clima.icon} ${clima.temp ?? '?'}°C`;
+                } catch (_) {
+                    statusEl.textContent = 'Ubicación detectada, pero no se pudo leer el clima ahora.';
+                }
+            }, (err) => {
+                statusEl.textContent = `No se pudo detectar la ubicación (${err.message || 'permiso denegado'}).`;
+            }, { enableHighAccuracy: true, timeout: 10000 });
+        }
+
+        async function renderLocationSuggestions(query, suggestionsContainerId, onPick) {
+            const box = document.getElementById(suggestionsContainerId);
+            if (!box) return;
+            if (!query || query.trim().length < 2) {
+                box.classList.add('hidden');
+                box.innerHTML = '';
+                return;
+            }
+            const items = await searchLocationSuggestions(query);
+            if (!items.length) {
+                box.classList.remove('hidden');
+                box.innerHTML = `<div class="px-3 py-2 text-xs text-gray-400">Sin resultados para "${query}"</div>`;
+                return;
+            }
+            box.classList.remove('hidden');
+            box.innerHTML = items.map((it, idx) =>
+                `<button type="button" class="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-gray-100 last:border-0" data-loc-idx="${idx}" data-lat="${it.lat}" data-lon="${it.lon}" data-name="${it.name.replace(/"/g, '&quot;')}">${it.name}</button>`
+            ).join('');
+            box.querySelectorAll('button[data-loc-idx]').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    const picked = {
+                        lat: Number(btn.getAttribute('data-lat')),
+                        lon: Number(btn.getAttribute('data-lon')),
+                        name: btn.getAttribute('data-name')
+                    };
+                    box.classList.add('hidden');
+                    box.innerHTML = '';
+                    await onPick(picked);
+                });
+            });
+        }
+
+        function initOnboardingLocationAutocomplete() {
+            const input = document.getElementById('onb-location');
+            if (!input || input.dataset.autoBound === '1') return;
+            input.dataset.autoBound = '1';
+            input.addEventListener('input', () => {
+                clearTimeout(onbLocTimer);
+                const query = input.value;
+                onbLocTimer = setTimeout(() => {
+                    renderLocationSuggestions(query, 'onb-location-suggestions', async (picked) => {
+                        onboardingLocation = { lat: picked.lat, lon: picked.lon };
+                        input.value = picked.name;
+                        const statusEl = document.getElementById('onb-location-status');
+                        try {
+                            const clima = await fetchWeatherByCoords(picked.lat, picked.lon);
+                            if (statusEl) statusEl.textContent = `Ubicación: ${picked.name} · ${clima.icon} ${clima.temp ?? '?'}°C`;
+                        } catch (_) {
+                            if (statusEl) statusEl.textContent = `Ubicación seleccionada: ${picked.name}`;
+                        }
+                    });
+                }, 250);
+            });
+        }
 
         // ==========================================================================================
         // 🌡️ DATASET CLIMATOLÓGICO - Temperaturas reales por mes
@@ -1529,18 +1805,21 @@
 
             getClimateStress() {
                 const month = new Date().getMonth();
-                const data = CLIMA_PETRER[month];
+                const fallback = CLIMA_PETRER[month];
+                const liveTemp = (CLIMA_REAL && CLIMA_REAL.temp != null) ? CLIMA_REAL.temp : null;
+                const temp = liveTemp != null ? liveTemp : fallback.t;
+                const icon = liveTemp != null ? CLIMA_REAL.icon : fallback.icon;
                 let waterFactor = 1.0;
                 let thermalFatigue = 0;
 
-                if (data.t > 25) { 
-                    let extraDegrees = data.t - 25;
+                if (temp > 25) { 
+                    let extraDegrees = temp - 25;
                     waterFactor += (extraDegrees * 0.05); 
                     thermalFatigue = 10;
                 }
                 
-                let termogenesis = (data.t < 15) ? 100 : 0;
-                return { waterFactor, termogenesisKcal: termogenesis, temp: data.t, thermalFatigue, icon: data.icon };
+                let termogenesis = (temp < 15) ? 100 : 0;
+                return { waterFactor, termogenesisKcal: termogenesis, temp, thermalFatigue, icon };
             }
 
             analyzeBodyComposition() {
@@ -3117,6 +3396,7 @@
         let BASE_GOALS = { cals: 0, prot: 160, fat: 70, sat: 20, carbs: 300, water: 2500 }; 
         let currentGoals = { ...BASE_GOALS };
         let history = [];
+        let trackerWeeks = [];
         
         let mentalLoad = 0;
         let physicalLoad = 0;
@@ -3138,6 +3418,57 @@
         // 🚀 INICIALIZACIÓN
         // ==========================================================================================
         window.onload = function() {
+            enrichFoodDatabase();
+            initOnboardingLocationAutocomplete();
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if (splash) splash.style.display = 'none';
+                iniciarAppNormal();
+            }, 1200);
+        };
+
+        function seleccionarApp(app) {
+            if (app === 'tracker') {
+                window.location.href = 'tracker.html';
+                return;
+            }
+            document.getElementById('app-selector').style.display = 'none';
+            iniciarAppNormal();
+        }
+
+        function toggleAppMenu() {
+            const menu = document.getElementById('app-switcher-menu');
+            if (!menu) return;
+            menu.classList.toggle('hidden');
+        }
+
+        function abrirAppDesdeMenu(app) {
+            const menu = document.getElementById('app-switcher-menu');
+            if (menu) menu.classList.add('hidden');
+            if (app === 'tracker') {
+                window.location.href = 'tracker.html';
+                return;
+            }
+            iniciarAppNormal();
+        }
+
+        document.addEventListener('click', (ev) => {
+            const menu = document.getElementById('app-switcher-menu');
+            if (!menu || menu.classList.contains('hidden')) return;
+            const titleButton = ev.target.closest('button[onclick="toggleAppMenu()"]');
+            if (titleButton) return;
+            if (!ev.target.closest('#app-switcher-menu')) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        function iniciarAppNormal() {
+            if (appBooted) return;
+            appBooted = true;
+            const splash = document.getElementById('splash-screen');
+            const selector = document.getElementById('app-selector');
+            if (splash) splash.style.display = 'none';
+            if (selector) selector.style.display = 'none';
             loadDay();
             renderFoodCategories();
             updateHistoryUI();
@@ -3147,10 +3478,12 @@
                 calculateStressBar();
                 updateDay();
                 calculateDailyPrediction();
-                updateBodyMap(); // Inicializar SVG
+                updateBodyMap();
             }
-            enrichFoodDatabase(); // Inyectar vitaminas en la DB
-        };
+            if (!auth.currentUser) {
+                document.getElementById('login-screen').style.display = 'flex';
+            }
+        }
 
         function startRealTimeClock() {
             setInterval(() => {
@@ -3161,8 +3494,9 @@
                 const month = MONTH_NAMES[now.getMonth()];
                 
                 const climate = ENGINE.getClimateStress();
-                
-                document.getElementById('season-indicator').innerHTML = `${hours}:${minutes} · ${day} ${month} ${climate.icon} ${climate.temp}°C`;
+                const maxTxt = CLIMA_REAL.tempMax != null ? ` Máx:${CLIMA_REAL.tempMax}°` : '';
+                const minTxt = CLIMA_REAL.tempMin != null ? ` Mín:${CLIMA_REAL.tempMin}°` : '';
+                document.getElementById('season-indicator').innerHTML = `${hours}:${minutes} · ${day} ${month} ${climate.icon} ${climate.temp}°C${maxTxt}${minTxt}`;
             }, 1000);
         }
 
@@ -3571,8 +3905,9 @@
                             </select>
                         </div>
                         <div>
-                            <label class="text-xs font-bold text-gray-500">Edad</label>
-                            <input id="swal-user-age" type="number" class="w-full border p-2 rounded mb-2" value="${USER_BIO.edad}">
+                            <label class="text-xs font-bold text-gray-500">Fecha de nacimiento</label>
+                            <input id="swal-user-birthdate" type="date" class="w-full border p-2 rounded mb-2" value="${USER_BIO.fechaNacimiento || ''}">
+                            <p class="text-[11px] text-gray-500 -mt-1 mb-2">Edad actual: <span id="swal-user-age-preview">${USER_BIO.edad || 18}</span> años</p>
                         </div>
                         <div>
                             <label class="text-xs font-bold text-gray-500">Peso (kg)</label>
@@ -3610,16 +3945,79 @@
                                 <option value="muscle_gain" ${USER_BIO.goal === 'muscle_gain' ? 'selected' : ''}>💪 Ganar Masa Muscular (Volumen)</option>
                             </select>
                         </div>
+                        <div class="col-span-2">
+                            <label class="text-xs font-bold text-gray-500">Ritmo del objetivo</label>
+                            <select id="swal-user-goal-speed" class="w-full border p-2 rounded mb-2">
+                                <option value="slow" ${(USER_BIO.goalSpeed || 'moderate') === 'slow' ? 'selected' : ''}>Lento (más sostenible)</option>
+                                <option value="moderate" ${(USER_BIO.goalSpeed || 'moderate') === 'moderate' ? 'selected' : ''}>Intermedio</option>
+                                <option value="fast" ${(USER_BIO.goalSpeed || 'moderate') === 'fast' ? 'selected' : ''}>Rápido (más exigente)</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-xs font-bold text-gray-500">Ubicación para clima real</label>
+                            <div class="flex gap-2">
+                                <input id="swal-user-location" type="text" class="w-full border p-2 rounded mb-2" value="${USER_BIO.ubicacion || ''}" placeholder="Ciudad o lat,lon">
+                                <button type="button" id="swal-detect-location-btn" class="px-3 h-[42px] rounded bg-blue-100 text-blue-700 text-xs font-bold">Detectar</button>
+                            </div>
+                            <div id="swal-user-location-suggestions" class="bg-white border border-gray-200 rounded-lg hidden max-h-36 overflow-y-auto mb-2"></div>
+                            <p id="swal-user-location-status" class="text-[11px] text-gray-500 -mt-1 mb-2">Usa Detectar para fijar temperatura exacta de tu zona.</p>
+                        </div>
                     </div>
                 `,
                 confirmButtonText: 'Guardar y Recalcular',
                 showDenyButton: true,
                 denyButtonText: 'Cerrar sesión',
                 denyButtonColor: '#ef4444',
-                preConfirm: () => {
+                didOpen: () => {
+                    window.__swalDetectedLocation = null;
+                    const birth = document.getElementById('swal-user-birthdate');
+                    if (birth) {
+                        birth.addEventListener('change', () => {
+                            const age = birth.value ? calcularEdad(birth.value) : (USER_BIO.edad || 18);
+                            const preview = document.getElementById('swal-user-age-preview');
+                            if (preview) preview.textContent = String(age);
+                        });
+                    }
+                    const detectBtn = document.getElementById('swal-detect-location-btn');
+                    if (detectBtn) {
+                        detectBtn.addEventListener('click', detectarUbicacionPerfilModal);
+                    }
+                    const locInput = document.getElementById('swal-user-location');
+                    if (locInput) {
+                        let timer = null;
+                        locInput.addEventListener('input', () => {
+                            clearTimeout(timer);
+                            const q = locInput.value;
+                            timer = setTimeout(() => {
+                                renderLocationSuggestions(q, 'swal-user-location-suggestions', async (picked) => {
+                                    window.__swalDetectedLocation = { lat: picked.lat, lon: picked.lon };
+                                    locInput.value = picked.name;
+                                    const status = document.getElementById('swal-user-location-status');
+                                    try {
+                                        const clima = await fetchWeatherByCoords(picked.lat, picked.lon);
+                                        if (status) status.textContent = `Ubicación: ${picked.name} · ${clima.icon} ${clima.temp ?? '?'}°C`;
+                                    } catch (_) {
+                                        if (status) status.textContent = `Ubicación seleccionada: ${picked.name}`;
+                                    }
+                                });
+                            }, 250);
+                        });
+                    }
+                },
+                preConfirm: async () => {
+                    const birthdate = document.getElementById('swal-user-birthdate').value;
+                    const locationText = document.getElementById('swal-user-location').value || (USER_BIO.ubicacion || "España");
+                    let pickedCoords = (window.__swalDetectedLocation && window.__swalDetectedLocation.lat != null)
+                        ? window.__swalDetectedLocation
+                        : null;
+                    if (!pickedCoords && locationText && locationText !== (USER_BIO.ubicacion || "")) {
+                        const resolved = await resolveLocationToCoords(locationText);
+                        if (resolved) pickedCoords = { lat: resolved.lat, lon: resolved.lon, name: resolved.name };
+                    }
                     return {
                         genero: document.getElementById('swal-user-gen').value,
-                        edad: Number(document.getElementById('swal-user-age').value),
+                        fechaNacimiento: birthdate || USER_BIO.fechaNacimiento || null,
+                        edad: birthdate ? calcularEdad(birthdate) : (USER_BIO.edad || 18),
                         peso: Number(document.getElementById('swal-user-w').value),
                         altura: Number(document.getElementById('swal-user-h').value),
                         grasa: Number(document.getElementById('swal-user-f').value),
@@ -3627,20 +4025,50 @@
                         maxRunKm: Number(document.getElementById('swal-user-maxrun').value),
                         maxGymTime: Number(document.getElementById('swal-user-maxgym').value),
                         maxBikeKm: Number(document.getElementById('swal-user-maxbike').value),
+                        ubicacion: (pickedCoords && pickedCoords.name) ? pickedCoords.name : locationText,
+                        lat: pickedCoords ? pickedCoords.lat : ((USER_BIO.lat != null) ? USER_BIO.lat : null),
+                        lon: pickedCoords ? pickedCoords.lon : ((USER_BIO.lon != null) ? USER_BIO.lon : null),
+                        goalSpeed: document.getElementById('swal-user-goal-speed').value || 'moderate',
                         goal: document.getElementById('swal-user-goal').value
                     }
                 }
-            }).then((result) => {
+            }).then(async (result) => {
                 if (result.isConfirmed) {
                     USER_BIO = { ...USER_BIO, ...result.value };
-                    guardarDatosUsuario();
+                    await ensureLocationCoordsInBio();
+                    await guardarDatosUsuario();
+                    await initWeatherFromUserBio();
                     updateDay();
-                    Swal.fire('Perfil Actualizado', 'Las metas de agua y calorías se han ajustado a tu nueva biología.', 'success');
+                    Swal.fire('Perfil Actualizado', `Las metas de agua y calorías se han ajustado a tu nueva biología. ${getGoalSpeedAdvice(USER_BIO.goalSpeed || 'moderate')}`, 'success');
                 } else if (result.isDenied) {
                     logoutUsuario();
                     Swal.close();
                 }
             });
+        }
+
+        async function detectarUbicacionPerfilModal() {
+            const statusEl = document.getElementById('swal-user-location-status');
+            if (!navigator.geolocation) {
+                if (statusEl) statusEl.textContent = 'Tu navegador no soporta geolocalización.';
+                return;
+            }
+            if (statusEl) statusEl.textContent = 'Detectando ubicación...';
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = Number(pos.coords.latitude.toFixed(5));
+                const lon = Number(pos.coords.longitude.toFixed(5));
+                window.__swalDetectedLocation = { lat, lon };
+                const input = document.getElementById('swal-user-location');
+                if (input) input.value = `${lat}, ${lon}`;
+                try {
+                    const clima = await fetchWeatherByCoords(lat, lon);
+                    if (statusEl) statusEl.textContent = `Detectada: ${clima.icon} ${clima.temp ?? '?'}°C · Máx ${clima.tempMax ?? '?'}°`;
+                } catch (_) {
+                    if (statusEl) statusEl.textContent = 'Ubicación detectada, pero no se pudo leer el clima ahora.';
+                }
+            }, (err) => {
+                if (statusEl) statusEl.textContent = `No se pudo detectar la ubicación (${err.message || 'permiso denegado'}).`;
+            }, { enableHighAccuracy: true, timeout: 10000 });
         }
 
         function triggerMorningPrediction() {
@@ -3719,9 +4147,14 @@
             const BMR = ENGINE.getBMR();
             const climate = ENGINE.getClimateStress();
             const profile = ENGINE.getBioProfile(USER_BIO.edad, USER_BIO.genero) || { water: 35, min: 18, max: 99 };
+            const goalSpeed = USER_BIO.goalSpeed || "moderate";
+            const fatFreeMass = USER_BIO.grasa > 0 ? (USER_BIO.peso * (1 - (USER_BIO.grasa / 100))) : (USER_BIO.peso * 0.8);
+            const safetyFloorByGender = USER_BIO.genero === 'mujer' ? 1200 : 1500;
+            const safetyFloorByFFM = fatFreeMass * 22; // aproximación conservadora de disponibilidad energética mínima
+            const calorieSafetyFloor = Math.max(safetyFloorByGender, safetyFloorByFFM);
             
             let g = { 
-                cals: BMR + climate.termogenesisKcal, 
+                cals: (BMR * 1.3) + climate.termogenesisKcal, // añade actividad basal diaria para evitar metas demasiado bajas
                 prot: (USER_BIO.masaMuscular > 0 ? 2.2 : 1.8) * USER_BIO.peso,
                 fat: 0.9 * USER_BIO.peso, 
                 sat: 25, 
@@ -3742,11 +4175,13 @@
 
             // AJUSTE POR OBJETIVO BIOLÓGICO
             if (USER_BIO.goal === 'fat_loss') {
-                g.cals -= 400; // Déficit calórico
+                const deficitMap = { slow: 250, moderate: 450, fast: 650 };
+                g.cals -= (deficitMap[goalSpeed] || 450);
                 g.prot = 2.4 * USER_BIO.peso; // Proteína alta para proteger músculo
                 g.fat = 0.7 * USER_BIO.peso; // Grasa moderada-baja
             } else if (USER_BIO.goal === 'muscle_gain') {
-                g.cals += 300; // Superávit calórico
+                const surplusMap = { slow: 150, moderate: 250, fast: 350 };
+                g.cals += (surplusMap[goalSpeed] || 250);
                 g.prot = 2.0 * USER_BIO.peso; // Proteína óptima
                 g.carbs += 50; // Extra energía para entrenar
             }
@@ -3798,6 +4233,7 @@
             }
 
             g.cals += activityCals;
+            g.cals = Math.max(g.cals, calorieSafetyFloor);
 
             const remainingCals = g.cals - ((g.prot * 4) + (g.fat * 9));
             g.carbs = Math.max(remainingCals / 4, 150); 
@@ -4123,7 +4559,7 @@
             });
         }
 
-        function saveAndClose(actualEnergy, mood, dateStr) {
+        async function saveAndClose(actualEnergy, mood, dateStr) {
             let recordDate;
             if (dateStr) {
                 recordDate = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -4144,21 +4580,22 @@
                 physicalExplanation: physicalExplanation
             };
             
-            const todayStr = record.date;
-            const existingIdx = history.findIndex(h => h.date === todayStr);
-            if (existingIdx >= 0) history[existingIdx] = record;
+            const existingIdx = history.findIndex(h => h.dateKey === record.dateKey);
+            const existingFirestoreId = existingIdx >= 0 ? (history[existingIdx].firestoreId || null) : null;
+            if (existingIdx >= 0) history[existingIdx] = { ...history[existingIdx], ...record };
             else history.unshift(record);
             
-            const existingFirestoreId = existingIdx >= 0 ? history[existingIdx].firestoreId : null;
-            guardarHistorialEnNube(record, existingFirestoreId).then((firestoreId) => {
-                if (!firestoreId) return;
+            const firestoreId = await guardarHistorialEnNube(record, existingFirestoreId);
+            if (firestoreId) {
                 const idx = history.findIndex(h => h.dateKey === record.dateKey);
                 if (idx >= 0) history[idx].firestoreId = firestoreId;
-            });
+            }
             todayData = JSON.parse(JSON.stringify(INITIAL_STATE));
             todayAlerts = [];
             saveDay();
-            window.location.reload();
+            updateHistoryUI();
+            navigateTo('registro');
+            Swal.fire({ icon: 'success', title: 'Informe guardado', timer: 1200, showConfirmButton: false });
         }
 
         // ==========================================================================================
@@ -4819,21 +5256,78 @@
             if (!todayData.gymSessions) todayData.gymSessions = [];
         }
         
-        function navigateTo(id) { 
+        async function navigateTo(id) { 
             document.querySelectorAll('.page-section').forEach(e=>e.classList.remove('active')); 
             document.getElementById(id).classList.add('active'); 
             document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); 
             document.getElementById('nav-'+id).classList.add('active'); 
+            if (id === 'registro') {
+                await refreshTrackerWeeksFromCloud();
+                updateHistoryUI();
+            }
             window.scrollTo(0,0); 
         }
         
         function updateHistoryUI() { 
             const list = document.getElementById('historyList'); 
-            if(history.length === 0) { 
+            if(history.length === 0 && trackerWeeks.length === 0) { 
                 list.innerHTML = '<div class="text-center text-gray-400 mt-10"><i class="fas fa-history text-4xl mb-3 opacity-30"></i><p>Sin historial</p></div>'; 
                 return; 
             } 
-            list.innerHTML = history.map((h, i) => `<div class="card p-5 flex justify-between items-center shadow-sm hover:shadow-md transition"><div><div class="font-bold text-slate-800 capitalize text-sm">${h.date}</div><div class="text-[10px] text-gray-400 mt-1">Carga Global: <b>${h.stress || 0}%</b></div></div><div class="flex gap-2"><button onclick="restoreDay(${i})" class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center hover:bg-orange-200 transition"><i class="fas fa-undo-alt text-sm"></i></button><button onclick="generateBeautifulPDF(${i})" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-file-pdf text-sm"></i></button><button onclick="deleteDay(${i})" class="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200 transition"><i class="fas fa-trash-alt text-sm"></i></button></div></div>`).join(''); 
+            const getWeekIdFromDateKey = (dateKey) => {
+                const d = new Date(`${dateKey}T12:00:00`);
+                const day = d.getDay();
+                const diffToMonday = (day + 6) % 7;
+                const monday = new Date(d);
+                monday.setDate(d.getDate() - diffToMonday);
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                const fmt = (x) => x.toISOString().slice(0, 10);
+                return `${fmt(monday)}_${fmt(sunday)}`;
+            };
+
+            const weekMap = new Map();
+            history.forEach((h, i) => {
+                const key = h.dateKey ? getWeekIdFromDateKey(h.dateKey) : `legacy_${i}`;
+                if (!weekMap.has(key)) weekMap.set(key, { days: [], tracker: null });
+                weekMap.get(key).days.push({ ...h, __idx: i });
+            });
+            trackerWeeks.forEach((w) => {
+                const key = w.weekId || `${w.weekStart}_${w.weekEnd}`;
+                if (!weekMap.has(key)) weekMap.set(key, { days: [], tracker: null });
+                weekMap.get(key).tracker = w;
+            });
+
+            const sortedWeekKeys = Array.from(weekMap.keys()).sort((a, b) => b.localeCompare(a));
+            list.innerHTML = sortedWeekKeys.map((wk) => {
+                const block = weekMap.get(wk);
+                const title = wk.includes('_') ? `Semana ${wk.replace('_', ' → ')}` : 'Semana';
+                const trackerLine = block.tracker
+                    ? `<div class="text-[11px] text-emerald-600 font-bold mb-2 flex items-center justify-between gap-2"><span>Tracker enlazado: ${block.tracker.score || 0}% · ${block.tracker.checks || 0} checks</span><button onclick="generateTrackerWeekPDF('${(block.tracker.weekId || '').replace(/'/g, "\\'")}')" class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold"><i class="fas fa-file-pdf mr-1"></i>PDF Tracker</button></div>`
+                    : '';
+                const daysHtml = (block.days || []).sort((a,b) => (b.dateKey || '').localeCompare(a.dateKey || '')).map((h) => `
+                    <div class="card p-4 flex justify-between items-center shadow-sm hover:shadow-md transition mb-2">
+                        <div>
+                            <div class="font-bold text-slate-800 capitalize text-sm">${h.date}</div>
+                            <div class="text-[10px] text-gray-400 mt-1">Carga Global: <b>${h.stress || 0}%</b></div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="restoreDay(${h.__idx})" class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center hover:bg-orange-200 transition"><i class="fas fa-undo-alt text-sm"></i></button>
+                            <button onclick="generateBeautifulPDF(${h.__idx})" class="bg-slate-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-file-pdf text-sm"></i></button>
+                            <button onclick="deleteDay(${h.__idx})" class="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200 transition"><i class="fas fa-trash-alt text-sm"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+                return `
+                    <details class="card p-4 mb-3" open>
+                        <summary class="font-bold text-slate-800 cursor-pointer">${title}</summary>
+                        <div class="mt-3">
+                            ${trackerLine}
+                            ${daysHtml || '<div class="text-xs text-gray-400">Sin informes diarios aún.</div>'}
+                        </div>
+                    </details>
+                `;
+            }).join('');
         }
         
         function restoreDay(index) { 
@@ -5046,6 +5540,43 @@
                 doc.text(`FitTracker AI - Informe generado el ${new Date().toLocaleDateString()}`, 105, 285, null, null, 'center');
             }
             
+            const blob = doc.output('bloburl');
+            window.open(blob, '_blank');
+        }
+
+        function generateTrackerWeekPDF(weekId) {
+            const week = trackerWeeks.find(w => (w.weekId || '') === weekId);
+            if (!week) {
+                Swal.fire('No encontrado', 'No se encontró esa semana de Tracker.', 'warning');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape' });
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.text('TRACKER - INFORME SEMANAL', 14, 16);
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Semana: ${week.weekStart || '?'} -> ${week.weekEnd || '?'}`, 14, 24);
+            doc.text(`Score: ${week.score || 0}% | Checks: ${week.checks || 0}`, 14, 30);
+
+            const daysShort = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
+            const habits = Array.isArray(week.habitsSnapshot) ? week.habitsSnapshot : [];
+            const data = week.data || {};
+            const bodyRows = habits.map((h) => {
+                const arr = data[h.id] || [false, false, false, false, false, false, false];
+                return [h.name, ...arr.map(v => v ? 'OK' : '-')];
+            });
+            doc.autoTable({
+                startY: 36,
+                head: [['Habito', ...daysShort]],
+                body: bodyRows.length ? bodyRows : [['Sin datos', '', '', '', '', '', '', '']],
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [16, 185, 129] }
+            });
+            doc.setFontSize(8);
+            doc.setTextColor(120, 120, 120);
+            doc.text(`Generado por FitTracker el ${new Date().toLocaleString()}`, 14, 205);
             const blob = doc.output('bloburl');
             window.open(blob, '_blank');
         }
@@ -5603,6 +6134,30 @@
             return edad;
         }
 
+        function verificarCumpleanos() {
+            if (!USER_BIO || !USER_BIO.fechaNacimiento) return;
+            const hoy = new Date();
+            const cumple = new Date(USER_BIO.fechaNacimiento);
+            if (Number.isNaN(cumple.getTime())) return;
+            if (hoy.getDate() !== cumple.getDate() || hoy.getMonth() !== cumple.getMonth()) return;
+            const cacheKey = `fittracker_bday_${hoy.toISOString().slice(0, 10)}`;
+            if (localStorage.getItem(cacheKey)) return;
+            localStorage.setItem(cacheKey, '1');
+            const nuevaEdad = calcularEdad(USER_BIO.fechaNacimiento);
+            Swal.fire({
+                title: 'Feliz cumpleaños',
+                text: `${USER_BIO.nombre || 'Campeón'} hoy cumples ${nuevaEdad} años. Que tengas un día brutal.`,
+                icon: 'success',
+                confirmButtonText: 'Gracias'
+            });
+        }
+
+        function getGoalSpeedAdvice(speed) {
+            if (speed === 'fast') return 'Modo rápido: útil a corto plazo, pero vigila energía, hambre, sueño y rendimiento.';
+            if (speed === 'slow') return 'Modo lento: más sostenible y con menor riesgo de rebote.';
+            return 'Modo intermedio: equilibrio entre progreso y adherencia.';
+        }
+
         async function guardarOnboarding() {
             const user = firebase.auth().currentUser;
             if (!user) return;
@@ -5623,6 +6178,18 @@
             }
 
             // Construimos el objeto BIO tal cual lo espera tu aplicación
+            let manualLocationText = document.getElementById('onb-location').value || (USER_BIO && USER_BIO.ubicacion) || "España";
+            let manualCoords = onboardingLocation;
+            if (!manualCoords && manualLocationText) {
+                try {
+                    const resolved = await resolveLocationToCoords(manualLocationText);
+                    if (resolved) {
+                        manualCoords = { lat: resolved.lat, lon: resolved.lon };
+                        manualLocationText = resolved.name || manualLocationText;
+                    }
+                } catch (_) {}
+            }
+
             const datosBio = {
                 nombre: user.displayName || "Usuario",
                 genero: document.getElementById('onb-genero').value,
@@ -5634,6 +6201,10 @@
                 masaMuscular: parseFloat(document.getElementById('onb-musculo').value) || 30,
                 maxRunKm: parseFloat(document.getElementById('onb-run').value) || 0,
                 maxBikeKm: parseFloat(document.getElementById('onb-bike').value) || 0,
+                ubicacion: manualLocationText,
+                lat: manualCoords ? manualCoords.lat : ((USER_BIO && USER_BIO.lat != null) ? USER_BIO.lat : null),
+                lon: manualCoords ? manualCoords.lon : ((USER_BIO && USER_BIO.lon != null) ? USER_BIO.lon : null),
+                goalSpeed: document.getElementById('onb-goal-speed').value || "moderate",
                 goal: document.getElementById('onb-objetivo').value
             };
 
@@ -5647,7 +6218,7 @@
 
                 Swal.fire({
                     title: '¡Perfil Calibrado!',
-                    text: `Edad calculada: ${edadCalculada} años`,
+                    text: `Fecha guardada (${fechaNacStr}) · Edad calculada: ${edadCalculada} años · ${getGoalSpeedAdvice(datosBio.goalSpeed)}`,
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -5668,3 +6239,4 @@
     </script>
 </body>
 </html>
+
