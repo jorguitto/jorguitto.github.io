@@ -77,6 +77,18 @@
         .group-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
         .group-content.open { max-height: 5000px; }
 
+        .quiz-step { display:none; }
+        .quiz-step.active { display:block; }
+        .quiz-option { cursor:pointer; transition: transform 0.18s ease, background-color 0.18s ease; }
+        .quiz-option:hover { transform: translateY(-1px); }
+        .quiz-stage { position: relative; overflow: hidden; }
+        .quiz-progress { height: 6px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+        .quiz-progress-fill { height: 100%; width: 0; background: #2563eb; transition: width 0.3s ease; }
+
+        .group-header { cursor: pointer; transition: background 0.2s; }
+        .group-header:active { background-color: #f1f5f9; }
+        .group-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
+
         .pb-safe-area { padding-bottom: env(safe-area-inset-bottom); }
 
         .alert-card { transition: all 0.3s ease; }
@@ -142,100 +154,190 @@
             <button onclick="seleccionarApp('tracker')" class="w-full bg-slate-700 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-600 active:scale-95 transition-all">Abrir TRACKER</button>
         </div>
     </div>
-    <div id="onboarding-modal" class="fixed inset-0 bg-slate-900 bg-opacity-95 z-[999] hidden flex-col overflow-y-auto">
+    <div id="onboarding-modal" class="fixed inset-0 bg-slate-900/95 z-[999] hidden flex-col overflow-y-auto">
         <div class="min-h-screen flex items-center justify-center p-4">
-            <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl">
-                <div class="text-center mb-6">
-                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-500 text-3xl">
-                        <i class="fas fa-rocket"></i>
-                    </div>
-                    <h2 class="text-2xl font-black text-slate-800">¡Bienvenido a FitTracker AI!</h2>
-                    <p class="text-sm text-gray-500 mt-2">Para crear tu motor biológico perfecto y darte las calorías exactas, necesitamos algunos datos iniciales.</p>
-                </div>
-
-                <div class="space-y-4">
-              <div class="grid grid-cols-2 gap-3">
-    <div>
-        <label class="text-[10px] font-bold text-gray-600 uppercase">Género</label>
-        <select id="onb-genero" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500">
-            <option value="hombre">Hombre</option>
-            <option value="mujer">Mujer</option>
-        </select>
-    </div>
-    <div>
-        <label class="text-[10px] font-bold text-gray-600 uppercase">F. Nacimiento</label>
-        <input type="date" id="onb-birthdate" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500">
-    </div>
-</div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-xs font-bold text-gray-600 uppercase">Peso (kg)</label>
-                            <input type="number" id="onb-peso" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 75">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-600 uppercase">Altura (cm)</label>
-                            <input type="number" id="onb-altura" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 175">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-xs font-bold text-gray-600 uppercase">Grasa (%)</label>
-                            <input type="number" id="onb-grasa" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 15">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-600 uppercase">Músculo (kg)</label>
-                            <input type="number" id="onb-musculo" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 35">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-xs font-bold text-gray-600 uppercase">Max Run (km)</label>
-                            <input type="number" id="onb-run" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Opcional">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-600 uppercase">Max Bici (km)</label>
-                            <input type="number" id="onb-bike" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Opcional">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="text-xs font-bold text-gray-600 uppercase">Objetivo Principal</label>
-                        <select id="onb-objetivo" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500">
-                            <option value="Perder Grasa">Perder Grasa</option>
-                            <option value="Mantenimiento" selected>Mantenimiento</option>
-                            <option value="Ganar Masa Muscular">Ganar Masa Muscular</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-600 uppercase">Ritmo del objetivo</label>
-                        <select id="onb-goal-speed" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500">
-                            <option value="slow">Lento (más sostenible)</option>
-                            <option value="moderate" selected>Intermedio</option>
-                            <option value="fast">Rápido (más exigente)</option>
-                        </select>
-                        <p class="text-[11px] text-gray-500 mt-1">Rápido puede ser más duro para energía, hambre y recuperación.</p>
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-600 uppercase">Ubicación actual</label>
-                        <div class="mt-1 flex gap-2">
-                            <input id="onb-location" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500" placeholder="Se detectará automáticamente">
-                            <button type="button" onclick="usarUbicacionActualOnboarding()" class="bg-blue-100 text-blue-700 font-bold px-3 rounded-xl text-xs whitespace-nowrap">Detectar</button>
-                        </div>
-                        <div id="onb-location-suggestions" class="mt-1 bg-white border border-gray-200 rounded-lg hidden max-h-36 overflow-y-auto"></div>
-                        <p id="onb-location-status" class="text-[11px] text-gray-500 mt-1">Pulsa Detectar para usar temperatura exacta de tu zona.</p>
+            <div class="w-full max-w-md">
+                <div class="text-center mb-4">
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-white text-xs font-black uppercase tracking-widest">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        Onboarding FitTracker AI
                     </div>
                 </div>
 
-                <div class="mt-8 space-y-3">
-                    <button onclick="guardarOnboarding()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all text-lg">
-                        Generar Perfil Biológico
-                    </button>
-                    <button onclick="omitirOnboarding()" class="w-full bg-gray-100 text-gray-500 font-bold py-3 rounded-xl hover:bg-gray-200 active:scale-95 transition-all">
-                        Omitir por ahora
-                    </button>
+                <div id="onb-wizard-card" class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+                    <div class="px-6 pt-6 pb-4 border-b border-slate-100">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                                    <i class="fas fa-rocket"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-black text-slate-800 leading-tight">Crea tu Motor Biológico</h2>
+                                    <p id="onb-step-subtitle" class="text-xs text-slate-500 font-semibold">Paso 1/5 · Básicos</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="omitirOnboarding()" class="text-xs font-black text-slate-400 hover:text-slate-700 transition">Omitir</button>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div id="onb-step-progress" class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width: 20%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <!-- Hidden value used by existing engine/summary logic -->
+                        <input type="hidden" id="onb-activity-level" value="moderate">
+
+                        <!-- STEP 1 -->
+                        <section class="onb-step space-y-4" data-step="0">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="col-span-2">
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">Nombre</label>
+                                    <input type="text" id="onb-nombre" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500" placeholder="Ej: Jorge">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">Género</label>
+                                    <select id="onb-genero" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500">
+                                        <option value="hombre">Hombre</option>
+                                        <option value="mujer">Mujer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">F. Nacimiento</label>
+                                    <input type="date" id="onb-birthdate" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-600">
+                                <div class="font-black text-slate-800 mb-1">Por qué te lo pedimos</div>
+                                Edad + género ajustan TMB, micronutrientes y alertas preventivas.
+                            </div>
+                        </section>
+
+                        <!-- STEP 2 -->
+                        <section class="onb-step space-y-4 hidden" data-step="1">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">Peso (kg)</label>
+                                    <input type="number" id="onb-peso" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 75">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">Altura (cm)</label>
+                                    <input type="number" id="onb-altura" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 175">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">Grasa (%)</label>
+                                    <input type="number" id="onb-grasa" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 15">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">Músculo (kg)</label>
+                                    <input type="number" id="onb-musculo" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Ej: 35">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">Max Run (km)</label>
+                                    <input type="number" id="onb-run" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Opcional">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">Max Bici (km)</label>
+                                    <input type="number" id="onb-bike" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Opcional">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase">Max Gym (min)</label>
+                                    <input type="number" id="onb-maxgym" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" placeholder="Opcional (ej: 75)">
+                                </div>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-600">
+                                <div class="font-black text-slate-800 mb-1">Precisión metabólica</div>
+                                Con grasa + músculo estimamos mejor tu gasto y proteína objetivo.
+                            </div>
+                        </section>
+
+                        <!-- STEP 3 -->
+                        <section class="onb-step space-y-4 hidden" data-step="2">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-600 uppercase">Ubicación</label>
+                                <div class="mt-1 flex gap-2">
+                                    <input id="onb-location" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-blue-500" placeholder="Se detectará automáticamente">
+                                    <button type="button" onclick="usarUbicacionActualOnboarding()" class="bg-blue-600 text-white font-black px-3 rounded-xl text-xs whitespace-nowrap hover:bg-blue-700 active:scale-95 transition">GPS</button>
+                                </div>
+                                <div id="onb-location-suggestions" class="mt-1 bg-white border border-gray-200 rounded-lg hidden max-h-36 overflow-y-auto"></div>
+                                <p id="onb-location-status" class="text-[11px] text-gray-500 mt-1">El clima ajusta agua, fatiga térmica y termogénesis.</p>
+                            </div>
+                        </section>
+
+                        <!-- STEP 4 -->
+                        <section class="onb-step space-y-4 hidden" data-step="3">
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="text-sm font-black text-slate-800">Actividad diaria (auto)</div>
+                                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">NEAT/TDEE</div>
+                                </div>
+                                <button type="button" onclick="startOnboardingQuiz()" class="w-full text-left bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 hover:border-blue-300 transition flex justify-between items-center">
+                                    <span><i class="fas fa-bolt mr-2 text-blue-600"></i>Empezar cuestionario rápido</span>
+                                    <i class="fas fa-chevron-right text-xs"></i>
+                                </button>
+                                <div id="onb-activity-quiz" class="hidden mt-3 bg-white border border-slate-200 rounded-2xl p-4 space-y-4">
+                                    <div class="quiz-progress"><div id="onb-quiz-progress" class="quiz-progress-fill"></div></div>
+                                    <div id="onb-quiz-stage" class="quiz-stage"></div>
+                                    <div class="text-right">
+                                        <button type="button" onclick="skipOnboardingQuiz()" class="text-xs text-slate-500 hover:text-slate-700">Omitir cuestionario</button>
+                                    </div>
+                                </div>
+                                <div id="onb-activity-summary" class="hidden mt-3 bg-white border border-slate-200 rounded-2xl p-4 text-sm text-slate-700"></div>
+                            </div>
+                            <div id="onb-goal-summary" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-slate-700 hidden"></div>
+                        </section>
+
+                        <!-- STEP 5 -->
+                        <section class="onb-step space-y-4 hidden" data-step="4">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-600 uppercase">Objetivo principal</label>
+                                <select id="onb-objetivo" class="w-full mt-1 bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500">
+                                    <option value="maintenance" selected>Mantenimiento</option>
+                                    <option value="muscle_gain">Ganar Masa Muscular</option>
+                                    <option value="fat_loss">Perder Grasa</option>
+                                </select>
+                            </div>
+
+                            <div id="onb-goal-speed-group" class="hidden">
+                                <label class="text-[10px] font-bold text-gray-600 uppercase">Ritmo del objetivo</label>
+                                <div class="grid grid-cols-3 gap-2 mt-1">
+                                    <button type="button" data-speed="slow" class="onb-speed-btn text-center p-3 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-200 transition">Lento</button>
+                                    <button type="button" data-speed="moderate" class="onb-speed-btn text-center p-3 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-200 transition">Intermedio</button>
+                                    <button type="button" data-speed="fast" class="onb-speed-btn text-center p-3 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-200 transition">Rápido</button>
+                                </div>
+                                <select id="onb-goal-speed" class="hidden">
+                                    <option value="slow">Lento (más sostenible)</option>
+                                    <option value="moderate" selected>Intermedio</option>
+                                    <option value="fast">Rápido (más exigente)</option>
+                                </select>
+                            </div>
+
+                            <div id="onb-clinical-alert" class="hidden rounded-2xl border p-4"></div>
+
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-600">
+                                <div class="font-black text-slate-800 mb-1">Última comprobación</div>
+                                Antes de guardar, validamos IMC + objetivo para evitar recomendaciones peligrosas.
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="px-6 pb-6 pt-0">
+                        <div class="flex gap-3">
+                            <button type="button" id="onb-back-btn" onclick="onbWizardPrev()" class="w-1/3 bg-slate-100 text-slate-600 font-black py-3 rounded-xl hover:bg-slate-200 active:scale-95 transition hidden">
+                                Atrás
+                            </button>
+                            <button type="button" id="onb-next-btn" onclick="onbWizardNext()" class="flex-1 bg-blue-600 text-white font-black py-3 rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition">
+                                Continuar
+                            </button>
+                        </div>
+                        <button type="button" id="onb-finish-btn" onclick="guardarOnboarding()" class="w-full mt-3 bg-slate-900 text-white font-black py-3 rounded-xl shadow-lg hover:bg-slate-800 active:scale-95 transition hidden">
+                            Guardar y Generar Perfil
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -486,9 +588,9 @@
                 <div class="flex items-end justify-between mb-3">
                     <div class="leading-none">
                         <span class="text-2xl font-bold text-slate-700 block"><span id="home-sport-km">0</span> <span class="text-base font-normal text-gray-400">km</span></span>
-                        <span class="text-[10px] text-gray-400 font-medium"><span id="home-steps">0</span> pasos</span>
+                        <span class="text-[10px] text-gray-400 font-medium" id="home-sport-mini">Actividad · 0 kcal</span>
                     </div>
-                    <i class="fas fa-running text-orange-500 text-xl"></i>
+                    <i id="home-sport-icon" class="fas fa-running text-orange-500 text-xl"></i>
                 </div>
                 <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                     <div id="bar-sport-home" class="bg-orange-500 h-full w-0 transition-all duration-500 rounded-full"></div>
@@ -499,7 +601,7 @@
                 <div class="flex justify-between items-center mb-5">
                     <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fas fa-fire text-orange-500"></i> Combustible</h3>
                     <div class="flex items-center gap-2">
-                        <span class="text-[10px] bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-bold">Meta: <span id="goal-cals">2400</span> kcal</span>
+                        <span class="text-[10px] bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-bold">Meta: <span id="goal-cals">0</span> kcal</span>
                         <button onclick="event.stopPropagation(); showMicros()" class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center shadow-lg active:scale-90 transition"><i class="fas fa-plus text-xs"></i></button>
                     </div>
                 </div>
@@ -510,8 +612,7 @@
                             <span>Energía Total</span>
                             <span><span id="val-cals">0</span> kcal</span>
                         </div>
-                        <span class="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded font-bold float-right mb-1">Meta: <span id="goal-cals">2400</span></span>
-                        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden relative">
                             <div id="bar-cals" class="bg-slate-800 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
                         </div>
                     </div>
@@ -519,24 +620,36 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <span class="text-[10px] text-gray-400 font-bold block mb-1">Proteína</span>
-                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
+                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1 relative">
                                 <div id="bar-prot" class="h-full bg-green-500 w-0 rounded-full"></div>
+                                <div id="minmark-prot" class="absolute top-0 h-full w-[2px] bg-green-900/35" style="left: 0%"></div>
                             </div>
-                            <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-prot">0</span>/<span id="goal-prot">0</span>g</span>
+                            <span class="text-[10px] text-right block font-mono text-slate-600">
+                                <span id="val-prot">0</span> /
+                                <span id="goal-prot-min">0</span>–<span id="goal-prot">0</span>g
+                            </span>
                         </div>
                         <div>
                             <span class="text-[10px] text-gray-400 font-bold block mb-1">Carbos</span>
-                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
+                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1 relative">
                                 <div id="bar-carbs" class="h-full bg-red-400 w-0 rounded-full"></div>
+                                <div id="minmark-carbs" class="absolute top-0 h-full w-[2px] bg-red-900/30" style="left: 0%"></div>
                             </div>
-                            <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-carbs">0</span>/<span id="goal-carbs">0</span>g</span>
+                            <span class="text-[10px] text-right block font-mono text-slate-600">
+                                <span id="val-carbs">0</span> /
+                                <span id="goal-carbs-min">0</span>–<span id="goal-carbs">0</span>g
+                            </span>
                         </div>
                         <div>
                             <span class="text-[10px] text-gray-400 font-bold block mb-1">Grasas</span>
-                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1">
+                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mb-1 relative">
                                 <div id="bar-fat" class="h-full bg-yellow-400 w-0 rounded-full"></div>
+                                <div id="minmark-fat" class="absolute top-0 h-full w-[2px] bg-yellow-900/35" style="left: 0%"></div>
                             </div>
-                            <span class="text-[10px] text-right block font-mono text-slate-600"><span id="val-fat">0</span>/<span id="goal-fat">0</span>g</span>
+                            <span class="text-[10px] text-right block font-mono text-slate-600">
+                                <span id="val-fat">0</span> /
+                                <span id="goal-fat-min">0</span>–<span id="goal-fat">0</span>g
+                            </span>
                         </div>
                         <div>
                             <span class="text-[10px] text-gray-400 font-bold block mb-1">G. Saturadas</span>
@@ -678,7 +791,26 @@
         <div id="deporte" class="page-section">
             <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">Actividad & Gym</h2>
 
-            <div class="card p-6 mb-6 border-l-4 border-green-500">
+            <div class="card p-6 mb-6 border-l-4 border-slate-400">
+                <div class="flex items-center justify-between gap-3 group-header" onclick="toggleActivityQuestionnaire()">
+                    <div>
+                        <h3 class="font-bold text-slate-700 text-base">Actividad diaria</h3>
+                        <p class="text-[11px] text-gray-500 mt-1">Ajusta tu nivel de actividad para recalcular tus calorías base. Puedes cambiarlo si tu rutina cambia.</p>
+                    </div>
+                    <i class="fas fa-chevron-down text-slate-400 transition-transform"></i>
+                </div>
+                <div id="activity-questionnaire" class="group-content mt-4">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Mi nivel de actividad es:</label>
+                    <select id="daily-activity-level" class="w-full mt-2 bg-white border border-gray-200 rounded-xl p-3 outline-none focus:border-blue-500" onchange="updateDailyActivityLevel()">
+                        <option value="very_low">Muy baja: estoy en casa y casi no me muevo</option>
+                        <option value="low">Baja: trabajo sedentario, pocos desplazamientos</option>
+                        <option value="moderate" selected>Media: salgo a trabajar, me muevo y hago algo de ejercicio</option>
+                        <option value="high">Alta: voy al gimnasio 1-2 veces y me muevo mucho</option>
+                        <option value="very_high">Muy alta: trabajo físico intenso y entreno fuerte</option>
+                    </select>
+                </div>
+            </div>
+        <div class="card p-6 mb-6 border-l-4 border-green-500">
                 <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-shoe-prints text-green-500"></i> Actividad de Hoy</h3>
                 <div class="space-y-5">
                     <div>
@@ -1505,6 +1637,7 @@
         let appBooted = false;
         let onboardingLocation = null;
         let onbLocTimer = null;
+        let swalLocTimer = null;
 
         function weatherCodeToIcon(code) {
             if (code === 0) return '☀️';
@@ -1671,7 +1804,7 @@
             input.dataset.autoBound = '1';
             input.addEventListener('input', () => {
                 clearTimeout(onbLocTimer);
-                const query = input.value;
+                const query = input.value.trim();
                 onbLocTimer = setTimeout(() => {
                     renderLocationSuggestions(query, 'onb-location-suggestions', async (picked) => {
                         onboardingLocation = { lat: picked.lat, lon: picked.lon };
@@ -1759,7 +1892,9 @@
             calcium: { name: 'Calcio', unit: 'mg', base: 1000, desc: 'Huesos y dientes.', type: 'min' },
             iron: { name: 'Hierro', unit: 'mg', base: 8, desc: 'Transporte de oxígeno.', type: 'min' },
             magnesium: { name: 'Magnesio', unit: 'mg', base: 400, desc: 'Músculos, nervios y relax.', type: 'min' },
-            zinc: { name: 'Zinc', unit: 'mg', base: 11, desc: 'Defensas y testosterona.', type: 'min' }
+            zinc: { name: 'Zinc', unit: 'mg', base: 11, desc: 'Defensas y testosterona.', type: 'min' },
+            sodium: { name: 'Sodio (Electrolitos)', unit: 'mg', base: 1500, desc: 'Volumen plasmático e hidratación.', type: 'min' },
+            potassium: { name: 'Potasio (Electrolitos)', unit: 'mg', base: 3400, desc: 'Contracción muscular y nervios.', type: 'min' }
         };
 
         // 🧠 BIO-ENGINE
@@ -1823,98 +1958,132 @@
             }
 
             analyzeBodyComposition() {
-                // Análisis físico basado en datos del usuario
                 const { peso, altura, grasa, masaMuscular, edad, genero, maxRunKm, maxGymTime, maxBikeKm } = USER_BIO;
-                const heightM = altura / 100;
-                const bmi = peso / (heightM * heightM);
-                
-                // 1. Calcular Nivel Atlético (Ignorando valores a 0)
+                const heightM = (Number(altura) || 0) / 100;
+                const weight = Number(peso) || 0;
+                const bodyFat = Number(grasa) || 0;
+                const muscleKg = Number(masaMuscular) || 0;
+
+                const bmiRaw = (heightM > 0 && weight > 0) ? (weight / (heightM * heightM)) : 0;
+                const bmi = Number.isFinite(bmiRaw) ? bmiRaw : 0;
+
+                // Nivel atlético (solo como “contexto”, nunca para tapar riesgo clínico)
                 let performanceScore = 0;
                 let activeStats = 0;
-                
-                // Running: >10km es avanzado
-                if (maxRunKm > 0) { 
-                    activeStats++; 
-                    performanceScore += Math.min(maxRunKm / 10, 1.5); 
-                }
-                // Gym: >90min es volumen alto
-                if (maxGymTime > 0) { 
-                    activeStats++; 
-                    performanceScore += Math.min(maxGymTime / 90, 1.5); 
-                }
-                // Bici: >40km es avanzado
-                if (maxBikeKm > 0) { 
-                    activeStats++; 
-                    performanceScore += Math.min(maxBikeKm / 40, 1.5); 
+                if ((Number(maxRunKm) || 0) > 0) { activeStats++; performanceScore += Math.min(Number(maxRunKm) / 10, 1.5); }
+                if ((Number(maxGymTime) || 0) > 0) { activeStats++; performanceScore += Math.min(Number(maxGymTime) / 90, 1.5); }
+                if ((Number(maxBikeKm) || 0) > 0) { activeStats++; performanceScore += Math.min(Number(maxBikeKm) / 40, 1.5); }
+                const fitnessLevel = activeStats > 0 ? (performanceScore / activeStats) : 0; // 0..1.5 aprox
+
+                // Rangos saludables (adultos) según referencia práctica de app:
+                // - IMC saludable: 18.5–24.9
+                // - % grasa saludable: 10–20% hombres, 18–28% mujeres
+                const sex = (genero || '').toLowerCase() === 'mujer' ? 'mujer' : 'hombre';
+                const healthyFatLow = sex === 'hombre' ? 10 : 18;
+                const healthyFatHigh = sex === 'hombre' ? 20 : 28;
+                const athleticFatHigh = sex === 'hombre' ? 15 : 22;
+
+                const muscleRatio = (weight > 0) ? (muscleKg / weight) : 0;
+
+                const bmiCategory = (() => {
+                    if (bmi <= 0) return 'SIN DATOS';
+                    if (bmi < 18.5) return 'BAJO PESO';
+                    if (bmi < 25) return 'NORMOPESO';
+                    if (bmi < 30) return 'SOBREPESO';
+                    if (bmi < 35) return 'OBESIDAD I';
+                    if (bmi < 40) return 'OBESIDAD II';
+                    return 'OBESIDAD III';
+                })();
+
+                const fatCategory = (() => {
+                    if (bodyFat <= 0) return 'SIN % GRASA';
+                    if (bodyFat < healthyFatLow) return 'GRASA BAJA';
+                    if (bodyFat <= healthyFatHigh) return 'GRASA SALUDABLE';
+                    if (bodyFat <= (sex === 'hombre' ? 25 : 32)) return 'GRASA ELEVADA';
+                    return 'GRASA MUY ELEVADA';
+                })();
+
+                // Excepción muscular: IMC alto por masa magra (muy raro). Solo si %grasa está en rango saludable y músculo alto.
+                const isMuscularException = (bmi >= 25) && (bodyFat > 0) && (bodyFat <= healthyFatHigh) && (muscleRatio >= 0.45) && (fitnessLevel >= 0.9);
+
+                let status = `Salud: ${bmiCategory}`;
+                let advice = "Sigue registrando tus datos para recomendaciones precisas.";
+                let colorClass = "text-slate-700";
+                let badgeClass = "bg-slate-100 text-slate-700";
+                let alertLevel = "none"; // none | warning | danger
+
+                // Regla estricta: NO decir “óptimo/atlético” si IMC no está en 18.5–24.9 O %grasa no está en rango saludable.
+                const bmiHealthy = bmi >= 18.5 && bmi <= 24.9;
+                const fatHealthy = (bodyFat > 0) ? (bodyFat >= healthyFatLow && bodyFat <= healthyFatHigh) : false;
+
+                if (bmi <= 0 || weight <= 0 || heightM <= 0) {
+                    status = "Salud: Datos incompletos";
+                    advice = "Revisa peso y altura para calcular IMC y riesgo.";
+                } else if (!isMuscularException && (bmiCategory.startsWith('OBESIDAD') || bmiCategory === 'SOBREPESO')) {
+                    alertLevel = bmiCategory.startsWith('OBESIDAD') ? "danger" : "warning";
+                    colorClass = alertLevel === 'danger' ? "text-red-700" : "text-orange-700";
+                    badgeClass = alertLevel === 'danger' ? "bg-red-50 text-red-700 border border-red-100" : "bg-orange-50 text-orange-700 border border-orange-100";
+
+                    const riskMsg = alertLevel === 'danger'
+                        ? "Alerta de Salud: tu composición actual sugiere un riesgo elevado."
+                        : "Alerta de Salud: estás por encima de tu rango saludable.";
+
+                    const goalHint = "Te recomendamos cambiar tu objetivo a 'Perder Grasa' y empezar con un déficit calórico leve y pasos diarios.";
+                    const impactHint = bmi >= 30 ? "Evita correr si hay molestias articulares; prioriza caminar + fuerza progresiva." : "Prioriza caminar, fuerza 2–3 días/semana y proteína suficiente.";
+
+                    // Si hay % grasa, úsalo para reforzar el mensaje (sin insultar y sin simplismos)
+                    const fatHint = bodyFat > healthyFatHigh
+                        ? `Tu % de grasa (${bodyFat}%) está por encima de rango saludable.`
+                        : (bodyFat > 0 ? `Tu % de grasa (${bodyFat}%) no indica perfil atlético.` : "Registra tu % de grasa para afinar el diagnóstico.");
+
+                    advice = `${riskMsg} ${fatHint} ${goalHint} ${impactHint}`;
+                } else if (bmiHealthy && fatHealthy && muscleRatio >= 0.38 && (bodyFat > 0 ? bodyFat <= athleticFatHigh : true)) {
+                    status = "Salud: Composición atlética";
+                    colorClass = "text-green-700";
+                    badgeClass = "bg-green-50 text-green-700 border border-green-100";
+                    advice = "Composición en rango saludable. Mantén fuerza + pasos y ajusta calorías según objetivo.";
+                } else if (bmiHealthy || fatHealthy || isMuscularException) {
+                    status = isMuscularException ? "Salud: Alto peso por masa muscular" : `Salud: ${bmiCategory}`;
+                    colorClass = "text-slate-700";
+                    badgeClass = "bg-slate-100 text-slate-700";
+                    const extra = (!bmiHealthy && fatHealthy) ? "Tu IMC está alto pero tu % grasa está en rango: revisa perímetros y tendencia." : "";
+                    advice = `IMC: ${bmi.toFixed(1)} · ${fatCategory}. ${extra}`.trim();
+                } else {
+                    // Casos como “skinny fat” (IMC normal pero grasa elevada) o grasa baja
+                    if (bodyFat > 0 && bodyFat > healthyFatHigh && bmi < 25) {
+                        alertLevel = "warning";
+                        status = "Salud: Normopeso con grasa elevada";
+                        colorClass = "text-yellow-800";
+                        badgeClass = "bg-yellow-50 text-yellow-800 border border-yellow-100";
+                        advice = "Alerta: aunque el IMC sea normal, tu % de grasa es alto. Prioriza fuerza + proteína y reduce calorías moderadamente.";
+                    } else if (bodyFat > 0 && bodyFat < healthyFatLow) {
+                        alertLevel = "warning";
+                        status = "Salud: Grasa corporal baja";
+                        colorClass = "text-blue-700";
+                        badgeClass = "bg-blue-50 text-blue-700 border border-blue-100";
+                        advice = "Grasa corporal baja: vigila energía, sueño y lípidos en dieta. Si hay síntomas, consulta profesional sanitario.";
+                    } else {
+                        advice = `IMC: ${bmi.toFixed(1)} · ${fatCategory}.`;
+                    }
                 }
 
-                const fitnessLevel = activeStats > 0 ? (performanceScore / activeStats) : 0; // 0 a 1.5
+                // Persistimos en memoria para que se guarde en Firebase junto al perfil (si existe el flujo de guardado)
+                USER_BIO.imc = Number(bmi.toFixed(1));
+                USER_BIO.imcCategoria = bmiCategory;
+                USER_BIO.grasaCategoria = fatCategory;
+                USER_BIO.healthAlertLevel = alertLevel;
 
-                let status = "Normal";
-                let advice = "Mantén tu rutina.";
-                let colorClass = "text-slate-600";
-
-                // Límites de grasa según género
-                const fatLimitHigh = genero === 'hombre' ? 25 : 32;
-                const fatLimitMid = genero === 'hombre' ? 20 : 28;
-                const fatAthletic = genero === 'hombre' ? 15 : 22;
-                const muscleRatio = masaMuscular / peso; // % de peso que es músculo
-
-                // --- LÓGICA DE DIAGNÓSTICO ---
-
-                // 1. OBESIDAD / SOBREPESO (Prioridad Alta)
-                if (bmi > 30 && grasa > fatLimitHigh) {
-                    status = "⚠️ OBESIDAD (Nivel Alto)";
-                    colorClass = "text-red-600";
-                    advice = "ALERTA: Riesgo cardiovascular. Prioridad absoluta: Déficit calórico agresivo y caminar (evita correr por impacto).";
-                } 
-                else if (bmi > 27 && grasa > fatLimitHigh) {
-                    status = "⚠️ OBESIDAD (Nivel Medio)";
-                    colorClass = "text-red-500";
-                    advice = "Necesitas perder grasa urgentemente. Reduce carbohidratos y elimina azúcares ya.";
-                }
-                else if ((bmi > 25 || grasa > fatLimitMid) && muscleRatio < 0.35) {
-                    status = "🟠 SOBREPESO / SEDENTARIO";
-                    colorClass = "text-orange-500";
-                    advice = "Tienes exceso de energía acumulada. Aumenta el cardio y reduce la cena.";
-                }
-                // 2. FALSO DELGADO (Peso normal, pero mucha grasa y poco músculo)
-                else if (bmi < 25 && grasa > fatLimitMid && muscleRatio < 0.35) {
-                    status = "🟡 FALSO DELGADO (Skinny Fat)";
-                    colorClass = "text-yellow-600";
-                    advice = "Tu peso está bien, pero te falta tono muscular y te sobra grasa. Haz pesas y come proteína.";
-                }
-                // 3. DELGADO / ECTOMORFO
-                else if (bmi < 19 || (grasa < 10 && muscleRatio < 0.4)) {
-                    status = "🔵 ECTOMORFO / DELGADO";
-                    colorClass = "text-blue-500";
-                    advice = "Metabolismo muy rápido. Necesitas superávit calórico (comer más) y levantar pesado para crecer.";
-                }
-                // 4. FUERTE PERO CON GRASA (Endomorfo fuerte / Powerlifter)
-                else if (muscleRatio > 0.4 && grasa > fatAthletic) {
-                    status = "🟤 ENDOMORFO FUERTE";
-                    colorClass = "text-amber-700";
-                    advice = `Tienes mucha fuerza (Nivel Fit: ${(fitnessLevel*100).toFixed(0)}%), pero la grasa tapa tu definición. Haz cardio post-pesas.`;
-                }
-                // 5. ATLÉTICO / ESTÉTICO
-                else if (muscleRatio > 0.42 && grasa <= fatAthletic) {
-                    status = "🟢 CUERPO ESTÉTICO / ATLÉTICO";
-                    colorClass = "text-green-600";
-                    advice = `Excelente composición (${edad} años). Estás en el top físico. Mantén rendimiento y define detalles.`;
-                }
-                // 6. NORMAL
-                else {
-                    status = "⚖️ COMPOSICIÓN NORMAL";
-                    colorClass = "text-slate-600";
-                    advice = "Estás saludable. Para verte mejor, sube ligeramente la proteína y entrena fuerza.";
-                }
-                
-                // Ajuste por edad
-                if (edad > 50 && status.includes("NORMAL")) {
-                    advice += " A tu edad, prioriza la masa muscular para proteger huesos.";
-                }
-                
-                return { status, advice, bmi: bmi.toFixed(1), colorClass };
+                return {
+                    status,
+                    advice,
+                    bmi: bmi.toFixed(1),
+                    bmiCategory,
+                    fatCategory,
+                    fitnessLevel: Number.isFinite(fitnessLevel) ? Number(fitnessLevel.toFixed(2)) : 0,
+                    colorClass,
+                    badgeClass,
+                    alertLevel
+                };
             }
 
             calculateSleepScore(hours, quality = 100) {
@@ -2023,6 +2192,20 @@
                     advice += "Sistemas recuperados. Puedes entrenar fuerte hoy.";
                 }
                 return advice;
+            }
+
+            recalculateEverything(opts = {}) {
+                const { shouldSaveDay = false } = opts || {};
+                try {
+                    if (typeof calculateDynamicGoals === 'function') calculateDynamicGoals();
+                    if (typeof calculateStressBar === 'function') calculateStressBar();
+                    if (typeof updateBodyMap === 'function') updateBodyMap();
+                    if (typeof updateUI === 'function') updateUI();
+                    if (typeof checkAlerts === 'function') checkAlerts();
+                    if (shouldSaveDay && typeof saveDay === 'function') saveDay();
+                } catch (e) {
+                    console.error("recalculateEverything fallo:", e);
+                }
             }
         }
 
@@ -3890,6 +4073,7 @@
         }
 
         function editUserProfile() {
+            const __bioSnapshot = USER_BIO ? JSON.parse(JSON.stringify(USER_BIO)) : null;
             Swal.fire({
                 title: 'Editar Perfil Biológico',
                 html: `
@@ -3942,14 +4126,40 @@
                                 <option value="muscle_gain" ${USER_BIO.goal === 'muscle_gain' ? 'selected' : ''}>💪 Ganar Masa Muscular (Volumen)</option>
                             </select>
                         </div>
-                        <div class="col-span-2">
+                        <div class="col-span-2" id="swal-user-goal-speed-group">
                             <label class="text-xs font-bold text-gray-500">Ritmo del objetivo</label>
-                            <select id="swal-user-goal-speed" class="w-full border p-2 rounded mb-2">
-                                <option value="slow" ${(USER_BIO.goalSpeed || 'moderate') === 'slow' ? 'selected' : ''}>Lento (más sostenible)</option>
-                                <option value="moderate" ${(USER_BIO.goalSpeed || 'moderate') === 'moderate' ? 'selected' : ''}>Intermedio</option>
-                                <option value="fast" ${(USER_BIO.goalSpeed || 'moderate') === 'fast' ? 'selected' : ''}>Rápido (más exigente)</option>
+                            <div class="grid grid-cols-3 gap-2 mt-1">
+                                <button type="button" data-speed="slow" class="swal-speed-btn text-center p-3 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-200 transition">Lento</button>
+                                <button type="button" data-speed="moderate" class="swal-speed-btn text-center p-3 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-200 transition">Intermedio</button>
+                                <button type="button" data-speed="fast" class="swal-speed-btn text-center p-3 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-200 transition">Rápido</button>
+                            </div>
+                            <select id="swal-user-goal-speed" class="hidden">
+                                <option value="slow">Lento</option>
+                                <option value="moderate">Intermedio</option>
+                                <option value="fast">Rápido</option>
                             </select>
                         </div>
+                        <div id="swal-clinical-alert" class="col-span-2 hidden rounded-2xl border p-4"></div>
+                        <div class="col-span-2" id="swal-activity-section">
+                            <label class="text-xs font-bold text-gray-500">Actividad diaria</label>
+                            <button type="button" id="swal-start-activity-quiz-btn" class="w-full text-left bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition flex justify-between items-center">
+                                <span><i class="fas fa-question-circle mr-2"></i>Recalcular actividad diaria</span>
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </button>
+                            <input type="hidden" id="swal-user-activity-level" value="${USER_BIO.activityLevel || 'moderate'}">
+                            <div id="swal-activity-quiz-container" class="hidden bg-slate-50 border border-slate-200 rounded-3xl p-4 space-y-4 mt-2">
+                                <div class="quiz-progress"><div id="swal-quiz-progress" class="quiz-progress-fill"></div></div>
+                                <div id="swal-quiz-stage" class="quiz-stage"></div>
+                                <div class="text-right">
+                                    <button type="button" onclick="skipSwalActivityQuiz()" class="text-xs text-slate-500 hover:text-slate-700">Omitir cuestionario</button>
+                                </div>
+                            </div>
+                            <div id="swal-activity-summary" class="bg-white border border-slate-200 rounded-3xl p-4 text-sm text-slate-700 mt-2">
+                                <!-- Summary will be rendered here -->
+                            </div>
+                            <p class="text-[11px] text-gray-500 mt-1">Tu nivel actual es: <span id="swal-current-activity-label" class="font-bold"></span></p>
+                        </div>
+                        <div id="swal-user-goal-summary" class="col-span-2 bg-slate-50 border border-slate-200 rounded-3xl p-4 text-sm text-slate-700 hidden"></div>
                         <div class="col-span-2">
                             <label class="text-xs font-bold text-gray-500">Ubicación para clima real</label>
                             <div class="flex gap-2">
@@ -3967,6 +4177,95 @@
                 denyButtonColor: '#ef4444',
                 didOpen: () => {
                     window.__swalDetectedLocation = null;
+
+                    const renderSwalClinicalAlert = () => {
+                        const box = document.getElementById('swal-clinical-alert');
+                        if (!box) return;
+                        const gender = document.getElementById('swal-user-gen')?.value || 'hombre';
+                        const birth = document.getElementById('swal-user-birthdate')?.value;
+                        const age = birth ? calcularEdad(birth) : (USER_BIO?.edad || 25);
+                        const weight = Number(document.getElementById('swal-user-w')?.value) || 0;
+                        const height = Number(document.getElementById('swal-user-h')?.value) || 0;
+                        const bodyFat = Number(document.getElementById('swal-user-f')?.value);
+                        const muscleKg = Number(document.getElementById('swal-user-m')?.value);
+                        const goal = document.getElementById('swal-user-goal')?.value || 'maintenance';
+
+                        if (!weight || !height) {
+                            box.classList.add('hidden');
+                            return;
+                        }
+
+                        const alert = getClinicalAlert({ gender, age, weight, height, goal, bodyFat, muscleKg });
+                        box.className = `col-span-2 rounded-2xl border p-4 ${alert.color.border} ${alert.color.bg} ${alert.color.text}`;
+                        box.innerHTML = `
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-xl ${alert.color.badge} text-white flex items-center justify-center font-black">
+                                    ${alert.level === 'danger' ? '<i class="fas fa-triangle-exclamation"></i>' : alert.level === 'warn' ? '<i class="fas fa-circle-exclamation"></i>' : '<i class="fas fa-shield-heart"></i>'}
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-black">${alert.title}</div>
+                                    <div class="text-[13px] leading-5 mt-1">
+                                        ${alert.message}
+                                        <div class="mt-2 font-semibold">${alert.bmiText}</div>
+                                        ${alert.idealText ? `<div class="mt-1 text-[12px] opacity-90">${alert.idealText}</div>` : ''}
+                                    </div>
+                                    ${alert.recommendationGoal
+                                        ? `<button type="button" id="swal-apply-recommended-goal" class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 border border-white/60 font-black text-[12px] hover:bg-white transition">
+                                               <i class="fas fa-wand-magic-sparkles"></i> ${alert.recommendationGoal === 'fat_loss' ? 'Cambiar a Perder Grasa' : alert.recommendationGoal === 'muscle_gain' ? 'Cambiar a Ganar Masa' : 'Aplicar objetivo recomendado'}
+                                           </button>`
+                                        : ''}
+                                </div>
+                            </div>
+                        `;
+                        box.classList.remove('hidden');
+
+                        const btn = document.getElementById('swal-apply-recommended-goal');
+                        if (btn && alert.recommendationGoal) {
+                            btn.onclick = () => {
+                                const goalEl = document.getElementById('swal-user-goal');
+                                if (goalEl) {
+                                    goalEl.value = alert.recommendationGoal;
+                                    goalEl.dispatchEvent(new Event('change'));
+                                }
+                            };
+                        }
+                    };
+
+                    const applySwalDraftBioToGlobal = () => {
+                        try {
+                            const birth = document.getElementById('swal-user-birthdate')?.value;
+                            const draft = {
+                                genero: document.getElementById('swal-user-gen')?.value || (USER_BIO?.genero || 'hombre'),
+                                fechaNacimiento: birth || (USER_BIO?.fechaNacimiento || null),
+                                edad: birth ? calcularEdad(birth) : (USER_BIO?.edad || 18),
+                                peso: Number(document.getElementById('swal-user-w')?.value) || (USER_BIO?.peso || 70),
+                                altura: Number(document.getElementById('swal-user-h')?.value) || (USER_BIO?.altura || 170),
+                                grasa: Number(document.getElementById('swal-user-f')?.value) || (USER_BIO?.grasa || 15),
+                                masaMuscular: Number(document.getElementById('swal-user-m')?.value) || (USER_BIO?.masaMuscular || 30),
+                                maxRunKm: Number(document.getElementById('swal-user-maxrun')?.value) || (USER_BIO?.maxRunKm || 0),
+                                maxGymTime: Number(document.getElementById('swal-user-maxgym')?.value) || (USER_BIO?.maxGymTime || 60),
+                                maxBikeKm: Number(document.getElementById('swal-user-maxbike')?.value) || (USER_BIO?.maxBikeKm || 0),
+                                goalSpeed: document.getElementById('swal-user-goal-speed')?.value || (USER_BIO?.goalSpeed || 'moderate'),
+                                goal: document.getElementById('swal-user-goal')?.value || (USER_BIO?.goal || 'maintenance'),
+                                activityLevel: (swalActivityLevelResult || document.getElementById('swal-user-activity-level')?.value || USER_BIO?.activityLevel || 'moderate')
+                            };
+                            USER_BIO = { ...USER_BIO, ...draft };
+                            ENGINE.recalculateEverything({ shouldSaveDay: false });
+                        } catch (e) {
+                            console.error("applySwalDraftBioToGlobal fallo:", e);
+                        }
+                    };
+
+                    const bindLive = (id, evt = 'input') => {
+                        const el = document.getElementById(id);
+                        if (!el) return;
+                        el.addEventListener(evt, () => {
+                            renderSwalClinicalAlert();
+                            syncProfileGoalPreview();
+                            applySwalDraftBioToGlobal();
+                        });
+                    };
+
                     const birth = document.getElementById('swal-user-birthdate');
                     if (birth) {
                         birth.addEventListener('change', () => {
@@ -3981,18 +4280,17 @@
                     }
                     const locInput = document.getElementById('swal-user-location');
                     if (locInput) {
-                        let timer = null;
                         locInput.addEventListener('input', () => {
-                            clearTimeout(timer);
-                            const q = locInput.value;
-                            timer = setTimeout(() => {
+                            clearTimeout(swalLocTimer);
+                            const q = locInput.value.trim();
+                            swalLocTimer = setTimeout(() => {
                                 renderLocationSuggestions(q, 'swal-user-location-suggestions', async (picked) => {
                                     window.__swalDetectedLocation = { lat: picked.lat, lon: picked.lon };
                                     locInput.value = picked.name;
                                     const status = document.getElementById('swal-user-location-status');
                                     try {
                                         const clima = await fetchWeatherByCoords(picked.lat, picked.lon);
-                                        if (status) status.textContent = `Ubicación: ${picked.name} · ${clima.icon} ${clima.temp ?? '?'}°C`;
+                                        if (status) status.textContent = `Detectada: ${clima.icon} ${clima.temp ?? '?'}°C`;
                                     } catch (_) {
                                         if (status) status.textContent = `Ubicación seleccionada: ${picked.name}`;
                                     }
@@ -4000,6 +4298,61 @@
                             }, 250);
                         });
                     }
+
+                    const swalStartQuizBtn = document.getElementById('swal-start-activity-quiz-btn');
+                    if (swalStartQuizBtn) {
+                        swalStartQuizBtn.addEventListener('click', startSwalActivityQuiz);
+                    }
+
+                    // Lógica para los botones de ritmo
+                    const speedButtons = document.querySelectorAll('.swal-speed-btn');
+                    const speedSelect = document.getElementById('swal-user-goal-speed');
+                    
+                    const updateSpeedSelection = (speed) => {
+                        speedSelect.value = speed;
+                        speedButtons.forEach(btn => {
+                            btn.classList.toggle('bg-blue-600', btn.dataset.speed === speed);
+                            btn.classList.toggle('text-white', btn.dataset.speed === speed);
+                            btn.classList.toggle('bg-slate-100', btn.dataset.speed !== speed);
+                            btn.classList.toggle('text-slate-700', btn.dataset.speed !== speed);
+                        });
+                        syncProfileGoalPreview();
+                        renderSwalClinicalAlert();
+                        applySwalDraftBioToGlobal();
+                    };
+
+                    speedButtons.forEach(btn => btn.addEventListener('click', () => updateSpeedSelection(btn.dataset.speed)));
+                    updateSpeedSelection(USER_BIO.goalSpeed || 'moderate');
+
+                    const swalGoal = document.getElementById('swal-user-goal');
+                    const swalSpeed = document.getElementById('swal-user-goal-speed');
+                    const swalActivity = document.getElementById('swal-user-activity-level');
+                    const swalActivitySummary = document.getElementById('swal-activity-summary');
+                    if (swalGoal) swalGoal.addEventListener('change', () => {
+                        syncProfileGoalPreview();
+                        toggleGoalSpeedField('swal-user');
+                        renderSwalClinicalAlert();
+                        applySwalDraftBioToGlobal();
+                    });
+                    if (swalSpeed) swalSpeed.addEventListener('change', syncProfileGoalPreview);
+                    if (swalActivity) swalActivity.addEventListener('change', syncProfileGoalPreview);
+                    syncProfileGoalPreview();
+                    renderSwalActivitySummary(USER_BIO.activityLevel || 'moderate'); // Initial render of activity summary
+                    toggleGoalSpeedField('swal-user');
+                    renderSwalClinicalAlert();
+
+                    bindLive('swal-user-gen', 'change');
+                    bindLive('swal-user-birthdate', 'change');
+                    bindLive('swal-user-w', 'input');
+                    bindLive('swal-user-h', 'input');
+                    bindLive('swal-user-f', 'input');
+                    bindLive('swal-user-m', 'input');
+                    bindLive('swal-user-maxrun', 'input');
+                    bindLive('swal-user-maxgym', 'input');
+                    bindLive('swal-user-maxbike', 'input');
+
+                    // Hide quiz container initially
+                    document.getElementById('swal-activity-quiz-container').classList.add('hidden');
                 },
                 preConfirm: async () => {
                     const birthdate = document.getElementById('swal-user-birthdate').value;
@@ -4026,7 +4379,8 @@
                         lat: pickedCoords ? pickedCoords.lat : ((USER_BIO.lat != null) ? USER_BIO.lat : null),
                         lon: pickedCoords ? pickedCoords.lon : ((USER_BIO.lon != null) ? USER_BIO.lon : null),
                         goalSpeed: document.getElementById('swal-user-goal-speed').value || 'moderate',
-                        goal: document.getElementById('swal-user-goal').value
+                        goal: document.getElementById('swal-user-goal').value,
+                        activityLevel: swalActivityLevelResult || document.getElementById('swal-user-activity-level').value || 'moderate'
                     }
                 }
             }).then(async (result) => {
@@ -4035,11 +4389,17 @@
                     await ensureLocationCoordsInBio();
                     await guardarDatosUsuario();
                     await initWeatherFromUserBio();
-                    updateDay();
+                    ENGINE.recalculateEverything({ shouldSaveDay: true });
                     Swal.fire('Perfil Actualizado', `Las metas de agua y calorías se han ajustado a tu nueva biología. ${getGoalSpeedAdvice(USER_BIO.goalSpeed || 'moderate')}`, 'success');
                 } else if (result.isDenied) {
                     logoutUsuario();
                     Swal.close();
+                } else {
+                    // Si el usuario cierra el modal sin confirmar, revertimos el perfil en memoria
+                    if (__bioSnapshot) {
+                        USER_BIO = __bioSnapshot;
+                        ENGINE.recalculateEverything({ shouldSaveDay: false });
+                    }
                 }
             });
         }
@@ -4124,6 +4484,13 @@
             const sleepQEl = document.getElementById('sleepQuality');
             if(sleepQEl) todayData.sleepQuality = Number(sleepQEl.value) || 0;
 
+            const dailyActivityEl = document.getElementById('daily-activity-level');
+            if (dailyActivityEl) {
+                todayData.activityLevel = dailyActivityEl.value || (USER_BIO && USER_BIO.activityLevel) || 'moderate';
+            } else if (USER_BIO && USER_BIO.activityLevel) {
+                todayData.activityLevel = USER_BIO.activityLevel;
+            }
+
             calculateDynamicGoals();
             calculateStressBar(); 
             saveDay();
@@ -4156,6 +4523,43 @@
             if (key === 'vitD' && age >= 50) target = 20;
             if (key === 'vitB12' && age >= 50) target = 2.8;
             if (goal === 'fat_loss' && (key === 'vitB1' || key === 'vitB6' || key === 'vitB9')) target *= 1.1;
+
+            // --- Dinámicos por estrés / sueño / deporte ---
+            const mobileH = Number(todayData?.mobileHours) || 0;
+            const sleepH = Number(todayData?.sleepHours) || 7;
+            const sleepQ = Number(todayData?.sleepQuality) || 80;
+            const studyH = (todayData?.studySessions || []).reduce((a, b) => a + (Number(b.hours) || 0), 0);
+            const stressMental = Math.min(100, (studyH * 12) + (mobileH * 10));
+            const hardSleep = (sleepH < 6) || ((sleepQ > 0) && (sleepQ < 70));
+            const activityCals = (Number(todayData?.runCals) || 0) + (Number(todayData?.bikeCals) || 0) + (Number(todayData?.gymCals) || 0);
+            const intenseSport = activityCals > 550 || (Number(todayData?.runKm) || 0) > 8 || (Number(todayData?.bikeKm) || 0) > 35;
+
+            // Estrés / móvil / estudio => sube Mg + C (y algo de B6)
+            if (stressMental >= 45) {
+                if (key === 'magnesium') target *= 1.15;
+                if (key === 'vitC') target *= 1.20;
+                if (key === 'vitB6') target *= 1.10;
+            }
+            if (stressMental >= 70) {
+                if (key === 'magnesium') target *= 1.10;
+                if (key === 'vitC') target *= 1.10;
+            }
+
+            // Falta de sueño => D + Zinc suben (apoyo inmune/hormonal)
+            if (hardSleep) {
+                if (key === 'vitD') target *= 1.20;
+                if (key === 'zinc') target *= 1.15;
+            }
+
+            // Deporte intenso => Mg + Zinc + Vit C suben (estrés oxidativo/contracción)
+            if (intenseSport) {
+                if (key === 'magnesium') target *= 1.10;
+                if (key === 'zinc') target *= 1.05;
+                if (key === 'vitC') target *= 1.10;
+                if (key === 'sodium') target *= 1.20;
+                if (key === 'potassium') target *= 1.15;
+            }
+
             return target;
         }
 
@@ -4167,11 +4571,13 @@
             const weight = Number(USER_BIO.peso) || 70;
             const height = Number(USER_BIO.altura) || 170;
             const bodyFat = Number(USER_BIO.grasa) || 0;
-            const goal = USER_BIO.goal || 'maintenance';
+            const goal = normalizeGoalKey(USER_BIO.goal);
             const goalSpeed = USER_BIO.goalSpeed || "moderate";
+            const activityLevel = todayData.activityLevel || USER_BIO.activityLevel || 'moderate';
+            const activityMeta = getActivityLevelMeta(activityLevel);
             const leanMass = bodyFat > 0 ? (weight * (1 - (bodyFat / 100))) : (weight * 0.8);
 
-            const mifflin = (10 * weight) + (6.25 * height) - (5 * age) + (sex === 'mujer' ? -161 : 5);
+            const mifflin = (10 * weight) + (6.25 * height) - (5 * age) + (sex === 'mujer' ? -161 : 5); // Mifflin-St Jeor
             const katch = 370 + (21.6 * leanMass);
             const bmr = bodyFat > 0 ? ((mifflin * 0.35) + (katch * 0.65)) : mifflin;
 
@@ -4179,21 +4585,27 @@
             const standing = Number(todayData.standingHours) || 0;
             const sleepHours = Number(todayData.sleepHours) || 7;
             const sleepQuality = Number(todayData.sleepQuality) || 80;
-            const sleepRecovery = (Math.max(0, sleepHours - 6) * 0.01) + ((sleepQuality - 70) * 0.0015);
-            const activityFactor = 1.2 + Math.min(0.25, steps / 40000) + Math.min(0.08, standing * 0.01) + sleepRecovery;
-
-            let tdee = bmr * activityFactor + climate.termogenesisKcal;
+            const sleepRecovery = (Math.max(0, sleepHours - 6) * 0.01) + ((sleepQuality - 70) * 0.0015); // Ajuste por sueño
+            const baseTdee = Math.round(bmr * activityMeta.tdeeFactor);
+            let tdee = baseTdee + Math.round(bmr * sleepRecovery) + climate.termogenesisKcal;
             let activityCals = 0;
             const runCals = (Number(todayData.runCals) > 0) ? Number(todayData.runCals) : ((Number(todayData.runKm) || 0) * weight * 1.03);
             const bikeCals = (Number(todayData.bikeCals) > 0) ? Number(todayData.bikeCals) : ((Number(todayData.bikeKm) || 0) * weight * 0.4);
             const gymCals = Number(todayData.gymCals) || 0;
-            activityCals += runCals + bikeCals + gymCals;
+            // NEAT (pasos) -> kcal: ~0.04 kcal/paso, ajustado por peso
+            // Referencia práctica: 10k pasos ≈ 400 kcal en 70kg (varía por zancada/velocidad); aquí lo ajustamos por peso.
+            const kcalPerStepBase = 0.04;
+            const kcalPerStep = Math.min(0.06, Math.max(0.025, kcalPerStepBase * (weight / 70)));
+            const stepsCals = steps > 0 ? (steps * kcalPerStep) : 0;
+            todayData.stepsCals = stepsCals;
+
+            activityCals += runCals + bikeCals + gymCals + stepsCals;
             tdee += activityCals;
 
-            const studyHours = (todayData.studySessions || []).reduce((a, b) => a + (Number(b.hours) || 0), 0);
+            const studyHours = (todayData.studySessions || []).reduce((a, b) => a + (Number(b.hours) || 0), 0); // Suma de horas de estudio
             const studyCals = (todayData.studySessions || []).reduce((a, b) => a + ((Number(b.hours) || 0) * ((Number(b.focus) || 1) * 18)), 0);
             tdee += studyCals;
-            tdee += Math.max(0, (Number(todayData.mobileHours) || 0) - 2) * 6;
+            tdee += Math.max(0, (Number(todayData.mobileHours) || 0) - 2) * 6; // Pequeño gasto por uso de móvil
 
             const goalDeltaPct = {
                 fat_loss: { slow: -0.10, moderate: -0.18, fast: -0.25 },
@@ -4204,25 +4616,53 @@
             let targetCals = tdee * (1 + deltaPct);
 
             const safetyFloorByGender = sex === 'mujer' ? 1200 : 1500;
-            const safetyFloorByFFM = leanMass * 22;
+            const safetyFloorByFFM = leanMass * 22; // Mínimo para no perder masa muscular
             const calorieSafetyFloor = Math.max(safetyFloorByGender, safetyFloorByFFM);
             targetCals = Math.max(targetCals, calorieSafetyFloor);
 
-            let proteinPerKg = (goal === 'fat_loss') ? 2.2 : (goal === 'muscle_gain' ? 1.9 : 1.7);
-            if (activityCals > 500) proteinPerKg += 0.15;
-            if (age > 55) proteinPerKg += 0.1;
-            let protein = proteinPerKg * weight;
+            // ======================================================================================
+            // Rangos nutricionales (min/max) en vez de “meta fija”
+            // ======================================================================================
+            // Reutilizamos studyHours ya calculado arriba (evitar redeclare)
+            const mobileH = Number(todayData.mobileHours) || 0;
+            const mentalStress = (studyHours * 10) + (Math.max(0, mobileH - 2) * 12); // proxy
+            const brainFatBoost = mentalStress >= 45 ? 0.08 : (mentalStress >= 25 ? 0.04 : 0); // +4% / +8% kcal a grasas
 
-            let fatPerKg = sex === 'mujer' ? 0.85 : 0.75;
-            if (goal === 'fat_loss') fatPerKg -= 0.05;
-            let fat = Math.max(fatPerKg * weight, sex === 'mujer' ? 50 : 45);
+            // Proteína (g/kg) min/max por objetivo + actividad
+            let pMinKg = 1.6;
+            let pMaxKg = 2.2;
+            if (goal === 'muscle_gain') { pMinKg = 1.7; pMaxKg = 2.2; }
+            if (goal === 'fat_loss') { pMinKg = 1.8; pMaxKg = 2.4; }
+            if (activityCals > 500) { pMinKg += 0.05; pMaxKg += 0.10; }
+            if (age >= 55) { pMinKg += 0.05; pMaxKg += 0.05; }
 
-            const remainingForCarbs = targetCals - ((protein * 4) + (fat * 9));
-            let carbs = Math.max(remainingForCarbs / 4, 120 + Math.round((activityCals / 250) * 10));
-            if (remainingForCarbs < 0) {
-                fat = Math.max(fat - (Math.abs(remainingForCarbs) / 9), sex === 'mujer' ? 45 : 40);
-                carbs = 120;
-            }
+            const protMin = pMinKg * weight;
+            const protMax = pMaxKg * weight;
+
+            // Grasa (g/kg) min/max; sube por estrés mental (omega-3/cerebro)
+            let fMinKg = sex === 'mujer' ? 0.75 : 0.65;
+            let fMaxKg = sex === 'mujer' ? 1.10 : 0.95;
+            if (goal === 'fat_loss') { fMinKg -= 0.05; fMaxKg -= 0.05; }
+            if (goal === 'muscle_gain') { fMinKg += 0.03; fMaxKg += 0.05; }
+            fMinKg += brainFatBoost;
+            fMaxKg += brainFatBoost;
+
+            const fatMin = Math.max(fMinKg * weight, sex === 'mujer' ? 45 : 40);
+            const fatMax = Math.max(fMaxKg * weight, sex === 'mujer' ? 70 : 65);
+
+            // Carbohidratos: el resto, con mínimos por cerebro + deporte
+            const carbsFloor = 120 + Math.round((activityCals / 250) * 12) + (studyHours >= 4 ? 20 : 0);
+            // Max carbs asumido como “resto con protMin + fatMin”
+            const carbsMaxFromCals = Math.max(0, (targetCals - ((protMin * 4) + (fatMin * 9))) / 4);
+            const carbsMinFromCals = Math.max(0, (targetCals - ((protMax * 4) + (fatMax * 9))) / 4);
+            const carbsMin = Math.max(carbsFloor, carbsMinFromCals);
+            const carbsMax = Math.max(carbsMin + 10, carbsMaxFromCals);
+
+            // Objetivo “meta” (para consejos) = punto medio del rango
+            const protein = (protMin + protMax) / 2;
+            const fat = (fatMin + fatMax) / 2;
+            const carbs = (carbsMin + carbsMax) / 2;
+
             const sat = Math.min((targetCals * 0.10) / 9, fat * 0.35);
 
             let baseMlKg = sex === 'mujer' ? 31 : 35;
@@ -4230,21 +4670,32 @@
             if (age >= 70) baseMlKg -= 2;
             if (bodyFat > 30) baseMlKg -= 1;
             const tempAvg = [CLIMA_REAL.temp, CLIMA_REAL.tempMax, CLIMA_REAL.tempMin].filter(v => v != null).reduce((a, b, _, arr) => a + b / arr.length, climate.temp);
-            const tempDelta = tempAvg - 22;
+            const tempDelta = tempAvg - 22; // Temperatura de confort
             let weatherFactor = 1 + (tempDelta * 0.015);
             if (weatherFactor < 0.88) weatherFactor = 0.88;
             let water = (weight * baseMlKg) * weatherFactor;
-            water += (activityCals * 1.2);
-            water += (steps * 0.015);
-            water += (studyHours * 120);
-            if (sleepHours < 6) water += 250;
+            // Ajuste por deporte / movimiento / carga mental / sueño / objetivo
+            const standingHours = Number(todayData.standingHours) || 0;
+            const goalWaterBoost = goal === 'fat_loss' ? 180 : (goal === 'muscle_gain' ? 120 : 0);
+            water += (activityCals * 1.25);          // ml por kcal de actividad
+            water += (steps * 0.02);                 // pasos aumentan demanda hídrica
+            water += (standingHours * 140);          // horas de pie
+            water += (studyHours * 110);             // carga cognitiva
+            water += goalWaterBoost;                 // objetivo (déficit = más riesgo de fatiga/deshidratación)
+            if (sleepHours < 6) water += 280;
 
             let g = {
                 cals: targetCals,
                 prot: protein,
+                protMin,
+                protMax,
                 fat: fat,
+                fatMin,
+                fatMax,
                 sat: sat,
                 carbs: carbs,
+                carbsMin,
+                carbsMax,
                 water: water
             };
 
@@ -4255,8 +4706,12 @@
             } else {
                 waterDetails.push({ txt: `Clima (${climate.temp}°C)`, val: `${Math.round((weatherFactor - 1) * 100)}%` });
             }
-            if (activityCals > 0) waterDetails.push({ txt: `Deporte (${Math.round(activityCals)} kcal)`, val: `+${Math.round(activityCals * 1.2)}ml` });
-            if (studyHours > 0) waterDetails.push({ txt: `Estudio (${studyHours.toFixed(1)}h)`, val: `+${Math.round(studyHours * 120)}ml` });
+            if (activityCals > 0) waterDetails.push({ txt: `Deporte (${Math.round(activityCals)} kcal)`, val: `+${Math.round(activityCals * 1.25)}ml` });
+            if (steps > 0) waterDetails.push({ txt: `Pasos (${Math.round(steps)})`, val: `+${Math.round(steps * 0.02)}ml` });
+            if (standingHours > 0) waterDetails.push({ txt: `De pie (${standingHours.toFixed(1)}h)`, val: `+${Math.round(standingHours * 140)}ml` });
+            if (studyHours > 0) waterDetails.push({ txt: `Estudio (${studyHours.toFixed(1)}h)`, val: `+${Math.round(studyHours * 110)}ml` });
+            if (goalWaterBoost > 0) waterDetails.push({ txt: `Objetivo (${goal === 'fat_loss' ? 'déficit' : 'masa'})`, val: `+${Math.round(goalWaterBoost)}ml` });
+            if (sleepHours < 6) waterDetails.push({ txt: `Sueño bajo (${sleepHours.toFixed(1)}h)`, val: `+280ml` });
 
             // NUTRICIÓN ADVICE
             nutritionAdvice = "";
@@ -4288,7 +4743,13 @@
                 nutritionAdvice = "<li class='text-gray-600'>Mantén una alimentación equilibrada.</li>";
             }
 
-            currentGoals = g;
+            // Normalizamos para UI (mantener compatibilidad: goal-prot = MAX, etc.)
+            currentGoals = {
+                ...g,
+                prot: g.protMax ?? g.prot,
+                fat: g.fatMax ?? g.fat,
+                carbs: g.carbsMax ?? g.carbs
+            };
         }
 
         function calculatePhysicalStressScore() {
@@ -4404,8 +4865,9 @@
             const comp = ENGINE.analyzeBodyComposition();
             const analysisDiv = document.getElementById('body-analysis-text');
             if(analysisDiv) {
-                analysisDiv.innerHTML = `${comp.status} <span class="text-gray-300">|</span> <span class="text-[10px] font-normal text-gray-500">${comp.advice}</span>`;
-                analysisDiv.innerHTML = `<span class="${comp.colorClass} font-black uppercase tracking-tight">${comp.status}</span><br><span class="text-[10px] font-medium text-slate-500 leading-tight block mt-1">${comp.advice}</span>`;
+                const base = "text-xs text-center font-bold mb-2 px-3 py-2 rounded-2xl w-full";
+                analysisDiv.className = `${base} ${comp.badgeClass || 'bg-slate-100 text-slate-700'}`;
+                analysisDiv.innerHTML = `<span class="font-black uppercase tracking-tight">${comp.status}</span><br><span class="text-[10px] font-medium leading-tight block mt-1">${comp.advice}</span>`;
             }
 
             // 2. Resetear todos los músculos a gris
@@ -4442,32 +4904,106 @@
                 });
             };
 
-            // --- PINTAR RECUPERACIÓN DE AYER (HISTORIAL) ---
-            // Si ayer entrenaste, esos músculos deben salir en Naranja (Recuperación) hoy,
-            // a menos que hoy los vuelvas a entrenar (que pasarían a Rojo/Verde según intensidad hoy).
-            if (history.length > 0) {
-                const yesterday = history[0].data;
-                
-                // Recuperación Piernas (Running/Bici ayer)
-                if (yesterday.runKm > 5 || yesterday.bikeKm > 20) {
-                    paint('front-quads', 2); // Naranja
-                    paint('back-calves', 2);
-                    paint('front-calves', 2);
-                    paint('back-hams', 2);
-                    paint('back-glutes', 2);
-                }
+            // --- RECUPERACIÓN PROGRESIVA (esfuerzo relativo + decay por días) ---
+            // Objetivo: si haces 100% de tu máximo -> rojo; día siguiente -> naranja; segundo día -> verde.
+            const safeDiv = (a, b) => (b && b > 0) ? (a / b) : 0;
+            const clamp01 = (x) => Math.max(0, Math.min(1, x));
+            const sumGymBy = (day, muscle) => (day.gymSessions || []).reduce((acc, s) => acc + ((s.muscle === muscle) ? (Number(s.time) || 0) : 0), 0);
 
-                // Recuperación Gym Ayer
-                if (yesterday.gymSessions) {
-                    yesterday.gymSessions.forEach(s => {
-                        // Mapeo simplificado de recuperación
-                        if (s.muscle === 'pecho') paint('front-pecs', 2);
-                        if (s.muscle === 'espalda') paint('back-lats', 2);
-                        if (s.muscle === 'pierna') { paint('front-quads', 2); paint('back-hams', 2); }
-                        if (s.muscle === 'brazos') { paint('front-biceps', 2); paint('back-triceps', 2); }
-                        if (s.muscle === 'hombro') paint('front-delts', 2);
-                    });
-                }
+            const computeRelLoad = (day) => {
+                const maxRun = Number(USER_BIO?.maxRunKm) || 0;
+                const maxBike = Number(USER_BIO?.maxBikeKm) || 0;
+                const maxGym = Number(USER_BIO?.maxGymTime) || 0;
+
+                const runRel = clamp01(safeDiv(Number(day.runKm) || 0, maxRun || 5));
+                const bikeRel = clamp01(safeDiv(Number(day.bikeKm) || 0, maxBike || 25));
+
+                const legGym = clamp01(safeDiv(sumGymBy(day, 'pierna'), maxGym || 60));
+                const chestGym = clamp01(safeDiv(sumGymBy(day, 'pecho'), maxGym || 60));
+                const backGym = clamp01(safeDiv(sumGymBy(day, 'espalda'), maxGym || 60));
+                const armsGym = clamp01(safeDiv(sumGymBy(day, 'brazos'), maxGym || 60));
+                const shoulderGym = clamp01(safeDiv(sumGymBy(day, 'hombro'), maxGym || 60));
+                const absGym = clamp01(safeDiv(sumGymBy(day, 'abs'), maxGym || 45));
+
+                // Intensidad subjetiva (1..3) eleva carga un poco
+                const intFactor = (x) => (x >= 3 ? 1.15 : (x >= 2 ? 1.05 : 1.0));
+                const sportInt = Math.max(Number(day.runInt) || 1, Number(day.bikeInt) || 1);
+                const sport = clamp01(Math.max(runRel, bikeRel) * intFactor(sportInt));
+
+                // Piernas = sport o pierna gym
+                const legs = clamp01(Math.max(sport, legGym));
+
+                return {
+                    legs,
+                    chest: clamp01(chestGym),
+                    back: clamp01(backGym),
+                    arms: clamp01(armsGym),
+                    shoulder: clamp01(shoulderGym),
+                    core: clamp01(absGym)
+                };
+            };
+
+            const levelFromScore = (s) => {
+                if (s >= 0.85) return 3; // rojo
+                if (s >= 0.45) return 2; // naranja
+                if (s >= 0.20) return 1; // verde
+                return 0;
+            };
+
+            const decay = [1.0, 0.55, 0.25]; // hoy, 1 día, 2 días
+            const daysToCheck = Math.min(3, history.length + 1);
+            let fatigue = { legs: 0, chest: 0, back: 0, arms: 0, shoulder: 0, core: 0 };
+
+            // Día 0 = hoy (todayData), día 1..2 = history[0..1]
+            for (let d = 0; d < daysToCheck; d++) {
+                const day = (d === 0) ? todayData : (history[d - 1] ? history[d - 1].data : null);
+                if (!day) continue;
+                const rel = computeRelLoad(day);
+                const factor = decay[d] || 0.15;
+                Object.keys(fatigue).forEach(k => {
+                    fatigue[k] = Math.max(fatigue[k], rel[k] * factor);
+                });
+            }
+
+            // Pintar recuperación base (incluye “hoy” como rojo si corresponde)
+            const legsLevel = levelFromScore(fatigue.legs);
+            if (legsLevel > 0) {
+                paint('front-quads', legsLevel);
+                paint('back-hams', legsLevel >= 2 ? 2 : 1);
+                paint('back-glutes', legsLevel >= 2 ? 2 : 1);
+                paint('front-calves', legsLevel);
+                paint('back-calves', legsLevel);
+            }
+            const chestLevel = levelFromScore(fatigue.chest);
+            if (chestLevel > 0) {
+                paint('front-pecs', chestLevel);
+                paint('back-triceps', Math.max(1, chestLevel - 1));
+                paint('front-delts', Math.max(1, chestLevel - 1));
+            }
+            const backLevel = levelFromScore(fatigue.back);
+            if (backLevel > 0) {
+                paint('back-lats', backLevel);
+                paint('back-traps', backLevel);
+                paint('back-lower', Math.max(1, backLevel - 1));
+                paint('front-biceps', Math.max(1, backLevel - 1));
+            }
+            const armsLevel = levelFromScore(fatigue.arms);
+            if (armsLevel > 0) {
+                paint('front-biceps', armsLevel);
+                paint('back-triceps', armsLevel);
+                paint('front-forearms', Math.max(1, armsLevel - 1));
+            }
+            const shoulderLevel = levelFromScore(fatigue.shoulder);
+            if (shoulderLevel > 0) {
+                paint('front-delts', shoulderLevel);
+                paint('back-delts', shoulderLevel);
+                paint('front-traps', Math.max(1, shoulderLevel - 1));
+                paint('back-traps', Math.max(1, shoulderLevel - 1));
+            }
+            const coreLevel = levelFromScore(fatigue.core);
+            if (coreLevel > 0) {
+                paint('front-abs', coreLevel);
+                paint('front-obliques', coreLevel);
             }
 
             // --- LÓGICA DE MAPEO (Igualando la imagen de referencia) ---
@@ -4684,56 +5220,119 @@
         }
         
         function updateUI() { 
-            renderStudySessions(); 
-            document.getElementById('range-mobile').value = todayData.mobileHours; 
-            document.getElementById('val-mobile').innerText = todayData.mobileHours; 
-            document.getElementById('home-mobile').innerText = `${todayData.mobileHours}h Móvil`; 
-            document.getElementById('range-steps').value = todayData.steps; 
-            document.getElementById('val-steps').innerText = todayData.steps; 
-            document.getElementById('home-steps').innerText = todayData.steps; 
-            document.getElementById('range-standing').value = todayData.standingHours; 
-            document.getElementById('val-standing').innerText = todayData.standingHours; 
-            
-            renderGymSessions();
+            try {
+                renderStudySessions(); 
 
-            let sum = { cal:0, prot:0, fat:0, sat:0, carb:0 }; 
-            todayData.foodLog.forEach(f => { 
-                sum.cal+=f.cal; 
-                sum.prot+=f.prot; 
-                sum.fat+=f.fat; 
-                sum.carb+=f.carb; 
-                if(f.sat) sum.sat+=f.sat; 
-            }); 
-            
-            const setBar = (id, val, max) => { 
-                const p = Math.min((val/max)*100, 100); 
-                const el = document.getElementById(`bar-${id}`); 
-                if(el) el.style.width = p+'%'; 
-                document.getElementById(`val-${id}`).innerText = (val % 1 !== 0 && val < 10) ? val.toFixed(1) : Math.round(val); 
-                document.getElementById(`goal-${id}`).innerText = Math.round(max); 
-            }; 
-            
-            setBar('cals', sum.cal, currentGoals.cals); 
-            setBar('prot', sum.prot, currentGoals.prot); 
-            setBar('fat', sum.fat, currentGoals.fat); 
-            setBar('carbs', sum.carb, currentGoals.carbs); 
-            setBar('sat', sum.sat, currentGoals.sat); 
-            
-            document.getElementById('total-consumed-kcal').innerText = Math.round(sum.cal) + ' kcal'; 
-            document.getElementById('home-water').innerText = todayData.water; 
-            document.getElementById('home-water-goal').innerText = Math.round(currentGoals.water); 
-            document.getElementById('mini-bar-water').style.width = Math.min((todayData.water/currentGoals.water)*100, 100) + '%'; 
-            
-            const wp = Math.min(todayData.water / currentGoals.water, 1); 
-            document.getElementById('water-circle').style.strokeDashoffset = 628 - (wp * 628); 
-            document.getElementById('water-display-lg').innerText = todayData.water; 
-            document.getElementById('water-goal-text').innerText = `Meta dinámica: ${Math.round(currentGoals.water)} ml`; 
-            
-            document.getElementById('home-sport-km').innerText = todayData.runKm + todayData.bikeKm; 
-            const sportProgress = Math.min(((todayData.runKm + (todayData.bikeKm*0.4)) / 10) * 100, 100); 
-            document.getElementById('bar-sport-home').style.width = sportProgress + '%'; 
-            
-            document.getElementById('addedFoodsList').innerHTML = todayData.foodLog.map((f, i) => `<div class="flex justify-between items-center text-sm py-3 border-b border-gray-100 last:border-0 bg-white p-3 rounded-xl mb-2 shadow-sm"><div><div class="text-slate-700 font-bold">${f.name} <span class="text-xs text-gray-400 font-normal">(${f.weight}g)</span></div><div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g | S: ${f.sat ? f.sat.toFixed(1) : 0}g</div></div><div class="flex items-center gap-3"><span class="font-bold text-xs text-slate-500 bg-gray-100 px-2 py-1 rounded">${Math.round(f.cal)} kcal</span><button onclick="removeFood(${i})" class="text-red-300 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 transition"><i class="fas fa-times"></i></button></div></div>`).join('') || '<p class="text-center text-gray-300 text-xs py-4">No has añadido comidas aún.</p>'; 
+                const setValue = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+                const setText = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+
+                setValue('range-mobile', todayData.mobileHours);
+                setText('val-mobile', todayData.mobileHours);
+                setText('home-mobile', `${todayData.mobileHours}h Móvil`);
+
+                setValue('range-steps', todayData.steps);
+                setText('val-steps', todayData.steps);
+                setText('home-steps', todayData.steps);
+
+                setValue('range-standing', todayData.standingHours);
+                setText('val-standing', todayData.standingHours);
+                
+                renderGymSessions();
+
+                let sum = { cal:0, prot:0, fat:0, sat:0, carb:0 }; 
+                (todayData.foodLog || []).forEach(f => { 
+                    sum.cal+=f.cal; 
+                    sum.prot+=f.prot; 
+                    sum.fat+=f.fat; 
+                    sum.carb+=f.carb; 
+                    if(f.sat) sum.sat+=f.sat; 
+                }); 
+                
+                const setBar = (id, val, max, min = null) => { 
+                    const safeMax = (max && max > 0) ? max : 1;
+                    const p = Math.min((val/safeMax)*100, 100); 
+                    const el = document.getElementById(`bar-${id}`); 
+                    if(el) el.style.width = p+'%'; 
+                    const valEl = document.getElementById(`val-${id}`);
+                    if (valEl) valEl.innerText = (val % 1 !== 0 && val < 10) ? val.toFixed(1) : Math.round(val); 
+                    const goalEl = document.getElementById(`goal-${id}`);
+                    if (goalEl) goalEl.innerText = Math.round(max || 0); 
+
+                    const minGoalEl = document.getElementById(`goal-${id}-min`);
+                    if (minGoalEl && min != null) minGoalEl.innerText = Math.round(min);
+
+                    const minMark = document.getElementById(`minmark-${id}`);
+                    if (minMark && min != null) {
+                        const left = Math.max(0, Math.min((min / safeMax) * 100, 100));
+                        minMark.style.left = `${left}%`;
+                    }
+                }; 
+                
+                setBar('cals', sum.cal, currentGoals.cals); 
+                setBar('prot', sum.prot, currentGoals.protMax ?? currentGoals.prot, currentGoals.protMin ?? null); 
+                setBar('fat', sum.fat, currentGoals.fatMax ?? currentGoals.fat, currentGoals.fatMin ?? null); 
+                setBar('carbs', sum.carb, currentGoals.carbsMax ?? currentGoals.carbs, currentGoals.carbsMin ?? null); 
+                setBar('sat', sum.sat, currentGoals.sat); 
+
+                // Mirror the kcal goal pill (if present)
+                document.querySelectorAll('.goal-cals-mirror').forEach(el => {
+                    el.textContent = String(Math.round(currentGoals.cals || 0));
+                });
+                
+                setText('total-consumed-kcal', Math.round(sum.cal) + ' kcal');
+                setText('home-water', todayData.water);
+                setText('home-water-goal', Math.round(currentGoals.water || 0));
+                const miniBarWater = document.getElementById('mini-bar-water');
+                if (miniBarWater) miniBarWater.style.width = Math.min((todayData.water/(currentGoals.water || 1))*100, 100) + '%'; 
+                
+                const wp = Math.min(todayData.water / (currentGoals.water || 1), 1); 
+                const waterCircle = document.getElementById('water-circle');
+                if (waterCircle) waterCircle.style.strokeDashoffset = 628 - (wp * 628); 
+                setText('water-display-lg', todayData.water);
+                setText('water-goal-text', `Meta dinámica: ${Math.round(currentGoals.water || 0)} ml`); 
+                
+                setText('home-sport-km', (Number(todayData.runKm) || 0) + (Number(todayData.bikeKm) || 0)); 
+                const sportProgress = Math.min((((Number(todayData.runKm) || 0) + ((Number(todayData.bikeKm) || 0)*0.4)) / 10) * 100, 100); 
+                const barSportHome = document.getElementById('bar-sport-home');
+                if (barSportHome) barSportHome.style.width = sportProgress + '%'; 
+
+                // Mini-resumen premium de actividad (Apple Health style)
+                const ints = ['--', 'Suave', 'Normal', 'Alta'];
+                const weight = Number(USER_BIO && USER_BIO.peso) || 70;
+                const runCalsUi = (Number(todayData.runCals) > 0) ? Number(todayData.runCals) : ((Number(todayData.runKm) || 0) * weight * 1.03);
+                const bikeCalsUi = (Number(todayData.bikeCals) > 0) ? Number(todayData.bikeCals) : ((Number(todayData.bikeKm) || 0) * weight * 0.4);
+                const gymCalsUi = Number(todayData.gymCals) || 0;
+                const stepsCalsUi = Number(todayData.stepsCals) || 0;
+
+                const candidates = [
+                    { key: 'gym', label: 'Gimnasio', icon: 'fa-dumbbell', color: 'text-slate-800', kcal: gymCalsUi, meta: `${Math.round(todayData.gymTime || 0)} min · ${ints[todayData.gymInt] || 'Normal'}` },
+                    { key: 'bike', label: 'Bicicleta', icon: 'fa-bicycle', color: 'text-indigo-600', kcal: bikeCalsUi, meta: `${Number(todayData.bikeKm || 0)} km · ${ints[todayData.bikeInt] || 'Normal'}` },
+                    { key: 'run', label: 'Running', icon: 'fa-running', color: 'text-orange-500', kcal: runCalsUi, meta: `${Number(todayData.runKm || 0)} km · ${ints[todayData.runInt] || 'Normal'}` },
+                    { key: 'steps', label: 'Pasos', icon: 'fa-shoe-prints', color: 'text-green-600', kcal: stepsCalsUi, meta: `${Math.round(todayData.steps || 0)} pasos` }
+                ];
+                const best = candidates
+                    .filter(c => (c.kcal || 0) > 0 || (c.key === 'steps' && (todayData.steps || 0) > 0))
+                    .sort((a, b) => (b.kcal || 0) - (a.kcal || 0))[0];
+
+                const mini = document.getElementById('home-sport-mini');
+                const iconEl = document.getElementById('home-sport-icon');
+                if (mini && iconEl) {
+                    if (best) {
+                        iconEl.className = `fas ${best.icon} ${best.color} text-xl`;
+                        mini.innerText = `${best.label} · ${best.meta} · +${Math.round(best.kcal || 0)} kcal`;
+                    } else {
+                        iconEl.className = 'fas fa-running text-orange-500 text-xl';
+                        mini.innerText = 'Actividad · 0 kcal';
+                    }
+                }
+                
+                const addedFoodsList = document.getElementById('addedFoodsList');
+                if (addedFoodsList) {
+                    addedFoodsList.innerHTML = (todayData.foodLog || []).map((f, i) => `<div class="flex justify-between items-center text-sm py-3 border-b border-gray-100 last:border-0 bg-white p-3 rounded-xl mb-2 shadow-sm"><div><div class="text-slate-700 font-bold">${f.name} <span class="text-xs text-gray-400 font-normal">(${f.weight}g)</span></div><div class="text-[10px] text-gray-400">P: ${Math.round(f.prot)}g | C: ${Math.round(f.carb)}g | G: ${Math.round(f.fat)}g | S: ${f.sat ? f.sat.toFixed(1) : 0}g</div></div><div class="flex items-center gap-3"><span class="font-bold text-xs text-slate-500 bg-gray-100 px-2 py-1 rounded">${Math.round(f.cal)} kcal</span><button onclick="removeFood(${i})" class="text-red-300 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 transition"><i class="fas fa-times"></i></button></div></div>`).join('') || '<p class="text-center text-gray-300 text-xs py-4">No has añadido comidas aún.</p>'; 
+                }
+            } catch (e) {
+                console.error("updateUI error:", e);
+            }
         }
         
         function addGymSession() {
@@ -4812,6 +5411,45 @@
             document.getElementById('total-gym-time-display').innerText = todayData.gymTime + ' min';
             
             updateDay(); 
+            proposeUpdateMaxPerformance();
+        }
+
+        function proposeUpdateMaxPerformance() {
+            if (!USER_BIO) return;
+            const key = `fittracker_max_prompt_${new Date().toISOString().slice(0,10)}`;
+            if (localStorage.getItem(key)) return;
+
+            const suggestions = [];
+            if ((Number(todayData.runKm) || 0) > (Number(USER_BIO.maxRunKm) || 0) && (Number(todayData.runKm) || 0) > 0) {
+                suggestions.push({ field: 'maxRunKm', label: 'Max Run (km)', value: Number(todayData.runKm) });
+            }
+            if ((Number(todayData.bikeKm) || 0) > (Number(USER_BIO.maxBikeKm) || 0) && (Number(todayData.bikeKm) || 0) > 0) {
+                suggestions.push({ field: 'maxBikeKm', label: 'Max Bici (km)', value: Number(todayData.bikeKm) });
+            }
+            if ((Number(todayData.gymTime) || 0) > (Number(USER_BIO.maxGymTime) || 0) && (Number(todayData.gymTime) || 0) > 0) {
+                suggestions.push({ field: 'maxGymTime', label: 'Max Gym (min)', value: Number(todayData.gymTime) });
+            }
+            if (suggestions.length === 0) return;
+
+            localStorage.setItem(key, '1');
+            const html = suggestions.map(s => `<div class="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-3 mb-2">
+                <div class="text-left"><div class="font-black text-slate-800 text-sm">${s.label}</div><div class="text-xs text-slate-500">Nuevo récord detectado</div></div>
+                <div class="font-mono font-black text-blue-600">${s.value}</div>
+            </div>`).join('');
+
+            Swal.fire({
+                title: 'Nuevo récord detectado',
+                html: `<div class="text-sm text-slate-700 mb-3">¿Quieres actualizar tus máximos? Esto mejora el mapa de recuperación y el “esfuerzo relativo”.</div>${html}`,
+                showCancelButton: true,
+                confirmButtonText: 'Actualizar máximos',
+                cancelButtonText: 'Ahora no',
+                confirmButtonColor: '#1e293b'
+            }).then(async (res) => {
+                if (!res.isConfirmed) return;
+                suggestions.forEach(s => { USER_BIO[s.field] = s.value; });
+                await guardarDatosUsuario();
+                ENGINE.recalculateEverything({ shouldSaveDay: false });
+            });
         }
         
         function showDetails(type) { 
@@ -5259,6 +5897,13 @@
             if(document.getElementById('wakeTime')) document.getElementById('wakeTime').value = todayData.wakeTime; 
             if(document.getElementById('sleepHours')) document.getElementById('sleepHours').value = todayData.sleepHours || ''; 
             if(document.getElementById('sleepQuality')) document.getElementById('sleepQuality').value = todayData.sleepQuality || ''; 
+            
+            // Sincronizar selector de actividad diaria con USER_BIO
+            const activityLevelEl = document.getElementById('daily-activity-level');
+            if (activityLevelEl) {
+                activityLevelEl.value = (USER_BIO && USER_BIO.activityLevel) || todayData.activityLevel || 'moderate';
+                todayData.activityLevel = activityLevelEl.value;
+            }
             
             document.getElementById('range-run-km').value = todayData.runKm || 0; 
             document.getElementById('range-run-pace').value = todayData.runPace || 5.5; 
@@ -6095,12 +6740,14 @@
                     });
                     document.getElementById('onboarding-modal').classList.remove('hidden');
                     document.getElementById('onboarding-modal').classList.add('flex');
+                    openOnboardingWizard(user);
                 } else {
                     const datos = docSnap.data();
                     if (datos.perfilCompletado === false) {
                         // Existe pero la última vez cerró la app sin acabar el formulario
                         document.getElementById('onboarding-modal').classList.remove('hidden');
                         document.getElementById('onboarding-modal').classList.add('flex');
+                        openOnboardingWizard(user);
                     } else {
                         // ¡ES JORGE O PEPE! Tienen su perfil completado, entran directos a la app
                         await completarSesionConUsuario(user); // Llama a tu función normal que carga la app
@@ -6130,7 +6777,7 @@
                             perfilCompletado: true,
                             genero: 'Hombre', edad: 25, peso: 70, altura: 170,
                             grasa: 15, musculo: 30, maxRun: 0, maxBike: 0,
-                            objetivo: 'Mantenimiento'
+                            goal: 'maintenance', goalSpeed: 'moderate', activityLevel: 'moderate'
                         });
                         
                         document.getElementById('onboarding-modal').classList.add('hidden');
@@ -6154,6 +6801,330 @@
             return edad;
         }
 
+        // ==========================================================================================
+        // 🧭 ONBOARDING WIZARD (5 pasos + animaciones)
+        // ==========================================================================================
+        let onbWizardState = { step: 0, total: 5 };
+
+        function openOnboardingWizard(user) {
+            try {
+                onbWizardState = { step: 0, total: 5 };
+                const nameEl = document.getElementById('onb-nombre');
+                if (nameEl && !nameEl.value) nameEl.value = (user && user.displayName) ? user.displayName : '';
+
+                // Defaults
+                const activityEl = document.getElementById('onb-activity-level');
+                if (activityEl && !activityEl.value) activityEl.value = 'moderate';
+
+                onbWizardShowStep(0);
+                syncOnboardingGoalPreview();
+                renderOnbClinicalAlert();
+            } catch (e) {
+                console.error('No se pudo abrir el wizard:', e);
+            }
+        }
+
+        function onbWizardShowStep(nextStep) {
+            const steps = Array.from(document.querySelectorAll('#onboarding-modal .onb-step'));
+            const total = onbWizardState.total;
+            const step = Math.max(0, Math.min(Number(nextStep) || 0, total - 1));
+            onbWizardState.step = step;
+
+            steps.forEach(sec => {
+                const s = Number(sec.dataset.step);
+                sec.classList.toggle('hidden', s !== step);
+            });
+
+            const subtitle = document.getElementById('onb-step-subtitle');
+            const progress = document.getElementById('onb-step-progress');
+            const backBtn = document.getElementById('onb-back-btn');
+            const nextBtn = document.getElementById('onb-next-btn');
+            const finishBtn = document.getElementById('onb-finish-btn');
+
+            const subtitleText = [
+                'Paso 1/5 · Básicos',
+                'Paso 2/5 · Composición',
+                'Paso 3/5 · Ubicación & clima',
+                'Paso 4/5 · Actividad (auto)',
+                'Paso 5/5 · Objetivo & seguridad'
+            ][step] || `Paso ${step + 1}/${total}`;
+
+            if (subtitle) subtitle.textContent = subtitleText;
+            if (progress) progress.style.width = `${Math.round(((step + 1) / total) * 100)}%`;
+
+            const isFirst = step === 0;
+            const isLast = step === total - 1;
+            if (backBtn) backBtn.classList.toggle('hidden', isFirst);
+            if (nextBtn) nextBtn.classList.toggle('hidden', isLast);
+            if (finishBtn) finishBtn.classList.toggle('hidden', !isLast);
+
+            // Refresh dynamic previews on relevant steps
+            if (step === 3) syncOnboardingGoalPreview();
+            if (step === 4) {
+                syncOnboardingGoalPreview();
+                renderOnbClinicalAlert();
+            }
+        }
+
+        function onbWizardNext() {
+            if (!onbWizardValidateStep(onbWizardState.step)) return;
+            onbWizardShowStep(onbWizardState.step + 1);
+        }
+
+        function onbWizardPrev() {
+            onbWizardShowStep(onbWizardState.step - 1);
+        }
+
+        function onbWizardValidateStep(step) {
+            const birth = document.getElementById('onb-birthdate')?.value;
+            const weight = Number(document.getElementById('onb-peso')?.value) || 0;
+            const height = Number(document.getElementById('onb-altura')?.value) || 0;
+
+            if (step === 0) {
+                if (!birth) {
+                    Swal.fire('Falta un dato', 'Introduce tu fecha de nacimiento para calcular la edad.', 'warning');
+                    return false;
+                }
+                return true;
+            }
+            if (step === 1) {
+                if (weight <= 0 || height <= 0) {
+                    Swal.fire('Falta un dato', 'Revisa tu peso y altura (son necesarios).', 'warning');
+                    return false;
+                }
+                return true;
+            }
+            if (step === 3) {
+                const activityVal = document.getElementById('onb-activity-level')?.value;
+                if (!activityVal) {
+                    Swal.fire('Actividad pendiente', 'Haz el cuestionario rápido para estimar tu actividad diaria.', 'warning');
+                    return false;
+                }
+                return true;
+            }
+            return true;
+        }
+
+        function clampNumber(n, min, max) {
+            const x = Number(n);
+            if (!Number.isFinite(x)) return min;
+            return Math.min(max, Math.max(min, x));
+        }
+
+        function getClinicalAlert({ gender, age, weight, height, goal, bodyFat = null, muscleKg = null }) {
+            const hM = (Number(height) || 0) / 100;
+            const bmi = (hM > 0) ? (Number(weight) / (hM * hM)) : NaN;
+            const normalizedGoal = normalizeGoalKey(goal);
+            const isMale = String(gender || '').toLowerCase() === 'hombre';
+            const safeBmiLow = (age && age < 18) ? 18.0 : 18.5;
+            const dangerBmiLow = 17.0;
+            const warnBmiLow = safeBmiLow;
+
+            const idealBmi = 22.0;
+            const idealWeight = (hM > 0) ? (idealBmi * hM * hM) : null;
+            const idealRange = (hM > 0)
+                ? { min: (20.0 * hM * hM), max: (24.0 * hM * hM) }
+                : null;
+
+            const sex = isMale ? 'hombre' : 'mujer';
+            const bf = bodyFat != null ? Number(bodyFat) : NaN;
+            const mk = muscleKg != null ? Number(muscleKg) : NaN;
+            const w = Number(weight) || 0;
+            const muscleRatio = (w > 0 && Number.isFinite(mk)) ? (mk / w) : NaN;
+            const healthyFatLow = sex === 'hombre' ? 10 : 18;
+            const healthyFatHigh = sex === 'hombre' ? 20 : 28;
+
+            const bmiCategory = (() => {
+                if (!Number.isFinite(bmi)) return 'SIN DATOS';
+                if (bmi < 18.5) return 'BAJO PESO';
+                if (bmi < 25) return 'NORMOPESO';
+                if (bmi < 30) return 'SOBREPESO';
+                if (bmi < 35) return 'OBESIDAD I';
+                if (bmi < 40) return 'OBESIDAD II';
+                return 'OBESIDAD III';
+            })();
+
+            const fatHealthy = Number.isFinite(bf) ? (bf >= healthyFatLow && bf <= healthyFatHigh) : null;
+
+            // Excepción muscular (no ocultar riesgo salvo perfil muy claro)
+            const muscularException = Number.isFinite(bmi)
+                && bmi >= 25
+                && fatHealthy === true
+                && Number.isFinite(muscleRatio)
+                && muscleRatio >= 0.45;
+
+            // Severity by BMI + body fat + goal interaction
+            let level = 'ok';
+            let title = 'En rango';
+            let message = 'Tu perfil parece consistente para el objetivo elegido.';
+            let recommendationGoal = null;
+
+            if (Number.isFinite(bmi)) {
+                // Bajo peso
+                if (bmi < dangerBmiLow) {
+                    level = 'danger';
+                    title = 'Peligro';
+                    message = 'Tu IMC es críticamente bajo. Un objetivo de pérdida de grasa puede ser peligroso.';
+                } else if (bmi < warnBmiLow) {
+                    level = 'warn';
+                    title = 'Advertencia';
+                    message = 'Tu IMC está por debajo del rango saludable. Ajusta el objetivo con cuidado.';
+                }
+                // Sobrepeso / obesidad
+                if (!muscularException && bmi >= 30) {
+                    level = 'danger';
+                    title = 'Alerta de Salud';
+                    message = 'Tu IMC está en rango de obesidad. Esto aumenta el riesgo cardiometabólico; tu objetivo debería priorizar pérdida de grasa y actividad diaria.';
+                    if (normalizedGoal !== 'fat_loss') recommendationGoal = 'fat_loss';
+                } else if (!muscularException && bmi >= 25) {
+                    level = (level === 'danger') ? level : 'warn';
+                    title = 'Advertencia';
+                    message = 'Tu IMC está por encima del rango saludable. Recomendación: prioriza pérdida de grasa con déficit leve y pasos diarios.';
+                    if (normalizedGoal !== 'fat_loss') recommendationGoal = 'fat_loss';
+                }
+            }
+
+            // Cross-check: low BMI + fat loss => danger
+            if (normalizedGoal === 'fat_loss' && Number.isFinite(bmi) && bmi < warnBmiLow) {
+                level = (bmi < dangerBmiLow) ? 'danger' : 'warn';
+                title = (level === 'danger') ? 'Peligro' : 'Advertencia';
+                message = (level === 'danger')
+                    ? 'Perder grasa con un IMC tan bajo es un riesgo clínico. Recomendación: cambiar a Ganar Masa.'
+                    : 'Perder grasa con un IMC bajo puede afectar energía, hormonas y recuperación. Considera Mantenimiento o Ganar Masa.';
+            }
+
+            // Additional heuristic: very low absolute weight
+            if (normalizedGoal === 'fat_loss' && Number.isFinite(bmi) && bmi < 18.0) {
+                level = 'danger';
+                title = 'Peligro';
+                message = 'Tus datos indican bajo peso. No es recomendable un déficit calórico. Prioriza subir peso de forma saludable.';
+            }
+
+            // % grasa: si está por encima de rango saludable, subir severidad (sin contradecir excepción muscular)
+            if (!muscularException && Number.isFinite(bf)) {
+                if (bf > healthyFatHigh && level === 'ok') {
+                    level = 'warn';
+                    title = 'Advertencia';
+                    message = `Tu % de grasa (${bf.toFixed(0)}%) está por encima del rango saludable para ${sex}. Recomendación: prioriza fuerza + déficit leve.`;
+                    if (normalizedGoal !== 'fat_loss') recommendationGoal = 'fat_loss';
+                }
+                if (bf > (sex === 'hombre' ? 25 : 32)) {
+                    level = 'danger';
+                    title = 'Alerta de Salud';
+                    message = `Tu % de grasa (${bf.toFixed(0)}%) es alto y sugiere riesgo cardiometabólico. Prioriza pérdida de grasa y actividad diaria.`;
+                    if (normalizedGoal !== 'fat_loss') recommendationGoal = 'fat_loss';
+                }
+            }
+
+            // Si está realmente en rango saludable (IMC + % grasa), entonces sí permitimos “óptimo”
+            const bmiHealthy = Number.isFinite(bmi) && bmi >= 18.5 && bmi <= 24.9;
+            const bfHealthy = Number.isFinite(bf) ? (bf >= healthyFatLow && bf <= healthyFatHigh) : false;
+            if (level === 'ok' && (bmiHealthy || bfHealthy || muscularException)) {
+                title = muscularException ? 'Perfil atlético (excepción muscular)' : 'Óptimo';
+                message = muscularException
+                    ? 'IMC alto compatible con masa muscular y % grasa saludable. Mantén fuerza y controla tendencia.'
+                    : 'IMC y/o % de grasa están en rangos saludables para tu perfil.';
+            }
+
+            const color = level === 'danger'
+                ? { border: 'border-red-200', bg: 'bg-red-50', text: 'text-red-700', badge: 'bg-red-600' }
+                : level === 'warn'
+                    ? { border: 'border-orange-200', bg: 'bg-orange-50', text: 'text-orange-700', badge: 'bg-orange-500' }
+                    : { border: 'border-emerald-200', bg: 'bg-emerald-50', text: 'text-emerald-700', badge: 'bg-emerald-600' };
+
+            const idealText = idealWeight
+                ? `Peso ideal estimado: ~${idealWeight.toFixed(1)} kg (rango saludable aprox. ${idealRange.min.toFixed(1)}–${idealRange.max.toFixed(1)} kg).`
+                : '';
+
+            const bmiText = Number.isFinite(bmi) ? `IMC: ${bmi.toFixed(1)} (${bmiCategory}).` : '';
+
+            return {
+                level,
+                title,
+                message,
+                bmi,
+                idealWeight,
+                idealRange,
+                bmiText,
+                idealText,
+                color,
+                recommendationGoal: (level === 'danger' && normalizedGoal === 'fat_loss')
+                    ? 'muscle_gain'
+                    : recommendationGoal,
+                meta: { isMale }
+            };
+        }
+
+        // Requerida por el prompt (API simple) - usa la lógica clínica unificada
+        function validateHealthStatus(peso, altura, objetivo, genero = 'hombre', edad = 25) {
+            const alert = getClinicalAlert({
+                gender: genero,
+                age: Number(edad) || 25,
+                weight: Number(peso) || 0,
+                height: Number(altura) || 0,
+                goal: objetivo || 'maintenance'
+            });
+            const color = alert.level === 'danger' ? 'red' : alert.level === 'warn' ? 'orange' : 'green';
+            return {
+                color,
+                level: alert.level,
+                message: `${alert.message} ${alert.idealText || ''}`.trim(),
+                bmi: alert.bmi,
+                idealWeight: alert.idealWeight,
+                recommendationGoal: alert.recommendationGoal
+            };
+        }
+
+        function renderOnbClinicalAlert() {
+            const box = document.getElementById('onb-clinical-alert');
+            if (!box) return;
+            const gender = document.getElementById('onb-genero')?.value || 'hombre';
+            const birth = document.getElementById('onb-birthdate')?.value;
+            const age = birth ? calcularEdad(birth) : null;
+            const weight = Number(document.getElementById('onb-peso')?.value) || 0;
+            const height = Number(document.getElementById('onb-altura')?.value) || 0;
+            const bodyFat = Number(document.getElementById('onb-grasa')?.value);
+            const muscleKg = Number(document.getElementById('onb-musculo')?.value);
+            const goal = document.getElementById('onb-objetivo')?.value || 'maintenance';
+
+            if (!birth || !weight || !height) {
+                box.classList.add('hidden');
+                return;
+            }
+
+            const alert = getClinicalAlert({ gender, age, weight, height, goal, bodyFat, muscleKg });
+            box.className = `rounded-2xl border p-4 ${alert.color.border} ${alert.color.bg} ${alert.color.text}`;
+            box.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-xl ${alert.color.badge} text-white flex items-center justify-center font-black">
+                        ${alert.level === 'danger' ? '<i class="fas fa-triangle-exclamation"></i>' : alert.level === 'warn' ? '<i class="fas fa-circle-exclamation"></i>' : '<i class="fas fa-shield-heart"></i>'}
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-sm font-black">${alert.title}</div>
+                        <div class="text-[13px] leading-5 mt-1">
+                            ${alert.message}
+                            <div class="mt-2 font-semibold">${alert.bmiText}</div>
+                            ${alert.idealText ? `<div class="mt-1 text-[12px] opacity-90">${alert.idealText}</div>` : ''}
+                        </div>
+                        ${alert.recommendationGoal
+                            ? `<button type="button" onclick="onbApplyRecommendedGoal('${alert.recommendationGoal}')" class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/70 border border-white/60 font-black text-[12px] hover:bg-white transition">
+                                   <i class="fas fa-wand-magic-sparkles"></i> ${alert.recommendationGoal === 'fat_loss' ? 'Cambiar a Perder Grasa' : alert.recommendationGoal === 'muscle_gain' ? 'Cambiar a Ganar Masa' : 'Aplicar objetivo recomendado'}
+                               </button>`
+                            : ''}
+                    </div>
+                </div>
+            `;
+            box.classList.remove('hidden');
+        }
+
+        function onbApplyRecommendedGoal(goal) {
+            const el = document.getElementById('onb-objetivo');
+            if (!el) return;
+            el.value = goal;
+            el.dispatchEvent(new Event('change'));
+            renderOnbClinicalAlert();
+        }
+
         function verificarCumpleanos() {
             if (!USER_BIO || !USER_BIO.fechaNacimiento) return;
             const hoy = new Date();
@@ -6173,10 +7144,427 @@
         }
 
         function getGoalSpeedAdvice(speed) {
-            if (speed === 'fast') return 'Modo rápido: útil a corto plazo, pero vigila energía, hambre, sueño y rendimiento.';
+            if (speed === 'fast') return 'Modo rápido: útil a corto plazo, pero vigila energía, hambre, sueño y recuperación.';
             if (speed === 'slow') return 'Modo lento: más sostenible y con menor riesgo de rebote.';
             return 'Modo intermedio: equilibrio entre progreso y adherencia.';
         }
+
+        function normalizeGoalKey(goal) {
+            if (!goal) return 'maintenance';
+            const lower = String(goal).toLowerCase();
+            if (lower.includes('grasa') || lower.includes('fat_loss') || lower.includes('definici')) return 'fat_loss';
+            if (lower.includes('muscul') || lower.includes('muscle_gain') || lower.includes('volumen')) return 'muscle_gain';
+            return 'maintenance';
+        }
+
+        function getHealthWarning(goal, speed, gender, age, weight, height, bodyFat) {
+            const bmi = height > 0 ? weight / ((height / 100) ** 2) : 22;
+            const isMale = String(gender).toLowerCase() === 'hombre';
+            const fatLowerWarning = isMale ? 12 : 18;
+            let warning = '';
+
+            if (goal === 'fat_loss') {
+                if (bmi < 18.5) {
+                    warning = '⚠️ Tu IMC es muy bajo. Perder grasa rápido en tu situación es peligroso para tu salud. Consulta a un médico.';
+                } else if (bodyFat < fatLowerWarning) {
+                    warning = '⚠️ Tu porcentaje de grasa corporal ya es bajo. Perder grasa rápido puede afectar tu energía y salud.';
+                }
+            } else if (goal === 'muscle_gain') {
+                if (bmi < 18.5) {
+                    warning = '⚠️ Tu IMC es muy bajo. Necesitas ganar peso primero (preferiblemente con comida nutritiva) antes de buscar músculo.';
+                } else if (age >= 50 && speed === 'fast') {
+                    warning = '⚠️ A partir de 50 años, es mejor subir masa de forma moderada para evitar fatiga y mala recuperación.';
+                } else if (bodyFat < (isMale ? 8 : 14)) {
+                    warning = '⚠️ Estás bastante magro. Un ritmo intermedio o lento es más seguro para ganar músculo sano.';
+                }
+            }
+            if (goal === 'maintenance' && speed === 'fast') {
+                warning = '⚠️ Mantenimiento no necesita ritmo rápido. Elige intermedio o lento para estabilizar tu peso con menos estrés.';
+            }
+            return warning;
+        }
+
+        let swalQuizState = { step: 0, score: 0, answers: [] };
+        let swalActivityLevelResult = null;
+        function toggleGoalSpeedField(prefix) { 
+            const goalEl = document.getElementById(`${prefix}-objetivo`);
+            const speedGroup = document.getElementById(`${prefix}-goal-speed-group`);
+            if (!goalEl || !speedGroup) return; 
+            const goal = normalizeGoalKey(goalEl.value);
+            speedGroup.style.display = goal === 'maintenance' ? 'none' : '';
+        }
+
+        const ONB_QUIZ_QUESTIONS = [
+            {
+                question: '¿Cómo empiezas tu mañana?',
+                options: [
+                    { text: 'Despierto y estoy sentado la mayor parte del tiempo', score: 1 },
+                    { text: 'Paseo ligero o desplazamientos cortos', score: 2 },
+                    { text: 'Trabajo con movimiento ligero todo el rato', score: 3 },
+                    { text: 'Empiezo activo: gimnasio, trabajo físico o entreno', score: 4 }
+                ]
+            },
+            {
+                question: '¿Cómo es tu tarde?',
+                options: [
+                    { text: 'Sentado en estudio, oficina o sofá', score: 1 },
+                    { text: 'Me muevo un poco entre tareas', score: 2 },
+                    { text: 'Estoy de pie o hago tareas domésticas', score: 3 },
+                    { text: 'Entreno fuerte o realizo trabajo intenso', score: 4 }
+                ]
+            },
+            {
+                question: '¿Y los fines de semana?',
+                options: [
+                    { text: 'Casi no salgo de casa', score: 1 },
+                    { text: 'Paseos ligeros y actividad suave', score: 2 },
+                    { text: 'Actividad deportiva 1-2 días', score: 3 },
+                    { text: 'Salgo mucho, entreno o camino largas distancias', score: 4 }
+                ]
+            },
+            {
+                question: '¿Tu trabajo exige movimiento físico?',
+                options: [
+                    { text: 'No, es sedentario', score: 1 },
+                    { text: 'Algo de desplazamiento y movimiento ligero', score: 2 },
+                    { text: 'Sí, estoy de pie y hago tareas activas', score: 3 },
+                    { text: 'Sí, es muy exigente físicamente', score: 4 }
+                ]
+            }
+        ];
+
+        let onboardingQuizState = { step: 0, score: 0, answers: [] };
+
+        function startOnboardingQuiz() {
+            onboardingQuizState = { step: 0, score: 0, answers: [] };
+            document.getElementById('onb-activity-quiz').classList.remove('hidden');
+            document.getElementById('onb-activity-summary').classList.add('hidden');
+            renderOnboardingQuiz();
+        }
+
+        function skipOnboardingQuiz() {
+            document.getElementById('onb-activity-quiz').classList.add('hidden');
+            const summary = document.getElementById('onb-activity-summary');
+            const hidden = document.getElementById('onb-activity-level');
+            if (hidden && !hidden.value) hidden.value = 'moderate';
+            if (hidden) hidden.dispatchEvent(new Event('change'));
+            if (summary) {
+                const meta = getActivityLevelMeta(hidden ? hidden.value : 'moderate');
+                summary.innerHTML = `
+                    <div class="font-bold text-slate-800 mb-3">Actividad diaria (estimada)</div>
+                    <p class="text-sm text-slate-600 mb-2">Se aplicará por defecto <strong>${meta.label}</strong>.</p>
+                    <div class="text-[13px] text-slate-600 space-y-2">
+                        <div>Siempre podrás recalibrarlo después en “Editar Perfil Biológico”.</div>
+                    </div>
+                `;
+                summary.classList.remove('hidden');
+            }
+        }
+
+        function renderOnboardingQuiz() {
+            const stage = document.getElementById('onb-quiz-stage');
+            const progress = document.getElementById('onb-quiz-progress');
+            if (!stage || !progress) return;
+            const current = ONB_QUIZ_QUESTIONS[onboardingQuizState.step];
+            if (!current) return finishOnboardingQuiz();
+            progress.style.width = `${Math.round((onboardingQuizState.step / ONB_QUIZ_QUESTIONS.length) * 100)}%`;
+            stage.innerHTML = `
+                <div class="quiz-step active">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-xs uppercase text-slate-500 font-bold">Pregunta ${onboardingQuizState.step + 1}/${ONB_QUIZ_QUESTIONS.length}</p>
+                            <h4 class="text-sm font-bold text-slate-800">${current.question}</h4>
+                        </div>
+                        <span class="text-xs text-slate-400">elige una opción</span>
+                    </div>
+                    <div class="grid gap-3">
+                        ${current.options.map((opt, idx) => `
+                            <button type="button" onclick="selectOnboardingQuizAnswer(${idx})" class="quiz-option w-full text-left bg-white border border-slate-200 rounded-2xl p-3 text-sm text-slate-700 hover:border-blue-300">
+                                ${opt.text}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectOnboardingQuizAnswer(optionIndex) {
+            const current = ONB_QUIZ_QUESTIONS[onboardingQuizState.step];
+            if (!current || !current.options[optionIndex]) return;
+            onboardingQuizState.score += current.options[optionIndex].score;
+            onboardingQuizState.answers.push(current.options[optionIndex].text);
+            onboardingQuizState.step += 1;
+            if (onboardingQuizState.step >= ONB_QUIZ_QUESTIONS.length) {
+                finishOnboardingQuiz();
+            } else {
+                renderOnboardingQuiz();
+            }
+        }
+
+        function computeOnboardingActivityLevel(score) {
+            if (score <= 7) return 'very_low';
+            if (score <= 9) return 'low';
+            if (score <= 11) return 'moderate';
+            if (score <= 13) return 'high';
+            return 'very_high';
+        }
+
+        function finishOnboardingQuiz() {
+            const activityValue = computeOnboardingActivityLevel(onboardingQuizState.score);
+            const activityMeta = getActivityLevelMeta(activityValue);
+            const summary = document.getElementById('onb-activity-summary');
+            const quiz = document.getElementById('onb-activity-quiz');
+            const hidden = document.getElementById('onb-activity-level');
+            if (hidden) {
+                hidden.value = activityValue;
+                hidden.dispatchEvent(new Event('change'));
+            }
+            if (summary) {
+                summary.innerHTML = `
+                    <div class="font-bold text-slate-800 mb-3">Actividad diaria calculada</div>
+                    <p class="text-sm text-slate-600 mb-2">Según tus respuestas, tu nivel de actividad es <strong>${activityMeta.label}</strong>.</p>
+                    <div class="text-[13px] text-slate-600 space-y-2">
+                        <div>Este nivel usa la forma en que te mueves por la mañana, tarde, fin de semana y tu trabajo.</div>
+                        <div>${activityMeta.text}</div>
+                        <div class="text-slate-500">Se aplicará esta valoración para ajustar tus calorías base.</div>
+                    </div>
+                `;
+                summary.classList.remove('hidden');
+            }
+            if (quiz) quiz.classList.add('hidden');
+            syncOnboardingGoalPreview();
+        }
+
+        function startSwalActivityQuiz() {
+            swalQuizState = { step: 0, score: 0, answers: [] };
+            document.getElementById('swal-activity-quiz-container').classList.remove('hidden');
+            document.getElementById('swal-activity-summary').classList.add('hidden');
+            document.getElementById('swal-start-activity-quiz-btn').classList.add('hidden');
+            renderSwalActivityQuiz();
+        }
+
+        function skipSwalActivityQuiz() {
+            document.getElementById('swal-activity-quiz-container').classList.add('hidden');
+            document.getElementById('swal-activity-summary').classList.remove('hidden');
+            document.getElementById('swal-start-activity-quiz-btn').classList.remove('hidden');
+            // Optionally reset to current USER_BIO activity level if skipped
+            swalActivityLevelResult = USER_BIO.activityLevel || 'moderate';
+            renderSwalActivitySummary(swalActivityLevelResult);
+            syncProfileGoalPreview();
+        }
+
+        function renderSwalActivityQuiz() {
+            const stage = document.getElementById('swal-quiz-stage');
+            const progress = document.getElementById('swal-quiz-progress');
+            if (!stage || !progress) return;
+            const current = ONB_QUIZ_QUESTIONS[swalQuizState.step];
+            if (!current) return finishSwalActivityQuiz();
+            progress.style.width = `${Math.round((swalQuizState.step / ONB_QUIZ_QUESTIONS.length) * 100)}%`;
+            stage.innerHTML = `
+                <div class="quiz-step active">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-xs uppercase text-slate-500 font-bold">Pregunta ${swalQuizState.step + 1}/${ONB_QUIZ_QUESTIONS.length}</p>
+                            <h4 class="text-sm font-bold text-slate-800">${current.question}</h4>
+                        </div>
+                        <span class="text-xs text-slate-400">elige una opción</span>
+                    </div>
+                    <div class="grid gap-3">
+                        ${current.options.map((opt, idx) => `
+                            <button type="button" onclick="selectSwalActivityQuizAnswer(${idx})" class="quiz-option w-full text-left bg-white border border-slate-200 rounded-2xl p-3 text-sm text-slate-700 hover:border-blue-300">
+                                ${opt.text}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectSwalActivityQuizAnswer(optionIndex) {
+            const current = ONB_QUIZ_QUESTIONS[swalQuizState.step];
+            if (!current || !current.options[optionIndex]) return;
+            swalQuizState.score += current.options[optionIndex].score;
+            swalQuizState.answers.push(current.options[optionIndex].text);
+            swalQuizState.step += 1;
+            if (swalQuizState.step >= ONB_QUIZ_QUESTIONS.length) {
+                finishSwalActivityQuiz();
+            } else {
+                renderSwalActivityQuiz();
+            }
+        }
+
+        function finishSwalActivityQuiz() {
+            swalActivityLevelResult = computeOnboardingActivityLevel(swalQuizState.score);
+            renderSwalActivitySummary(swalActivityLevelResult);
+            document.getElementById('swal-activity-quiz-container').classList.add('hidden');
+            document.getElementById('swal-activity-summary').classList.remove('hidden');
+            document.getElementById('swal-start-activity-quiz-btn').classList.remove('hidden');
+            document.getElementById('swal-user-activity-level').value = swalActivityLevelResult; // Update hidden input
+            syncProfileGoalPreview();
+            try {
+                if (USER_BIO) USER_BIO.activityLevel = swalActivityLevelResult;
+                if (ENGINE && typeof ENGINE.recalculateEverything === 'function') ENGINE.recalculateEverything({ shouldSaveDay: false });
+            } catch (_) {}
+        }
+
+        function renderSwalActivitySummary(activityValue) {
+            const activityMeta = getActivityLevelMeta(activityValue);
+            const summary = document.getElementById('swal-activity-summary');
+            const currentActivityLabel = document.getElementById('swal-current-activity-label');
+            if (summary) {
+                summary.innerHTML = `
+                    <div class="font-bold text-slate-800 mb-3">Actividad diaria calculada</div>
+                    <p class="text-sm text-slate-600 mb-2">Según tus respuestas, tu nivel de actividad es <strong>${activityMeta.label}</strong>.</p>
+                    <div class="text-[13px] text-slate-600 space-y-2">
+                        <div>Este nivel usa la forma en que te mueves por la mañana, tarde, fin de semana y tu trabajo.</div>
+                        <div>${activityMeta.text}</div>
+                        <div class="text-slate-500">Se aplicará esta valoración para ajustar tus calorías base.</div>
+                    </div>
+                `;
+                summary.classList.remove('hidden');
+            }
+            if (currentActivityLabel) {
+                currentActivityLabel.textContent = activityMeta.label;
+            }
+        }
+
+        function getActivityLevelMeta(level) {
+            const map = {
+                very_low: { label: 'Muy baja', tdeeFactor: 1.2, factor: -0.05, text: 'Rutina sedentaria, muy poco movimiento en el día.' },
+                low: { label: 'Baja', tdeeFactor: 1.375, factor: 0, text: 'Actividad ligera, desplazamientos cortos y pocas horas en movimiento.' },
+                moderate: { label: 'Media', tdeeFactor: 1.55, factor: 0.08, text: 'Jornada normal con algo de ejercicio o trabajo moderado.' },
+                high: { label: 'Alta', tdeeFactor: 1.725, factor: 0.16, text: 'Trabajo activo o entrenamientos frecuentes durante la semana.' },
+                very_high: { label: 'Muy alta', tdeeFactor: 1.9, factor: 0.26, text: 'Trabajo físico intenso y entrenamiento diario.' }
+            };
+            return map[level] || map.moderate;
+        }
+
+        function renderGoalStrategySummary(prefix, summaryId) {
+            const goalEl = document.getElementById(`${prefix}-objetivo`);
+            const speedEl = document.getElementById(`${prefix}-goal-speed`);
+            const activityEl = document.getElementById(`${prefix}-activity-level`);
+            const summary = document.getElementById(summaryId);
+            if (!goalEl || !summary) return;
+
+            const goal = normalizeGoalKey(goalEl.value);
+            const speed = speedEl ? speedEl.value : 'moderate';
+            const activityLevel = activityEl ? activityEl.value : 'moderate';
+            const gender = document.getElementById(`${prefix}-genero`)?.value || 'hombre';
+            const weight = Number(document.getElementById(`${prefix}-peso`)?.value) || 70;
+            const height = Number(document.getElementById(`${prefix}-altura`)?.value) || 170;
+            const birthdate = document.getElementById(`${prefix}-birthdate`)?.value;
+            const age = birthdate ? calcularEdad(birthdate) : 25;
+            const bodyFat = Number(document.getElementById(`${prefix}-grasa`)?.value) || 20;
+            const mifflin = (10 * weight) + (6.25 * height) - (5 * age) + (gender === 'mujer' ? -161 : 5);
+            const leanMass = bodyFat > 0 ? (weight * (1 - (bodyFat / 100))) : (weight * 0.8);
+            const katch = 370 + (21.6 * leanMass);
+            const bmr = bodyFat > 0 ? ((mifflin * 0.35) + (katch * 0.65)) : mifflin;
+            const activityMeta = getActivityLevelMeta(activityLevel);
+            const baseTdee = Math.round(bmr * activityMeta.tdeeFactor);
+            const goalDeltaPct = {
+                fat_loss: { slow: -0.10, moderate: -0.18, fast: -0.25 },
+                maintenance: { slow: 0, moderate: 0, fast: 0 },
+                muscle_gain: { slow: 0.05, moderate: 0.10, fast: 0.15 }
+            };
+            const deltaPct = ((goalDeltaPct[goal] || goalDeltaPct.maintenance)[speed]) || 0;
+            const adjusted = Math.round(baseTdee * (1 + deltaPct));
+            const warning = getHealthWarning(goal, speed, gender, age, weight, height, bodyFat);
+
+            const speedLabel = speed === 'slow' ? 'Lento' : speed === 'fast' ? 'Rápido' : 'Intermedio';
+            const goalLabel = goal === 'fat_loss' ? 'Perder Grasa' : goal === 'muscle_gain' ? 'Ganar Masa Muscular' : 'Mantenimiento';
+            const speedMessage = goal === 'maintenance'
+                ? 'Mantenimiento no aplica ritmo: tu gasto estimado se ajusta para estabilizar tu peso.'
+                : `Ritmo ${speedLabel}: ${Math.round(deltaPct * 100)}% ${deltaPct > 0 ? 'más' : 'menos'} calorías según ${goalLabel.toLowerCase()}.`;
+            
+            const warningMessages = warning ? [warning] : [];
+
+            summary.innerHTML = `
+                <div class="font-bold text-slate-700 mb-3">Resumen de cálculo</div>
+                <div class="space-y-2 text-[13px] leading-5">
+                    <div><strong>Metabolismo Basal (BMR):</strong> ${Math.round(bmr)} kcal · Tu gasto en reposo total.</div>
+                    <div><strong>Actividad Diaria (TDEE):</strong> ${activityMeta.label} · Multiplicador x${activityMeta.tdeeFactor.toFixed(2)} · ${activityMeta.text}</div>
+                    <div><strong>Base TDEE:</strong> ${baseTdee} kcal.</div>
+                    <div><strong>Objetivo:</strong> ${goalLabel} · ${speedMessage}</div>
+                    <div class="text-slate-700 font-bold text-lg"><strong>Meta resultante:</strong> ${adjusted} kcal.</div>
+                    ${warningMessages.length > 0 
+                        ? `<div class="mt-2 p-3 bg-orange-100 border border-orange-200 rounded-lg text-orange-700 font-semibold"><ul>${warningMessages.map(w => `<li>${w}</li>`).join('')}</ul></div>` 
+                        : ''}
+                    <div class="text-slate-500">Estos cálculos se apoyan en tus kilos, tu % de grasa, tu masa muscular y tu nivel real de actividad.</div>
+                </div>
+            `;
+            summary.classList.remove('hidden');
+        }
+
+        function toggleActivityQuestionnaire() {
+            const panel = document.getElementById('activity-questionnaire');
+            const icon = panel.previousElementSibling.querySelector('.fa-chevron-down');
+            if (!panel) return;
+            panel.classList.toggle('open');
+            if (icon) icon.classList.toggle('rotate-180');
+        }
+
+        function updateDailyActivityLevel(force = false) {
+            const select = document.getElementById('daily-activity-level'); 
+            if (!select) return; 
+            const value = select.value || 'moderate'; 
+            todayData.activityLevel = value; 
+            if (USER_BIO) USER_BIO.activityLevel = value; 
+            updateDay(); 
+        }
+
+        function syncOnboardingGoalPreview() {
+            renderGoalStrategySummary('onb', 'onb-goal-summary');
+        }
+
+        function syncProfileGoalPreview() {
+            renderGoalStrategySummary('swal-user', 'swal-user-goal-summary');
+        }
+
+        async function attachGoalPreviewListeners() {
+            const onbGoal = document.getElementById('onb-objetivo');
+            const onbSpeed = document.getElementById('onb-goal-speed');
+            const onbSpeedBtns = document.querySelectorAll('.onb-speed-btn');
+            const onbActivity = document.getElementById('onb-activity-level');
+            const onbBirth = document.getElementById('onb-birthdate');
+            const onbWeight = document.getElementById('onb-peso');
+            const onbHeight = document.getElementById('onb-altura');
+            const onbGender = document.getElementById('onb-genero');
+            if (onbGoal) {
+                onbGoal.addEventListener('change', () => {
+                    syncOnboardingGoalPreview();
+                    toggleGoalSpeedField('onb');
+                    renderOnbClinicalAlert();
+                });
+            }
+
+            onbSpeedBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    onbSpeed.value = btn.dataset.speed;
+                    onbSpeedBtns.forEach(b => {
+                        b.classList.toggle('bg-blue-600', b.dataset.speed === onbSpeed.value);
+                        b.classList.toggle('text-white', b.dataset.speed === onbSpeed.value);
+                    });
+                    syncOnboardingGoalPreview();
+                });
+            });
+
+            if (onbActivity) onbActivity.addEventListener('change', syncOnboardingGoalPreview);
+            if (onbBirth) onbBirth.addEventListener('change', () => { syncOnboardingGoalPreview(); renderOnbClinicalAlert(); });
+            if (onbWeight) onbWeight.addEventListener('input', () => { syncOnboardingGoalPreview(); renderOnbClinicalAlert(); });
+            if (onbHeight) onbHeight.addEventListener('input', () => { syncOnboardingGoalPreview(); renderOnbClinicalAlert(); });
+            if (onbGender) onbGender.addEventListener('change', () => { syncOnboardingGoalPreview(); renderOnbClinicalAlert(); });
+
+            const activitySelect = document.getElementById('daily-activity-level');
+            if (activitySelect) activitySelect.addEventListener('change', () => updateDailyActivityLevel(true));
+
+            if (onbGoal || onbSpeed || onbActivity) {
+                syncOnboardingGoalPreview();
+                toggleGoalSpeedField('onb');
+                renderOnbClinicalAlert();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', attachGoalPreviewListeners);
 
         async function guardarOnboarding() {
             const user = firebase.auth().currentUser;
@@ -6197,6 +7585,48 @@
                 return;
             }
 
+            // Alerta clínica preventiva (antes de guardar)
+            const goalSelected = document.getElementById('onb-objetivo').value;
+            const bfForm = parseFloat(document.getElementById('onb-grasa')?.value) || 0;
+            const mkForm = parseFloat(document.getElementById('onb-musculo')?.value) || 0;
+            const alert = getClinicalAlert({
+                gender: document.getElementById('onb-genero').value,
+                age: edadCalculada,
+                weight: pesoForm,
+                height: alturaForm,
+                goal: goalSelected,
+                bodyFat: bfForm || null,
+                muscleKg: mkForm || null
+            });
+            if (alert.level === 'danger' && alert.recommendationGoal && normalizeGoalKey(goalSelected) !== normalizeGoalKey(alert.recommendationGoal)) {
+                const ideal = alert.idealWeight ? alert.idealWeight.toFixed(1) : '?';
+                const btnLabel = alert.recommendationGoal === 'fat_loss' ? 'Cambiar a Perder Grasa'
+                    : alert.recommendationGoal === 'muscle_gain' ? 'Cambiar a Ganar Masa'
+                    : 'Aplicar recomendado';
+                const recText = alert.recommendationGoal === 'fat_loss' ? 'Perder Grasa' : (alert.recommendationGoal === 'muscle_gain' ? 'Ganar Masa' : alert.recommendationGoal);
+                const res = await Swal.fire({
+                    title: '⚠️ Alerta de salud',
+                    html: `<div class="text-left text-sm text-slate-700">
+                              <div class="font-black text-red-600 mb-2">${alert.title}</div>
+                              <div>${alert.message}</div>
+                              <div class="mt-2"><b>${alert.bmiText}</b></div>
+                              ${alert.idealWeight ? `<div class="mt-1"><b>Peso ideal estimado:</b> ~${ideal} kg</div>` : ''}
+                              <div class="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 font-semibold">
+                                Recomendación: cambia el objetivo a <b>${recText}</b>.
+                              </div>
+                           </div>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#1e293b',
+                    cancelButtonColor: '#ef4444',
+                    confirmButtonText: btnLabel,
+                    cancelButtonText: 'Continuar igual'
+                });
+                if (res.isConfirmed) {
+                    onbApplyRecommendedGoal(alert.recommendationGoal);
+                }
+            }
+
             // Construimos el objeto BIO tal cual lo espera tu aplicación
             let manualLocationText = document.getElementById('onb-location').value || (USER_BIO && USER_BIO.ubicacion) || "España";
             let manualCoords = onboardingLocation;
@@ -6211,7 +7641,7 @@
             }
 
             const datosBio = {
-                nombre: user.displayName || "Usuario",
+                nombre: (document.getElementById('onb-nombre')?.value || '').trim() || user.displayName || "Usuario",
                 genero: document.getElementById('onb-genero').value,
                 fechaNacimiento: fechaNacStr, // Guardamos la fecha para el futuro
                 edad: edadCalculada,
@@ -6220,12 +7650,14 @@
                 grasa: parseFloat(document.getElementById('onb-grasa').value) || 15,
                 masaMuscular: parseFloat(document.getElementById('onb-musculo').value) || 30,
                 maxRunKm: parseFloat(document.getElementById('onb-run').value) || 0,
+                maxGymTime: parseFloat(document.getElementById('onb-maxgym')?.value) || 0,
                 maxBikeKm: parseFloat(document.getElementById('onb-bike').value) || 0,
                 ubicacion: manualLocationText,
                 lat: manualCoords ? manualCoords.lat : ((USER_BIO && USER_BIO.lat != null) ? USER_BIO.lat : null),
                 lon: manualCoords ? manualCoords.lon : ((USER_BIO && USER_BIO.lon != null) ? USER_BIO.lon : null),
                 goalSpeed: document.getElementById('onb-goal-speed').value || "moderate",
-                goal: document.getElementById('onb-objetivo').value
+                goal: document.getElementById('onb-objetivo').value,
+                activityLevel: document.getElementById('onb-activity-level').value || 'moderate'
             };
 
             try {
@@ -6259,3 +7691,4 @@
     </script>
 </body>
 </html>
+
