@@ -1,4 +1,4 @@
-# FitTracker / Tracker Pro — Documentación completa (nivel TFG)
+# FitTracker / Tracker Pro — Documentación completa
 
 Última actualización: 2026-05-09
 Autor del refactor: Jorge Gonzalez  
