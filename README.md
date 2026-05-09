@@ -1,7 +1,7 @@
 # FitTracker / Tracker Pro — Documentación completa (nivel TFG)
 
-Última actualización: 2026-05-08  
-Autor del refactor: (tu nombre)  
+Última actualización: 2026-05-09
+Autor del refactor: Jorge Gonzalez  
 Proyecto: FitTracker (Nutrición) + Tracker Pro (Hábitos)  
 Stack: HTML + CSS + Vanilla JS + ES Modules + Firebase compat CDN  
 Restricciones: sin Node, sin npm, sin TypeScript, sin bundlers, 100% estático  
