@@ -6,6 +6,9 @@ Proyecto: FitTracker (Nutrición) + Tracker Pro (Hábitos)
 Stack: HTML + CSS + Vanilla JS + ES Modules + Firebase compat CDN  
 Restricciones: sin Node, sin npm, sin TypeScript, sin bundlers, 100% estático  
 Hosting objetivo: GitHub Pages  
+
+[FitTracker_Technical_Blueprint.pdf](https://github.com/user-attachments/files/27567904/FitTracker_Technical_Blueprint.pdf)
+
 <img width="2752" height="1536" alt="unnamed" src="https://github.com/user-attachments/assets/19772745-6de1-4fda-9d12-aa73d54d9344" />
 
 
