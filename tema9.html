@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Autoevaluación - Tema 9</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: #fff;
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            border-bottom: 2px solid #e8eaed;
+            padding-bottom: 10px;
+        }
+        .question-header {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .option-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        .option-btn:hover:not(:disabled) {
+            background-color: #e8eaed;
+        }
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            font-weight: bold;
+        }
+        .option-btn.incorrect {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.9;
+        }
+        .feedback-box {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none; /* Se oculta por defecto */
+            font-size: 1em;
+        }
+        .feedback-box.correct {
+            background-color: #e6f4ea;
+            border: 1px solid #ceead6;
+            color: #0d652d;
+        }
+        .feedback-box.incorrect {
+            background-color: #fce8e6;
+            border: 1px solid #fad2cf;
+            color: #c5221f;
+        }
+        .correct-answer-box {
+            background-color: #e6f4ea;
+            padding: 15px;
+            border-radius: 4px;
+            color: #0d652d;
+            margin-top: 15px;
+            border: 1px solid #ceead6;
+        }
+        .controls {
+            margin-top: 20px;
+            text-align: right;
+        }
+        .next-btn, .restart-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            display: none;
+        }
+        .next-btn:hover, .restart-btn:hover {
+            background-color: #1557b0;
+        }
+        .progress {
+            margin-bottom: 20px;
+            color: #5f6368;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        #results-screen {
+            display: none;
+            text-align: center;
+        }
+        .score {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #1a73e8;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Test de Autoevaluación</h1>
+    
+    <div id="quiz-screen">
+        <div class="progress" id="progress-text">Pregunta 1 de 10</div>
+        <div class="question-header" id="question-text"></div>
+        <div class="options" id="options-container"></div>
+        <div class="feedback-box" id="feedback-container"></div>
+        <div class="controls">
+            <button class="next-btn" id="next-btn" onclick="nextQuestion()">Siguiente Pregunta</button>
+        </div>
+    </div>
+
+    <div id="results-screen">
+        <h2>Test Terminado</h2>
+        <div class="score" id="score-text"></div>
+        <button class="restart-btn" id="restart-btn" onclick="restartQuiz()" style="display: inline-block;">Hacer el test otra vez</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            question: "La copia de seguridad de tipo espejo…..",
+            options: [
+                { 
+                    text: "Copia todos los datos que han cambiado desde la última copia de seguridad", 
+                    isCorrect: false, 
+                    whyWrong: "Porque eso es lo que hace una copia incremental o diferencial, no una espejo." 
+                },
+                { 
+                    text: "Es la más segura y rápida de restaurar", 
+                    isCorrect: false, 
+                    whyWrong: "Porque si borras un archivo por error en tu ordenador, se borra también en el espejo al instante. No es segura contra fallos humanos." 
+                },
+                { 
+                    text: "Crea una réplica exacta de los datos originales, reflejando cualquier cambio en tiempo real.", 
+                    isCorrect: true, 
+                    whyRight: "Porque la copia en espejo (mirror) es literalmente un clon. Lo que añades, modificas o borras en el disco original se refleja en el disco de copia al momento." 
+                },
+                { 
+                    text: "Es el método más rápido y eficiente en espacio", 
+                    isCorrect: false, 
+                    whyWrong: "Porque ocupa exactamente el mismo espacio que los datos originales, no comprime los datos ni ahorra espacio." 
+                }
+            ]
+        },
+        {
+            question: "¿De qué manera se puede instalar software no firmado en un equipo?",
+            options: [
+                { 
+                    text: "Marcando el archivo como no seguro", 
+                    isCorrect: false, 
+                    whyWrong: "Porque no existe ninguna opción en la BIOS o UEFI para marcar un archivo como seguro o no seguro." 
+                },
+                { 
+                    text: "Desactivando Secure Boot", 
+                    isCorrect: true, 
+                    whyRight: "Porque el Secure Boot es la función de la placa base que bloquea el arranque de software sin firma digital. Si lo desactivas, te deja instalar cualquier sistema." 
+                },
+                { 
+                    text: "Con la cuenta del administrador", 
+                    isCorrect: false, 
+                    whyWrong: "Porque ser administrador de Windows no sirve de nada aquí. El bloqueo ocurre en la placa base, mucho antes de que Windows arranque." 
+                },
+                { 
+                    text: "Deshabilitando el antivirus", 
+                    isCorrect: false, 
+                    whyWrong: "Porque el antivirus funciona dentro del sistema operativo. No controla el arranque de la máquina a bajo nivel." 
+                }
+            ]
+        },
+        {
+            question: "La copia de seguridad completa…..",
+            options: [
+                { 
+                    text: "Crea una réplica exacta de los datos originales, reflejando cualquier cambio en tiempo real.", 
+                    isCorrect: false, 
+                    whyWrong: "Porque esta es la definición de la copia en espejo, no de la completa." 
+                },
+                { 
+                    text: "Es la más segura y rápida de restaurar", 
+                    isCorrect: true, 
+                    whyRight: "Porque al tener todos los datos guardados juntos en un solo archivo, es el método más rápido y directo para restaurar todo de golpe si hay un desastre." 
+                },
+                { 
+                    text: "Copia todos los datos que han cambiado desde la última copia de seguridad", 
+                    isCorrect: false, 
+                    whyWrong: "Porque esta es la definición de la copia incremental o diferencial." 
+                },
+                { 
+                    text: "Es el método más rápido y eficiente en espacio", 
+                    isCorrect: false, 
+                    whyWrong: "Porque es justo lo contrario. La copia completa es la que más tarda en hacerse y la que más gigas ocupa en el disco." 
+                }
+            ]
+        },
+        {
+            question: "Con MBR legacy:",
+            options: [
+                { 
+                    text: "Se pueden tener tres particiones primarias y 4 particiones lógicas", 
+                    isCorrect: false, 
+                    whyWrong: "Porque es falso. Las particiones lógicas no pueden ir sueltas, tienen que ir obligatoriamente dentro de una partición extendida (y aquí no la mencionas)." 
+                },
+                { 
+                    text: "Se pueden tener 3 particiones primarias, una extendida y 7 particiones lógicas", 
+                    isCorrect: true, 
+                    whyRight: "Porque el MBR solo admite 4 particiones principales. La estructura correcta para tener más particiones es crear 3 primarias y 1 extendida, y luego meter las lógicas dentro de esa extendida." 
+                },
+                { 
+                    text: "Pueden existir dos particiones extendidas", 
+                    isCorrect: false, 
+                    whyWrong: "Porque el sistema MBR solo permite crear una única partición extendida por disco duro." 
+                },
+                { 
+                    text: "Se pueden tener instalados 5 sistemas operativos en particiones primarias", 
+                    isCorrect: false, 
+                    whyWrong: "Porque la tabla MBR tiene un límite físico de 4 particiones primarias como máximo." 
+                }
+            ]
+        },
+        {
+            question: "A la hora de realizar una copia de seguridad es aconsejable:",
+            options: [
+                { 
+                    text: "Se aconseja tener los backups cifrados y bajo llave", 
+                    isCorrect: false, 
+                    whyWrong: "Porque aunque es una buena práctica de seguridad, las otras opciones también son correctas." 
+                },
+                { 
+                    text: "Todas son correctas", 
+                    isCorrect: true, 
+                    whyRight: "Porque las tres cosas son necesarias: cifrar por seguridad, automatizar para no olvidar hacer la copia, y poner un buen nombre para saber qué contiene." 
+                },
+                { 
+                    text: "Automatizar las tarea para que se pueda realizar de forma desatendida", 
+                    isCorrect: false, 
+                    whyWrong: "Porque aunque es vital para que no se te olvide hacerla, las otras opciones también son correctas." 
+                },
+                { 
+                    text: "El nombre del backup tendrá que contener información suficiente", 
+                    isCorrect: false, 
+                    whyWrong: "Porque aunque es necesario para identificarla luego, las otras opciones también son correctas." 
+                }
+            ]
+        },
+        {
+            question: "En el formateo a bajo nivel se leen y escriben todos los bytes de la superficie del disco para verificar que puedan ser leídos o escritos sin problema ninguno.",
+            options: [
+                { 
+                    text: "Falso", 
+                    isCorrect: false, 
+                    whyWrong: "Porque en tu temario esta afirmación se da como verdadera, ya que las herramientas modernas verifican la superficie leyendo y escribiendo en todos los sectores." 
+                },
+                { 
+                    text: "Verdadero", 
+                    isCorrect: true, 
+                    whyRight: "Porque las herramientas actuales de bajo nivel sobrescriben y leen sector por sector para comprobar que el disco no tiene daños físicos." 
+                }
+            ]
+        },
+        {
+            question: "La copia de seguridad Diferencial…..",
+            options: [
+                { 
+                    text: "Es la más segura y rápida de restaurar", 
+                    isCorrect: false, 
+                    whyWrong: "Porque esa es la principal ventaja de la copia Completa." 
+                },
+                { 
+                    text: "Crea una réplica exacta de los datos originales, reflejando cualquier cambio en tiempo real.", 
+                    isCorrect: false, 
+                    whyWrong: "Porque esa es la función de la copia en Espejo." 
+                },
+                { 
+                    text: "Copia todos los datos que han cambiado desde la última copia de seguridad", 
+                    isCorrect: true, 
+                    whyRight: "Porque su función es guardar todo lo que ha cambiado desde la última copia COMPLETA. Cada día va acumulando más cambios en un solo archivo." 
+                },
+                { 
+                    text: "Es el método más rápido y eficiente en espacio", 
+                    isCorrect: false, 
+                    whyWrong: "Porque esa es la ventaja de la copia Incremental. La diferencial cada día ocupa más espacio porque acumula cambios." 
+                }
+            ]
+        },
+        {
+            question: "La siguiente copia de seguridad no desactiva el flag de modificación de archivos:",
+            options: [
+                { 
+                    text: "Incremental", 
+                    isCorrect: false, 
+                    whyWrong: "Porque la incremental sí que desactiva el flag para no volver a copiar mañana los archivos que ya ha copiado hoy." 
+                },
+                { 
+                    text: "Total", 
+                    isCorrect: false, 
+                    whyWrong: "Porque al hacer una copia total, el sistema desactiva el flag de todos los archivos para empezar un ciclo nuevo." 
+                },
+                { 
+                    text: "Completa", 
+                    isCorrect: false, 
+                    whyWrong: "Porque es lo mismo que la total, sí que desactiva el flag." 
+                },
+                { 
+                    text: "Diferencial", 
+                    isCorrect: true, 
+                    whyRight: "Porque la diferencial copia los archivos modificados pero NO les quita el flag. Así, al día siguiente los vuelve a copiar junto con los nuevos cambios." 
+                }
+            ]
+        },
+        {
+            question: "Con MRB legacy:",
+            options: [
+                { 
+                    text: "Se pueden tener más de 4 particiones primarias", 
+                    isCorrect: false, 
+                    whyWrong: "Porque MBR tiene una limitación técnica y solo permite 4 particiones primarias como máximo." 
+                },
+                { 
+                    text: "Es más fiable que UEFI/GPT", 
+                    isCorrect: false, 
+                    whyWrong: "Porque es justo al revés. GPT es mucho más fiable que MBR porque guarda copias de seguridad de la tabla de particiones." 
+                },
+                { 
+                    text: "Todas son falsas", 
+                    isCorrect: true, 
+                    whyRight: "Porque todas las opciones anteriores son mentira. MBR no permite más de 4 primarias, no es más fiable que GPT y arranca más lento que UEFI." 
+                },
+                { 
+                    text: "Se inicia más rápido que su predecesor el UEFI", 
+                    isCorrect: false, 
+                    whyWrong: "Porque UEFI es el sucesor, no el predecesor, y los sistemas con UEFI arrancan mucho más rápido que los antiguos con MBR/BIOS." 
+                }
+            ]
+        },
+        {
+            question: "La copia de seguridad Incremental…..",
+            options: [
+                { 
+                    text: "Crea una réplica exacta de los datos originales, reflejando cualquier cambio en tiempo real.", 
+                    isCorrect: false, 
+                    whyWrong: "Porque esta es la copia en espejo." 
+                },
+                { 
+                    text: "Es la más segura y rápida de restaurar", 
+                    isCorrect: false, 
+                    whyWrong: "Porque esta es la copia completa." 
+                },
+                { 
+                    text: "Es el método más rápido y eficiente en espacio", 
+                    isCorrect: true, 
+                    whyRight: "Porque como solo guarda lo que ha cambiado desde el día anterior, copia muy pocos datos. Por eso tarda muy poco y ocupa muy poco espacio." 
+                },
+                { 
+                    text: "Copia todos los datos que han cambiado desde la última copia de seguridad", 
+                    isCorrect: false, 
+                    whyWrong: "Porque en los exámenes esta definición suele referirse a la diferencial (cambios desde la última completa). La característica clave de la incremental es que es la más rápida y eficiente (la opción C)." 
+                }
+            ]
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let answered = false;
+
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const feedbackContainer = document.getElementById('feedback-container');
+    const nextBtn = document.getElementById('next-btn');
+    const progressText = document.getElementById('progress-text');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultsScreen = document.getElementById('results-screen');
+    const scoreText = document.getElementById('score-text');
+
+    function loadQuestion() {
+        answered = false;
+        
+        // Escondemos el cuadro al pasar de pregunta
+        feedbackContainer.style.display = 'none';
+        
+        nextBtn.style.display = 'none';
+        feedbackContainer.className = 'feedback-box';
+        
+        const q = questions[currentQuestionIndex];
+        progressText.innerText = `Pregunta ${currentQuestionIndex + 1} de ${questions.length}`;
+        questionText.innerText = q.question;
+        
+        optionsContainer.innerHTML = '';
+        
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt.text;
+            btn.dataset.index = index; 
+            btn.onclick = () => selectOption(btn, opt);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function selectOption(selectedBtn, optionData) {
+        if (answered) return; 
+        answered = true;
+
+        const allButtons = optionsContainer.querySelectorAll('.option-btn');
+        allButtons.forEach(btn => btn.disabled = true);
+
+        // ESTA ES LA LÍNEA QUE FALTABA: Muestra el cuadro al hacer clic
+        feedbackContainer.style.display = 'block';
+
+        if (optionData.isCorrect) {
+            // SI ACIERTA
+            selectedBtn.classList.add('correct');
+            feedbackContainer.classList.add('correct');
+            feedbackContainer.innerHTML = `
+                <h3 style="margin-top:0;">✅ ¡Correcto!</h3>
+                <p><strong>¿Por qué está bien?</strong><br> ${optionData.whyRight}</p>
+            `;
+            score++;
+        } else {
+            // SI FALLA
+            selectedBtn.classList.add('incorrect');
+            feedbackContainer.classList.add('incorrect');
+            
+            // Buscar la opción correcta para mostrarla
+            const currentQ = questions[currentQuestionIndex];
+            const correctOptionIndex = currentQ.options.findIndex(o => o.isCorrect);
+            const correctOption = currentQ.options[correctOptionIndex];
+            
+            feedbackContainer.innerHTML = `
+                <h3 style="margin-top:0;">❌ Has fallado</h3>
+                <p><strong>¿Por qué tu respuesta está mal?</strong><br> ${optionData.whyWrong}</p>
+                
+                <div class="correct-answer-box">
+                    <p style="margin-top:0;"><strong>La respuesta correcta era:</strong><br> "${correctOption.text}"</p>
+                    <p style="margin-bottom:0;"><strong>¿Por qué es la correcta?</strong><br> ${correctOption.whyRight}</p>
+                </div>
+            `;
+            
+            // Marcar en verde la que era correcta
+            const correctBtn = optionsContainer.querySelector(`.option-btn[data-index="${correctOptionIndex}"]`);
+            if(correctBtn) {
+                correctBtn.style.border = "2px solid #28a745";
+                correctBtn.style.backgroundColor = "#e6f4ea";
+            }
+        }
+
+        nextBtn.style.display = 'inline-block';
+        if (currentQuestionIndex === questions.length - 1) {
+            nextBtn.innerText = 'Ver Nota Final';
+        }
+    }
+
+    function nextQuestion() {
+        if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        quizScreen.style.display = 'none';
+        resultsScreen.style.display = 'block';
+        scoreText.innerText = `${score} / ${questions.length}`;
+    }
+
+    function restartQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        quizScreen.style.display = 'block';
+        resultsScreen.style.display = 'none';
+        nextBtn.innerText = 'Siguiente Pregunta';
+        loadQuestion();
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>

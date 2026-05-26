@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cuestionario de Hardware y Eficiencia</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 700px; margin: 20px auto; padding: 0 20px; }
+        .pregunta { margin-bottom: 30px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+        .feedback { margin-top: 10px; padding: 10px; display: none; border-radius: 5px; font-weight: bold; }
+        .correct { background-color: #d4edda; color: #155724; }
+        .incorrect { background-color: #f8d7da; color: #721c24; }
+        button { margin-top: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>Cuestionario de Hardware</h1>
+
+    <div id="cuestionario"></div>
+
+    <script>
+        const preguntas = [
+            {
+                q: "El componente que más energía consume en un ordenador su funcionamiento es:",
+                opciones: ["El sistema de ventilación", "El microprocesador", "El disco duro", "La placa base"],
+                correcta: 1,
+                explicacion: "El microprocesador (CPU) es el componente que mayor consumo genera durante el trabajo activo."
+            },
+            {
+                q: "El componente que más energía gasta en un ordenador en reposo es:",
+                opciones: ["El sistema de ventilación", "La placa base", "El microprocesador", "El disco duro"],
+                correcta: 1,
+                explicacion: "La placa base mantiene alimentados los componentes básicos y controladores, consumiendo más que el resto cuando el procesador entra en modo reposo."
+            },
+            {
+                q: "¿Cuánto menos, en porcentaje, puede llegar a consumir un portátil en relación con un equipo de sobremesa?",
+                opciones: ["30%", "60%", "90%", "10%"],
+                correcta: 1,
+                explicacion: "Se estima de forma estándar en manuales técnicos que el ahorro es de aproximadamente un 60%."
+            },
+            {
+                q: "La directiva RoHS tiene como objetivo:",
+                opciones: ["Reducir el uso de sustancias contaminantes", "Reducir el gasto por el standby", "Reducir el consumo de combustibles fósiles", "Reducir el gasto vampiro"],
+                correcta: 0,
+                explicacion: "RoHS (Restriction of Hazardous Substances) restringe materiales tóxicos como plomo o mercurio."
+            },
+            {
+                q: "En funcionamiento, el componente que menos energía consume en un ordenador es:",
+                opciones: ["La placa base", "El microprocesador", "El disco duro", "El sistema de ventilación"],
+                correcta: 3,
+                explicacion: "Los ventiladores son componentes mecánicos simples cuyo consumo es mínimo (1-3W)."
+            },
+            {
+                q: "El término Burnout:",
+                opciones: ["Responsable del efecto invernadero", "Efecto de conducción eléctrica", "Responsable de un CPD", "Síndrome del trabajador quemado"],
+                correcta: 3,
+                explicacion: "Es un término psicológico que hace referencia al agotamiento profesional."
+            },
+            {
+                q: "No es un metal pesado:",
+                opciones: ["El plomo", "El litio", "El cadmio", "El mercurio"],
+                correcta: 1,
+                explicacion: "El litio es un metal alcalino, no se clasifica dentro de la categoría de metales pesados altamente tóxicos."
+            },
+            {
+                q: "Antiguamente, las soldaduras de los componentes electrónicos contenían:",
+                opciones: ["Cadmio", "Litio", "Plomo", "Mercurio"],
+                correcta: 2,
+                explicacion: "Las soldaduras tradicionales usaban una aleación de estaño y plomo antes de la normativa RoHS."
+            }
+        ];
+
+        const contenedor = document.getElementById('cuestionario');
+
+        preguntas.forEach((p, index) => {
+            const div = document.createElement('div');
+            div.className = 'pregunta';
+            div.innerHTML = `<p><strong>${index + 1}. ${p.q}</strong></p>`;
+            
+            p.opciones.forEach((op, i) => {
+                div.innerHTML += `<label><input type="radio" name="q${index}" value="${i}"> ${op}</label><br>`;
+            });
+
+            div.innerHTML += `<button onclick="verificar(${index})">Comprobar</button>`;
+            div.innerHTML += `<div id="feedback${index}" class="feedback"></div>`;
+            contenedor.appendChild(div);
+        });
+
+        function verificar(index) {
+            const seleccion = document.querySelector(`input[name="q${index}"]:checked`);
+            const feedback = document.getElementById(`feedback${index}`);
+            
+            if (!seleccion) {
+                alert("Por favor, selecciona una opción.");
+                return;
+            }
+
+            const valor = parseInt(seleccion.value);
+            if (valor === preguntas[index].correcta) {
+                feedback.className = "feedback correct";
+                feedback.innerHTML = "¡Correcto! " + preguntas[index].explicacion;
+            } else {
+                feedback.className = "feedback incorrect";
+                feedback.innerHTML = "Incorrecto. " + preguntas[index].explicacion;
+            }
+            feedback.style.display = "block";
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Tema 8</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .pregunta-container {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .enunciado {
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .opciones button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .opciones button:hover:not(:disabled) {
+            background-color: #e9e9e9;
+        }
+        .opciones button:disabled {
+            cursor: default;
+        }
+        .btn-correcto {
+            background-color: #d4edda !important;
+            border-color: #c3e6cb !important;
+            color: #155724;
+        }
+        .btn-incorrecto {
+            background-color: #f8d7da !important;
+            border-color: #f5c6cb !important;
+            color: #721c24;
+        }
+        .explicacion {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #e2e3e5;
+            border-left: 4px solid #6c757d;
+            border-radius: 4px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Test de autoevaluación - Tema 8</h1>
+    <div id="test-contenedor"></div>
+
+    <script>
+        // Datos de las preguntas ajustados a tu plantilla
+        const preguntas = [
+            {
+                enunciado: "1. El malware WannaCry era un gusano y a la vez un ransomware",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 0, // Índice de "Verdadero"
+                explicacion: "Correcto. WannaCry es un ataque combinado. Cifraba archivos pidiendo un rescate (ransomware) y se propagaba automáticamente por la red usando una vulnerabilidad (gusano)."
+            },
+            {
+                enunciado: "2. El spyware es un tipo de software que utiliza la propaganda para financiarse mostrando publicidad o productos y servicios",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 1, // Índice de "Falso"
+                explicacion: "El enunciado describe al Adware. El Spyware se dedica a recopilar información del usuario a escondidas, no a mostrar publicidad."
+            },
+            {
+                enunciado: "3. APT es el acrónimo de advanced packaging tool",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 0, // Índice de "Verdadero" (según tu plantilla)
+                explicacion: "Según tu temario, hace referencia a la herramienta de gestión de paquetes (APT) utilizada en sistemas operativos como Linux."
+            },
+            {
+                enunciado: "4. Los plugin son pequeñas aplicaciones o programas que corren sobre un motor de widgets",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 1, // Índice de "Falso"
+                explicacion: "Los que corren sobre un motor de widgets son los 'widgets'. Un plugin se integra dentro de un programa principal (como un navegador) para añadirle funciones."
+            },
+            {
+                enunciado: "5. Una botnet es una red que tiene a su cargo a una serie de equipos o robots informáticos a los que les llama bots.",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 0, 
+                explicacion: "Una botnet es una red de equipos infectados (zombis o bots) controlados a distancia por un atacante para realizar acciones maliciosas conjuntas."
+            },
+            {
+                enunciado: "6. Cuando un malware utiliza la debilidad de un sistema o fallo de seguridad se llama exploit",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 0,
+                explicacion: "El exploit es el código o herramienta que 'aprovecha' una vulnerabilidad concreta para poder inyectar el malware en el sistema."
+            },
+            {
+                enunciado: "7. El firmware es un software",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 0,
+                explicacion: "Sí, es un tipo de software de bajo nivel que viene preinstalado en chips de memoria dentro del propio hardware para controlar su funcionamiento básico."
+            },
+            {
+                enunciado: "8. El software libre y de dominio público son equivalentes",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 1,
+                explicacion: "No son equivalentes. El software libre tiene derechos de autor y licencias que protegen la libertad del código. El de dominio público no tiene dueño ni licencia."
+            },
+            {
+                enunciado: "9. Los widgets son pequeñas aplicaciones o programas que corren sobre un motor de widgets",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 0,
+                explicacion: "Correcto. Son miniapplicaciones (como un reloj o el tiempo en el escritorio) que necesitan de su motor base para poder funcionar y mostrarse."
+            },
+            {
+                enunciado: "10. Un WebView renderiza una página web",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 0,
+                explicacion: "Un WebView actúa como un navegador integrado dentro de una aplicación móvil o de escritorio, encargado de cargar y mostrar el código HTML/CSS/JS."
+            },
+            {
+                enunciado: "11. El software libre y open source son equivalentes",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 0, // Índice de "Verdadero" (según tu plantilla)
+                explicacion: "A efectos del temario se consideran equivalentes, ya que ambos permiten el acceso al código fuente para su estudio, modificación y distribución."
+            },
+            {
+                enunciado: "12. El scumware generalmente no permite ser desinstalado",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 0,
+                explicacion: "El scumware (programas basura o engañosos) oculta sus procesos o usa desinstaladores falsos para evitar que el usuario pueda eliminarlo fácilmente."
+            },
+            {
+                enunciado: "13. El ransomware permite a los crackers acceder a un sistema infectado sin seguir los procesos de identificación en el mismo",
+                opciones: ["Verdadero", "Falso"],
+                respuestaCorrecta: 1, // Índice de "Falso"
+                explicacion: "Eso describe a una 'puerta trasera' (backdoor). El ransomware no busca dar acceso, sino cifrar los archivos y pedir un rescate económico."
+            }
+        ];
+
+        const contenedor = document.getElementById('test-contenedor');
+
+        // Generar el HTML de las preguntas mediante JS de forma sencilla
+        preguntas.forEach((pregunta, index) => {
+            const divPregunta = document.createElement('div');
+            divPregunta.className = 'pregunta-container';
+
+            const enunciado = document.createElement('div');
+            enunciado.className = 'enunciado';
+            enunciado.textContent = pregunta.enunciado;
+            divPregunta.appendChild(enunciado);
+
+            const divOpciones = document.createElement('div');
+            divOpciones.className = 'opciones';
+
+            const divExplicacion = document.createElement('div');
+            divExplicacion.className = 'explicacion';
+            divExplicacion.textContent = pregunta.explicacion;
+
+            pregunta.opciones.forEach((opcionTexto, i) => {
+                const btn = document.createElement('button');
+                btn.textContent = opcionTexto;
+                
+                btn.onclick = () => {
+                    // Deshabilitar botones tras responder
+                    const botones = divOpciones.querySelectorAll('button');
+                    botones.forEach(b => b.disabled = true);
+
+                    // Comprobar si ha acertado o fallado
+                    if (i === pregunta.respuestaCorrecta) {
+                        btn.classList.add('btn-correcto');
+                        btn.textContent += ' (¡Correcto!)';
+                    } else {
+                        btn.classList.add('btn-incorrecto');
+                        btn.textContent += ' (Incorrecto)';
+                        // Marcar la correcta en verde para que la vea
+                        botones[pregunta.respuestaCorrecta].classList.add('btn-correcto');
+                    }
+                    
+                    // Mostrar la explicación
+                    divExplicacion.style.display = 'block';
+                };
+                
+                divOpciones.appendChild(btn);
+            });
+
+            divPregunta.appendChild(divOpciones);
+            divPregunta.appendChild(divExplicacion);
+            contenedor.appendChild(divPregunta);
+        });
+    </script>
+</body>
+</html>

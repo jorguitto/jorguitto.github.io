@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Interactivo - Infraestructura y Sistemas</title>
+    <style>
+        /* Estilos sencillos y limpios */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 20px;
+        }
+
+        #contenedor-test {
+            background-color: #ffffff;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .btn-opcion {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 1em;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-opcion:hover {
+            background-color: #dee2e6;
+        }
+
+        .opcion-correcta {
+            background-color: #d4edda !important;
+            border-color: #c3e6cb !important;
+            color: #155724;
+        }
+
+        .opcion-incorrecta {
+            background-color: #f8d7da !important;
+            border-color: #f5c6cb !important;
+            color: #721c24;
+        }
+
+        #caja-explicacion {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e2e3e5;
+            border-left: 5px solid #6c757d;
+            border-radius: 4px;
+        }
+
+        #btn-siguiente {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        #btn-siguiente:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="contenedor-test">
+        <div id="pantalla-preguntas">
+            <h2 id="texto-pregunta">Cargando pregunta...</h2>
+            <div id="contenedor-opciones">
+                </div>
+            <div id="caja-explicacion"></div>
+            <button id="btn-siguiente" onclick="siguientePregunta()">Siguiente Pregunta</button>
+        </div>
+
+        <div id="pantalla-resultados" style="display: none; text-align: center;">
+            <h2>¡Test finalizado!</h2>
+            <p id="texto-puntuacion" style="font-size: 1.2em; font-weight: bold;"></p>
+            <button onclick="reiniciarTest()" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Repetir Test</button>
+        </div>
+    </div>
+
+    <script>
+        const preguntas = [
+            {
+                pregunta: "1. El blockchain es un sistema de:",
+                opciones: ["Identificación y verificación de una identidad", "Bancario", "Inteligencia artificial", "De criptomonedas"],
+                correcta: 0,
+                explicacion: "A nivel técnico y empresarial, una cadena de bloques es un registro distribuido e inmutable cuya criptografía lo hace ideal para certificar identidades y accesos, no solo para dinero."
+            },
+            {
+                pregunta: "2. IaaS es el acrónimo de:",
+                opciones: ["Infraestructure as a Software", "Internet as a Service", "Infraestructure as a Service", "Internet as a Software"],
+                correcta: 2,
+                explicacion: "IaaS (Infraestructura como Servicio) es el nivel más básico del Cloud Computing, donde el proveedor te alquila servidores virtuales, almacenamiento y redes."
+            },
+            {
+                pregunta: "3. El AVR:",
+                opciones: ["Es el elemento de un servidor", "Es un servicio cloud", "Es un tipo de servicio de la nube", "Es un regulador de voltaje"],
+                correcta: 3,
+                explicacion: "AVR (Automatic Voltage Regulator) es un componente de hardware (a menudo integrado en los SAI) que estabiliza la tensión eléctrica para proteger los equipos informáticos."
+            },
+            {
+                pregunta: "4. No son sistemas operativos hipervisores:",
+                opciones: ["z/VM", "Proxmox", "Parallels", "Vmware vSphere Enterprise"],
+                correcta: 2,
+                explicacion: "Parallels es un Hipervisor de Tipo 2 (Alojado), es decir, es una aplicación que funciona sobre un sistema operativo ya existente (como macOS), no es un sistema operativo en sí mismo."
+            },
+            {
+                pregunta: "5. RFID tiene que ver con:",
+                opciones: ["El control biomédico", "El cloud computing", "El control de accesos", "La inteligencia artificial"],
+                correcta: 2,
+                explicacion: "La Identificación por Radiofrecuencia (RFID) utiliza ondas para leer etiquetas a proximidad, siendo su uso informático más común las tarjetas y llaves para el control de accesos físicos."
+            }
+        ];
+
+        let indiceActual = 0;
+        let puntuacion = 0;
+        let respondido = false;
+
+        const textoPregunta = document.getElementById("texto-pregunta");
+        const contenedorOpciones = document.getElementById("contenedor-opciones");
+        const cajaExplicacion = document.getElementById("caja-explicacion");
+        const btnSiguiente = document.getElementById("btn-siguiente");
+        const pantallaPreguntas = document.getElementById("pantalla-preguntas");
+        const pantallaResultados = document.getElementById("pantalla-resultados");
+        const textoPuntuacion = document.getElementById("texto-puntuacion");
+
+        function cargarPregunta() {
+            respondido = false;
+            cajaExplicacion.style.display = "none";
+            btnSiguiente.style.display = "none";
+            contenedorOpciones.innerHTML = "";
+
+            const preguntaActual = preguntas[indiceActual];
+            textoPregunta.textContent = preguntaActual.pregunta;
+
+            preguntaActual.opciones.forEach((opcion, index) => {
+                const boton = document.createElement("button");
+                boton.textContent = opcion;
+                boton.classList.add("btn-opcion");
+                boton.onclick = () => verificarRespuesta(index, boton);
+                contenedorOpciones.appendChild(boton);
+            });
+        }
+
+        function verificarRespuesta(indiceSeleccionado, botonSeleccionado) {
+            if (respondido) return; 
+            respondido = true;
+
+            const preguntaActual = preguntas[indiceActual];
+            const botones = contenedorOpciones.children;
+
+            botones[preguntaActual.correcta].classList.add("opcion-correcta");
+
+            if (indiceSeleccionado === preguntaActual.correcta) {
+                puntuacion++;
+                cajaExplicacion.innerHTML = "<strong>¡Correcto!</strong> " + preguntaActual.explicacion;
+                cajaExplicacion.style.borderLeftColor = "#28a745"; 
+            } else {
+                botonSeleccionado.classList.add("opcion-incorrecta");
+                cajaExplicacion.innerHTML = "<strong>Incorrecto.</strong> " + preguntaActual.explicacion;
+                cajaExplicacion.style.borderLeftColor = "#dc3545"; 
+            }
+
+            cajaExplicacion.style.display = "block";
+            btnSiguiente.style.display = "block";
+        }
+
+        function siguientePregunta() {
+            indiceActual++;
+            if (indiceActual < preguntas.length) {
+                cargarPregunta();
+            } else {
+                mostrarResultados();
+            }
+        }
+
+        function mostrarResultados() {
+            pantallaPreguntas.style.display = "none";
+            pantallaResultados.style.display = "block";
+            textoPuntuacion.textContent = `Has acertado ${puntuacion} de ${preguntas.length} preguntas.`;
+        }
+
+        function reiniciarTest() {
+            indiceActual = 0;
+            puntuacion = 0;
+            pantallaResultados.style.display = "none";
+            pantallaPreguntas.style.display = "block";
+            cargarPregunta();
+        }
+
+        // Iniciar el test al cargar la página
+        cargarPregunta();
+    </script>
+</body>
+</html>
