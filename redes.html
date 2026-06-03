@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tipo Test — Redes (Trimestre 3)</title>
+<style>
+:root {
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface2: #243044;
+  --text: #e7ecf3;
+  --muted: #8b9cb3;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --ok: #22c55e;
+  --ok-bg: rgba(34,197,94,.12);
+  --bad: #ef4444;
+  --bad-bg: rgba(239,68,68,.12);
+  --warn: #f59e0b;
+  --radius: 12px;
+  --font: "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  min-height: 100vh;
+}
+header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f1419 100%);
+  padding: 1.5rem 1.25rem;
+  border-bottom: 1px solid #2d3f56;
+}
+header h1 { font-size: 1.35rem; font-weight: 600; }
+header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.35rem; }
+main { max-width: 820px; margin: 0 auto; padding: 1.25rem; }
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #2d3f56;
+}
+.panel h2 { font-size: 1rem; margin-bottom: 0.75rem; color: #a8c4e8; }
+.temas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+.tema-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--surface2);
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-size: 0.82rem;
+  transition: border-color .15s, background .15s;
+}
+.tema-chip:hover { border-color: var(--accent); }
+.tema-chip input { accent-color: var(--accent); }
+.tema-chip label { cursor: pointer; flex: 1; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+button, .btn {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.6rem 1.1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: transform .1s, background .15s;
+}
+button:active { transform: scale(0.98); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid #3d5270; }
+.btn-secondary:hover { background: #2d4058; }
+.btn-ok { background: var(--ok); color: #fff; }
+.btn-warn { background: var(--warn); color: #111; }
+.hidden { display: none !important; }
+.progress-bar {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width .3s;
+}
+.quiz-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.q-tema {
+  display: inline-block;
+  background: #2a4060;
+  color: #93c5fd;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.q-text { font-size: 1.05rem; font-weight: 500; margin-bottom: 1rem; }
+.options { display: flex; flex-direction: column; gap: 0.5rem; }
+.option {
+  display: block;
+  padding: 0.75rem 1rem;
+  background: var(--surface2);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.option:hover:not(.locked) { border-color: #4a6a8f; }
+.option.selected { border-color: var(--accent); background: #1e3350; }
+.option.correct { border-color: var(--ok); background: var(--ok-bg); }
+.option.incorrect { border-color: var(--bad); background: var(--bad-bg); }
+.option.locked { cursor: default; opacity: 0.95; }
+.feedback {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+.feedback.ok { background: var(--ok-bg); border-left: 4px solid var(--ok); }
+.feedback.bad { background: var(--bad-bg); border-left: 4px solid var(--bad); }
+.feedback strong { display: block; margin-bottom: 0.35rem; }
+.nav-quiz { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.stat-card {
+  background: var(--surface2);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+.stat-card .num { font-size: 1.75rem; font-weight: 700; }
+.stat-card .lbl { font-size: 0.8rem; color: var(--muted); }
+.fail-list { margin-top: 1rem; }
+.fail-item {
+  padding: 0.75rem;
+  background: var(--surface2);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  font-size: 0.88rem;
+  border-left: 3px solid var(--bad);
+}
+.options-inline { margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.options-inline label { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 0.35rem; }
+select {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid #3d5270;
+  padding: 0.45rem 0.65rem;
+  border-radius: 6px;
+  font-family: inherit;
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tipo Test — Redes (Trimestre 3)</h1>
+  <p>WAN · WLAN · ACL · CDP/LLDP/NTP · SNMP/Syslog · Amazon VPC</p>
+</header>
+<main>
+  <section id="pantalla-inicio" class="panel">
+    <h2>Selecciona los temas</h2>
+    <div class="temas-grid" id="temas-container"></div>
+    <div class="options-inline" style="margin-top:1rem">
+      <label><input type="checkbox" id="mezclar-preguntas" checked> Mezclar preguntas</label>
+      <label><input type="checkbox" id="mezclar-opciones" checked> Mezclar opciones</label>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn-primary" id="btn-todos">Todos los temas</button>
+      <button type="button" class="btn-secondary" id="btn-ninguno">Ninguno</button>
+      <button type="button" class="btn-primary" id="btn-empezar">Empezar test</button>
+    </div>
+    <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--muted)" id="contador-preguntas"></p>
+  </section>
+
+  <section id="pantalla-quiz" class="panel hidden">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="quiz-meta">
+      <span id="quiz-contador">Pregunta 1 de 1</span>
+      <span id="quiz-puntuacion">Aciertos: 0</span>
+    </div>
+    <span class="q-tema" id="q-tema-label"></span>
+    <p class="q-text" id="q-text"></p>
+    <div class="options" id="q-options"></div>
+    <div class="feedback hidden" id="q-feedback"></div>
+    <div class="nav-quiz">
+      <button type="button" class="btn-primary hidden" id="btn-siguiente">Siguiente</button>
+      <button type="button" class="btn-secondary" id="btn-abandonar">Volver al inicio</button>
+    </div>
+  </section>
+
+  <section id="pantalla-resultados" class="panel hidden">
+    <h2>Resultados</h2>
+    <div class="results-grid" id="results-stats"></div>
+    <div class="fail-list hidden" id="fail-summary"></div>
+    <div class="actions">
+      <button type="button" class="btn-warn hidden" id="btn-repetir-fallos">Repetir solo las falladas</button>
+      <button type="button" class="btn-secondary" id="btn-nuevo-test">Nuevo test</button>
+      <button type="button" class="btn-secondary" id="btn-inicio-res">Cambiar temas</button>
+    </div>
+  </section>
+</main>
+<script>
+const TEMAS = {
+  wan: "8.6 Conceptos WAN",
+  wifi1: "9.1 Conceptos redes inalámbricas",
+  wifi2: "9.2 Configuración WLAN",
+  wifi3: "9.3 Resumen WLAN (router/WLC)",
+  acl1: "10.1 Conceptos ACL",
+  acl2: "10.2 ACL estándar IPv4",
+  acl3: "10.3 ACL extendidas IPv4",
+  proto: "10.4 CDP, LLDP y NTP",
+  snmp: "10.5 SNMP, Syslog y mantenimiento",
+  vpc: "10.6 Práctica Amazon VPC"
+};
+
+const PREGUNTAS = [
+/* ========== WAN ========== */
+{t:"wan",q:"¿Qué define correctamente una WAN?",o:["Red de área local de alta velocidad en un edificio","Red de telecomunicaciones de gran extensión geográfica para conectar más allá de la LAN","Red exclusivamente inalámbrica doméstica","Red propiedad siempre de la organización del usuario"],c:1,ok:"Una WAN abarca áreas geográficas amplias y conecta sitios, usuarios o redes remotas fuera del alcance de una LAN. Suele ser propiedad y administrada por proveedores (ISP, cable, satélite).",ko:"La WAN no es una LAN ni una red solo doméstica: es la infraestructura de larga distancia que enlaza sedes o usuarios remotos, normalmente con coste de servicio adicional."},
+{t:"wan",q:"¿Cuál es una característica típica de una WAN privada dedicada?",o:["Ancho de banda variable sin garantías","Conexión compartida con otros clientes en Internet","Nivel de servicio garantizado y ancho de banda consistente","Sin coste adicional respecto a la LAN"],c:2,ok:"Las WAN privadas dedicadas ofrecen SLA, ancho de banda predecible y mayor seguridad al ser exclusivas del cliente.",ko:"Las WAN públicas basadas en Internet comparten infraestructura; las privadas dedicadas priorizan calidad y consistencia del servicio."},
+{t:"wan",q:"En topología hub-and-spoke (estrella), ¿qué ocurre si falla el router concentrador?",o:["Solo falla un enlace punto a punto","Los sitios radiales pueden comunicarse directamente","La comunicación entre sitios radiales también falla","Se activa automáticamente malla completa"],c:2,ok:"En hub-and-spoke los radios solo se comunican entre sí pasando por el hub; es un punto único de falla.",ko:"El hub concentra el tráfico; sin él, los spokes no tienen ruta entre ellos salvo otra topología redundante."},
+{t:"wan",q:"¿Qué ventaja principal ofrece la topología de doble conexión (dual-homed)?",o:["Menor coste que una sola conexión","Redundancia, equilibrio de carga y respaldo del proveedor","Eliminación de la necesidad de routers","Solo sirve en LAN"],c:1,ok:"Dual-homed añade redundancia y puede permitir balanceo, pero es más cara y compleja de configurar.",ko:"La doble conexión mejora disponibilidad; no reduce costes ni sustituye el enrutamiento."},
+{t:"wan",q:"¿Qué dispositivo del suscriptor conecta la LAN al equipo de comunicación WAN?",o:["DCE","DTE","POP","CO"],c:1,ok:"El DTE (Data Terminal Equipment) es el equipo del cliente (router) que conecta la LAN al WAN.",ko:"El DCE es del proveedor; POP y CO son puntos de la red del operador."},
+{t:"wan",q:"¿Qué es el punto de demarcación en una WAN?",o:["Oficina central del proveedor","Ubicación que separa CPE del equipo del proveedor","Red troncal entre operadores","Última milla de fibra óptica únicamente"],c:1,ok:"El punto de demarcación marca la frontera física/legal entre instalación del cliente (CPE) y red del proveedor.",ko:"No es la CO ni la red troncal: es el límite del edificio/complejo donde termina la responsabilidad del cliente."},
+{t:"wan",q:"¿Qué describe el loop local (última milla)?",o:["Cable entre routers de backbone","Enlace del CPE a la central del proveedor (CO)","Red VPN sitio a sitio","Conexión entre dos sedes corporativas sin operador"],c:1,ok:"La última milla es el medio (cobre/fibra) que une el CPE con la oficina central del ISP.",ko:"Backbone y VPN son otros conceptos; el loop local es el acceso del abonado al proveedor."},
+{t:"wan",q:"¿Por qué la comunicación serie es habitual en WAN y la paralela se limita a distancias cortas?",o:["La serie es más barata siempre","La sincronización de varios hilos en paralelo empeora con la distancia","El paralelo no existe en redes","La serie solo funciona en fibra"],c:1,ok:"En paralelo varios bits viajan por cables distintos; a más distancia, sincronizar canales es difícil. La serie envía bits secuencialmente por un canal.",ko:"No es cuestión de precio únicamente: es limitación física de sincronización en enlaces largos."},
+{t:"wan",q:"¿Qué tecnología WAN de capa 2 está en desuso según el material?",o:["Metro Ethernet","MPLS","Frame Relay","PPP sobre DSL"],c:2,ok:"Frame Relay y ATM son heredados y han sido sustituidos en gran medida por Metro Ethernet e Internet.",ko:"Metro Ethernet y MPLS son opciones modernas; Frame Relay es legado NBMA."},
+{t:"wan",q:"¿Qué estándar de fibra está siendo sustituido en parte por WDM?",o:["PPP","HDLC","SDH/SONET","DOCSIS"],c:2,ok:"WDM multiplexa varias longitudes de onda sobre fibra, aumentando capacidad respecto a SDH/SONET clásicos.",ko:"PPP/HDLC son capa 2; DOCSIS es cable; SDH/SONET son jerarquías síncronas en desplazamiento."},
+{t:"wan",q:"En América del Norte, ¿qué ancho de banda máximo aproximado ofrece un enlace T3?",o:["1,544 Mbps","2,048 Mbps","43,7 Mbps","34,368 Mbps"],c:2,ok:"T-carrier: T1 ≈ 1,544 Mbps, T3 ≈ 43,7 Mbps. E-carrier usa E1/E3 en Europa.",ko:"2,048 Mbps es E1; 34,368 Mbps es E3; 1,544 Mbps es T1."},
+{t:"wan",q:"¿Cuál es una desventaja principal de las líneas arrendadas punto a punto?",o:["Baja calidad de servicio","Alto coste al conectar muchos sitios","No permiten voz sobre IP","Imposibilitan uso de VPN"],c:1,ok:"Cada enlace dedicado se paga por distancia y capacidad; conectar muchas sedes encarece mucho la solución.",ko:"Suelen ofrecer buena calidad; el problema principal es coste y capacidad fija poco flexible."},
+{t:"wan",q:"¿Qué velocidad máxima típica tenía el acceso telefónico analógico (PSTN) con módem?",o:["2,048 Mbps","Menos de 56 kbps","100 Mbps","1 Gbps"],c:1,ok:"Las limitaciones del bucle local PSTN restringían la señal a menos de 56 kbps.",ko:"ISDN y DSL superaban eso; 56 kbps era el techo práctico del módem voz."},
+{t:"wan",q:"¿Qué identificador usa Frame Relay para los circuitos virtuales?",o:["VLAN ID","DLCI","SSID","OID"],c:1,ok:"Frame Relay crea PVC identificados por DLCI (Data Link Connection Identifier).",ko:"VLAN es Ethernet; SSID es Wi-Fi; OID es SNMP."},
+{t:"wan",q:"¿Qué tamaño fijo tienen las celdas ATM?",o:["53 bytes","1500 bytes","64 bytes","128 bytes"],c:0,ok:"ATM usa celdas de 53 bytes (arquitectura basada en celdas, no en tramas Ethernet).",ko:"1500 bytes es MTU Ethernet típico; ATM siempre usa 53 bytes."},
+{t:"wan",q:"¿Qué rol cumple un router PE en MPLS?",o:["Solo cliente sin etiquetas","Router de borde del proveedor que adjunta etiquetas","Dispositivo solo capa 2 del usuario","Servidor NTP"],c:1,ok:"PE (Provider Edge) es borde del ISP en MPLS; CE es borde del cliente; P es router interno.",ko:"PE trabaja con etiquetas MPLS en la red del proveedor; el CE está en la red del cliente."},
+{t:"wan",q:"¿Qué característica tiene DSL respecto al medio compartido del cable?",o:["Comparte ancho de banda con todos los vecinos en el coaxial","Cada usuario tiene conexión directa al DSLAM sin degradar a otros por más usuarios","Usa solo fibra hasta el hogar siempre","No necesita módem"],c:1,ok:"DSL no es medio compartido como el cable: cada abonado tiene su par hasta el DSLAM.",ko:"En cable todos los suscriptores comparten el mismo coaxial; en DSL la línea es dedicada al abonado."},
+{t:"wan",q:"¿Para qué usa el ISP habitualmente PPP sobre banda ancha?",o:["Sustituir DNS","Autenticar al suscriptor y asignar IPv4 pública","Cifrar Wi-Fi","Reemplazar MPLS en el backbone"],c:1,ok:"PPPoE/PPPoA permiten autenticación, asignación de IP y gestión de calidad del enlace.",ko:"PPP en acceso no sustituye MPLS ni Wi-Fi; gestiona sesión del abonado."},
+{t:"wan",q:"¿Qué significa FTTH?",o:["Fiber to the Home — fibra hasta la vivienda","Frame Transfer Telephony Host","Fast Token Tunneling Header","Fiber trunk telehouse"],c:0,ok:"FTTx incluye FTTH, FTTB, FTTN según hasta dónde llega la fibra.",ko:"FTTH es fibra hasta el hogar, no protocolos de capa 2 ni nombres ficticios."},
+{t:"wan",q:"¿Qué topología de conexión a ISP ofrece mayor redundancia entre varios proveedores?",o:["Conexión única","Dual-homed (mismo ISP, dos enlaces)","Multihomed (dos ISP distintos)","Dual-multihomed (enlaces redundantes a varios ISP)"],c:3,ok:"Dual-multihomed combina varios ISP y enlaces redundantes; es la opción más resistente y costosa.",ko:"Multihomed ya mejora; dual-multihomed es el máximo nivel de redundancia descrito."},
+{t:"wan",q:"¿Qué beneficio principal aporta una VPN sobre Internet para teletrabajo?",o:["Elimina la necesidad de cifrado","Conexión cifrada sin enlaces WAN dedicados caros","Aumenta el ancho de banda del DSL","Sustituye al firewall físico siempre"],c:1,ok:"Las VPN cifran tráfico sobre Internet, ahorrando coste de líneas dedicadas y manteniendo seguridad.",ko:"La VPN no elimina cifrado ni sustituye siempre un firewall; ahorra coste y protege el túnel."},
+{t:"wan",q:"En la evolución SPAN Engineering, ¿qué usa la empresa global para conectar sedes?",o:["Solo una LAN con un router Wi-Fi","VPN sitio a sitio y acceso remoto sobre Internet","Solo líneas Frame Relay","MAN sin proveedor"],c:1,ok:"En la fase global, VPN sitio a sitio y acceso remoto permiten conectividad segura mundial.",ko:"La empresa pequeña usa banda ancha simple; la global añade VPN sobre Internet."},
+{t:"wan",q:"¿Qué capas del modelo OSI cubren principalmente los estándares WAN citados?",o:["Solo capa 7","Capa 1 y capa 2","Solo capa 3","Capas 5 a 7 únicamente"],c:1,ok:"Físico (fibra, cobre, WDM) y enlace (Ethernet WAN, PPP, MPLS, etc.) son el foco WAN tradicional.",ko:"Aunque IP viaja por WAN, los estándares de acceso WAN se centran en capas 1-2."},
+{t:"wan",q:"¿Qué es un DSLAM?",o:["Módem del usuario final","Multiplexor en la CO que concentra líneas DSL","Router CE de MPLS","Switch de capa 3 en la LAN"],c:1,ok:"El DSLAM está en la central del proveedor y agrupa conexiones DSL de abonados.",ko:"El módem DSL está en el cliente; DSLAM es del lado del operador."},
+{t:"wan",q:"¿Por qué el cable coaxial puede bajar la velocidad en horas punta?",o:["Porque cada usuario tiene fibra dedicada","Porque el ancho de banda del coaxial es compartido entre suscriptores","Porque no usa DOCSIS","Porque prohibe IPv4"],c:1,ok:"Todos los vecinos comparten el mismo medio; más usuarios implican menos Mbps efectivos.",ko:"DSL no comparte el par del abonado; el cable sí comparte el segmento coaxial."},
+
+/* ========== WIFI 9.1 ========== */
+{t:"wifi1",q:"¿Qué estándar IEEE define principalmente las WLAN?",o:["802.15","802.11","802.3","802.1X solo en switches"],c:1,ok:"La familia 802.11 (Wi-Fi) define WLAN; 802.15 es WPAN (Bluetooth/Zigbee).",ko:"802.3 es Ethernet cableada; 802.11 es la base de Wi-Fi."},
+{t:"wifi1",q:"¿Qué alcance típico tiene una WPAN?",o:["Ciudad completa","20-30 pies (6-9 m) aproximadamente","300 pies como máximo siempre","Global con satélite"],c:1,ok:"WPAN (802.15) es corto alcance y baja potencia: Bluetooth, Zigbee.",ko:"WLAN llega a ~300 pies; WMAN/WWAN son mayores."},
+{t:"wifi1",q:"¿En qué bandas trabaja habitualmente Wi-Fi (802.11)?",o:["Solo 900 MHz","2,4 GHz y 5 GHz","Solo 60 GHz obligatorio","Solo bandas con licencia de operador"],c:1,ok:"802.11 usa principalmente 2,4 y 5 GHz; Wi-Fi 6 también puede usar 6 GHz según región.",ko:"Wi-Fi usa bandas ISM/no licenciadas en 2,4/5 GHz, no solo bandas celulares."},
+{t:"wifi1",q:"¿Qué estándar 802.11 opera solo en 5 GHz y no es compatible con 802.11b?",o:["802.11a","802.11b","802.11g","802.11n solo 2,4"],c:0,ok:"802.11a usa 5 GHz hasta ~54 Mbps y no interoperaba con b/g de 2,4 GHz.",ko:"802.11b/g son 2,4 GHz; 802.11a es 5 GHz exclusivo."},
+{t:"wifi1",q:"¿Qué nombre comercial corresponde a 802.11n?",o:["Wi-Fi 4","Wi-Fi 5","Wi-Fi 6","Wi-Fi 7"],c:0,ok:"Wi-Fi 4 = 802.11n; Wi-Fi 5 = ac; Wi-Fi 6 = ax.",ko:"La numeración Wi-Fi Alliance: n→4, ac→5, ax→6."},
+{t:"wifi1",q:"¿Qué tecnología usa 802.11n para aumentar rendimiento con varias antenas?",o:["CSMA/CD","MIMO","FHSS solo","WEP"],c:1,ok:"MIMO (Multiple Input Multiple Output) usa varias antenas para más throughput.",ko:"CSMA/CA es acceso al medio en Wi-Fi; MIMO es técnica de antenas."},
+{t:"wifi1",q:"¿Qué organización regula el espectro radioeléctrico a nivel internacional?",o:["IEEE","Wi-Fi Alliance","UIT (ITU)","IETF"],c:2,ok:"La UIT/ITU regula espectro y órbitas; IEEE define estándares técnicos 802.",ko:"IEEE define modulación 802.11; UIT asigna espectro globalmente."},
+{t:"wifi1",q:"¿Qué función cumple un AP en modo infraestructura?",o:["Solo conectar dos PCs sin servidor","Permite que clientes se asocien y accedan a la red","Sustituye al switch troncal obligatoriamente","Elimina la necesidad de SSID"],c:1,ok:"En infraestructura los clientes se asocian al AP para alcanzar recursos de red.",ko:"Modo ad hoc no usa AP; el AP es punto de acceso a la infraestructura."},
+{t:"wifi1",q:"¿Qué diferencia hay entre AP autónomo y LAP?",o:["El LAP se configura manualmente en cada sitio sin WLC","El LAP usa LWAPP/CAPWAP y es gestionado por un WLC","El autónomo no tiene antenas","El LAP no soporta 802.11"],c:1,ok:"LAP (ligero) depende del Wireless LAN Controller; el autónomo se administra individualmente.",ko:"Autónomo = independiente; LAP = centralizado con WLC."},
+{t:"wifi1",q:"¿Qué es un BSS?",o:["Varias BSS unidas por distribución cableada","Un AP y todos los clientes asociados a él","Solo modo ad hoc","Protocolo de capa 3"],c:1,ok:"BSS (Basic Service Set) es un AP con sus clientes; clientes de distintos BSS no se comunican sin ESS.",ko:"ESS une varios BSS; BSS es la célula básica con un AP."},
+{t:"wifi1",q:"¿Por qué las WLAN usan CSMA/CA en lugar de CSMA/CD?",o:["Porque detectan colisiones mejor que Ethernet","Porque en semidúplex no pueden escuchar mientras transmiten y no detectan colisión","Porque no hay interferencia","Porque usan fibra"],c:1,ok:"En wireless no se puede 'escuchar' durante TX; se evitan colisiones con RTS/CTS y backoff.",ko:"CSMA/CD detecta colisiones en cable; en Wi-Fi se previene (CA)."},
+{t:"wifi1",q:"¿Qué campos adicionales tiene la trama 802.11 respecto a Ethernet?",o:["Solo VLAN tag","Control, duración, RA, TA, secuencia, etc.","Solo CRC de capa 3","Campo MPLS obligatorio"],c:1,ok:"La trama wireless incluye direcciones y control específicos (RA, TA, duración, etc.).",ko:"No es idéntica a Ethernet; tiene más campos para medio compartido."},
+{t:"wifi1",q:"¿Qué hace el cliente en sondeo pasivo?",o:["Envía Probe Request sin conocer SSID","Escucha beacons del AP con SSID y capacidades","Desactiva la NIC","Configura RADIUS"],c:1,ok:"Pasivo: el AP anuncia SSID en beacons; el cliente escucha.",ko:"Activo: el cliente envía probe conociendo o buscando SSID."},
+{t:"wifi1",q:"¿Qué puertos UDP usa CAPWAP?",o:["161 y 162","5246 y 5247","80 y 443","179 y 520"],c:1,ok:"CAPWAP usa UDP 5246 (control) y 5247 (datos) entre AP y WLC.",ko:"161/162 son SNMP; 179 es BGP."},
+{t:"wifi1",q:"¿Qué es DTLS en CAPWAP?",o:["Protocolo de routing","Cifrado entre AP y WLC para control (y datos opcional)","Sustituto de DHCP","Tipo de antena"],c:1,ok:"DTLS protege el canal de control CAPWAP por defecto; datos cifrados requieren licencia.",ko:"DTLS aporta seguridad al túnel CAPWAP, no es enrutamiento."},
+{t:"wifi1",q:"En FlexConnect modo autónomo, ¿qué hace el AP si pierde el WLC?",o:["Apaga la radio","Asume funciones locales (datos/autenticación local)","Borra la configuración","Solo modo ad hoc"],c:1,ok:"Sin WLC, FlexConnect local switching permite seguir sirviendo clientes en la sucursal.",ko:"Modo conectado depende del WLC; autónomo mantiene servicio local."},
+{t:"wifi1",q:"¿Qué canales 2,4 GHz se recomiendan sin solapamiento?",o:["1, 2 y 3","1, 6 y 11","2, 5 y 10","Todos los canales a la vez"],c:1,ok:"Canales 1, 6 y 11 están separados 5 MHz en banda de 22 MHz de canal.",ko:"Canales adyacentes se solapan y causan interferencia."},
+{t:"wifi1",q:"¿Qué técnica usa 802.11b en 2,4 GHz para interferencias?",o:["OFDM","DSSS","Solo FHSS","WPA3"],c:1,ok:"802.11b usó DSSS en 2,4 GHz; OFDM lo usan a/g/n/ac.",ko:"FHSS era 802.11 original; DSSS es de 802.11b."},
+{t:"wifi1",q:"¿Por qué WEP no debe usarse nunca?",o:["Es el más moderno","Usa RC4 con clave estática y está roto","Requiere servidor RADIUS obligatorio","Solo funciona en 5 GHz"],c:1,ok:"WEP es obsoleto y vulnerable; usar WPA2/WPA3.",ko:"WEP fue el primer intento de cifrado 802.11; hoy está totalmente desaconsejado."},
+{t:"wifi1",q:"¿Qué cifrado usa WPA2?",o:["RC4 estático","TKIP únicamente","AES (CCMP)","Ninguno"],c:2,ok:"WPA2 usa AES con CCMP; WPA usaba TKIP sobre legado.",ko:"TKIP es de WPA; WPA2 estandariza AES."},
+{t:"wifi1",q:"¿Qué modo WPA2 usa contraseña precompartida en SOHO?",o:["Enterprise con 802.1X","Personal (PSK)","Open sin cifrado","WEP shared"],c:1,ok:"WPA2-Personal usa PSK; Enterprise usa RADIUS y 802.1X/EAP.",ko:"Enterprise requiere servidor AAA; Personal la clave compartida."},
+{t:"wifi1",q:"¿Qué puertos UDP usa RADIUS por defecto (modernos)?",o:["5246 y 5247","1812 autenticación y 1813 contabilidad","80 y 443","22 y 23"],c:1,ok:"1812/1813 son los estándar actuales; 1645/1646 son legado.",ko:"RADIUS no usa puertos web ni CAPWAP."},
+{t:"wifi1",q:"¿Qué aporta WPA3-Personal frente a ataques de fuerza bruta?",o:["WEP mejorado","SAE (Simultaneous Authentication of Equals)","Solo ocultar SSID","MAC filtering"],c:1,ok:"SAE mejora el intercambio de claves frente a PSK débil de WPA2.",ko:"Ocultar SSID y filtro MAC no sustituyen cifrado fuerte."},
+{t:"wifi1",q:"¿Qué es un evil twin (AP intruso)?",o:["AP autorizado con doble antena","AP no autorizado con el mismo SSID que uno legítimo","Protocolo NTP","Tipo de ACL"],c:1,ok:"Atacante crea AP falso con SSID igual para MITM; mitigar con autenticación y monitorización.",ko:"No es redundancia legítima: es suplantación del SSID."},
+{t:"wifi1",q:"¿Qué amenaza implica un AP rogue en la red cableada?",o:["Solo mejora la señal","Captura de tráfico, acceso a red o MITM","Aumenta automáticamente WPA3","Desactiva CDP"],c:1,ok:"AP no autorizado conectado al LAN corporativo viola política y permite ataques.",ko:"Rogue AP es riesgo de seguridad, no una mejora de cobertura."},
+
+/* ========== WIFI 9.2 / 9.3 ========== */
+{t:"wifi2",q:"¿Qué debes cambiar primero en un router SOHO por seguridad?",o:["Solo el SSID","IP, usuario y contraseña por defecto","Canal siempre a 13","Desactivar DHCP siempre"],c:1,ok:"Credenciales e IP por defecto están publicadas; cambiarlas es la prioridad.",ko:"SSID y canal importan, pero las credenciales por defecto son el riesgo inmediato."},
+{t:"wifi2",q:"¿Qué hace NAT en el router doméstico?",o:["Traduce direcciones privadas LAN a pública y rastrea puertos","Asigna nombres DNS solo","Cifra WPA3","Sustituye al switch"],c:0,ok:"NAT traduce origen privado a global usando la IP pública del ISP y números de puerto.",ko:"NAT no es DNS ni cifrado wireless; es traducción IPv4."},
+{t:"wifi2",q:"¿Para qué sirve QoS en un router inalámbrico?",o:["Aumentar potencia legal de la radio","Priorizar tráfico sensible al tiempo (voz/vídeo)","Desactivar NAT","Configurar VLAN troncal"],c:1,ok:"QoS da prioridad a flujos críticos frente a tráfico best-effort.",ko:"QoS no cambia regulación RF ni sustituye NAT/VLAN."},
+{t:"wifi2",q:"¿Diferencia entre reenvío de puertos y activación de puertos?",o:["Son idénticos","Reenvío dirige tráfico entrante a un host; activación abre temporalmente tras tráfico saliente","Solo activación existe en Cisco IOS","Reenvío solo UDP"],c:1,ok:"Port forwarding es estático; port triggering abre puertos tras solicitud saliente del interior.",ko:"Forwarding permanente vs triggering dinámico por sesión saliente."},
+{t:"wifi2",q:"¿Qué protocolo usan los LAP para hablar con el WLC?",o:["SNMP","LWAPP (base de CAPWAP)","BGP","LLDP solo"],c:1,ok:"LAPs ligeros usan LWAPP/CAPWAP hacia el controlador.",ko:"SNMP gestiona; LWAPP/CAPWAP es túnel AP-WLC."},
+{t:"wifi2",q:"¿Qué muestra CDP en el WLC sobre el AP?",o:["Solo temperatura","Puerto del switch al que está conectado el AP","Contraseña WPA","Versión de Java"],c:1,ok:"CDP indica interfaz vecina (ej. Fa0/1 del switch conectado al AP).",ko:"CDP es descubrimiento L2 Cisco, no claves Wi-Fi."},
+{t:"wifi2",q:"Pasos para crear WLAN en WLC (orden lógico):",o:["Solo monitorear","Crear, habilitar, elegir interfaz, asegurar, verificar","Borrar interfaz virtual primero","Desactivar CAPWAP"],c:1,ok:"Flujo: crear WLAN → apply/enable → interfaz → seguridad → verificar clientes.",ko:"Sin crear y asignar interfaz virtual no hay tráfico segregado."},
+{t:"wifi2",q:"¿Qué necesita WPA2 Enterprise en el WLC?",o:["Solo PSK de 8 caracteres","Servidor RADIUS (AAA) y 802.1X","Desactivar AES","SSID oculto únicamente"],c:1,ok:"Enterprise usa RADIUS para credenciales por usuario; 802.1X gestiona autenticación.",ko:"PSK es modo Personal; Enterprise exige RADIUS."},
+{t:"wifi2",q:"¿Dónde se configuran los trap receivers SNMP en WLC?",o:["WLAN > Security","MANAGEMENT > SNMP > Trap Receivers","Controller > NAT","AP > FlexConnect"],c:1,ok:"Ruta típica: MANAGEMENT, SNMP, Trap Receivers, New.",ko:"Traps SNMP no se configuran en pestaña WLAN Security."},
+{t:"wifi2",q:"¿Qué interfaz virtual usa una WLAN en VLAN 5 según la práctica del tema?",o:["management por defecto siempre","Interfaz asociada a VLAN 5 (ej. vlan5)","Solo loopback 0","No hace falta interfaz"],c:1,ok:"Cada WLAN suele mapearse a una interfaz/VLAN virtual en el WLC.",ko:"Sin interfaz correcta, el tráfico no entra en la subred prevista."},
+{t:"wifi3",q:"¿Hasta qué distancia aproximada puede bastar un router SOHO sin malla?",o:["5 m interior","~45 m interior / ~90 m exterior","1 km","Sin límite"],c:1,ok:"Más allá conviene malla con APs en canales no solapados.",ko:"Un solo AP tiene alcance limitado; malla extiende cobertura."},
+{t:"wifi3",q:"Metodología de troubleshooting: ¿cuántos pasos principales?",o:["3","6","10","2"],c:1,ok:"Identificar, teoría, probar, plan, verificar, documentar (6 pasos).",ko:"Es el método científico adaptado a redes."},
+{t:"wifi3",q:"Si la WLAN es lenta, ¿qué banda suele usarse para multimedia con menos interferencia?",o:["2,4 GHz siempre","5 GHz","AM radio","Solo Bluetooth"],c:1,ok:"5 GHz está menos congestionada y tiene más canales.",ko:"2,4 GHz suele saturarse; 5 GHz para vídeo/streaming."},
+{t:"wifi3",q:"¿Cómo actualizar firmware de todos los AP desde WLC 3504?",o:["Uno a uno solo por consola","WIRELESS > Access Points > Global Configuration (predescarga)","Solo por TFTP del PC del alumno","No es posible"],c:1,ok:"Global Configuration permite imagen de firmware para todos los LAP.",ko:"Centralizado en WLC, no manual AP por AP en producción grande."},
+{t:"wifi3",q:"Cliente no conecta: ¿qué comando verifica IP en Windows?",o:["show ip interface brief","ipconfig","ntp server","access-list"],c:1,ok:"ipconfig muestra configuración IP del host.",ko:"show ip... es IOS del router, no del PC."},
+
+/* ========== ACL 10.1 ========== */
+{t:"acl1",q:"¿Qué es una ACE en una ACL?",o:["Tipo de cable","Entrada permit o deny del ACL","Protocolo NTP","Interfaz virtual WLC"],c:1,ok:"ACE = Access Control Entry; cada línea permit/deny del ACL.",ko:"No es medio físico ni protocolo de tiempo."},
+{t:"acl1",q:"¿Qué ocurre si un paquete no coincide con ninguna ACE explícita?",o:["Se permite siempre","Se deniega por deny implícito al final","Se envía al CPU del router","Se convierte en broadcast"],c:1,ok:"Todas las ACL terminan con deny implícito (oculto) que bloquea el resto.",ko:"Sin permit explícito, todo queda bloqueado por la implícita."},
+{t:"acl1",q:"¿Las ACL filtran paquetes originados en el propio router?",o:["Sí, siempre","No operan sobre tráfico originado en el router","Solo en switches","Solo IPv6"],c:1,ok:"ACL en interfaz filtra tránsito; tráfico del router (origen local) no se evalúa igual.",ko:"Tráfico generado por el router (SSH, ping desde IOS) no pasa por ACL de interfaz de la misma forma."},
+{t:"acl1",q:"¿Dónde son más eficientes las ACL de entrada?",o:["Después de enrutar, en salida","Antes de enrutar, descartando pronto","Solo en switches capa 2","En el servidor syslog"],c:1,ok:"Entrada filtra antes del routing lookup, ahorrando procesamiento si se descarta.",ko:"Salida filtra tras decidir reenvío; entrada evita trabajo innecesario."},
+{t:"acl1",q:"En wildcard mask, ¿qué significa bit 0?",o:["Ignorar ese bit","Debe coincidir ese bit","Siempre deny","Host any"],c:1,ok:"En wildcard: 0 = match, 1 = ignore (inverso intuitivo de máscara de subred).",ko:"Al revés que subred: 0 coincide, 1 omite."},
+{t:"acl1",q:"¿Qué wildcard equivale a un host específico?",o:["255.255.255.255","0.0.0.0","0.0.0.255","0.0.15.255"],c:1,ok:"0.0.0.0 exige coincidencia de todos los bits = un solo host.",ko:"0.0.0.255 es toda una /24; 255... es any."},
+{t:"acl1",q:"¿Cómo calcular wildcard de subred 255.255.255.0?",o:["Restar máscara de 255.255.255.255 → 0.0.0.255","Sumar a la IP","Usar /24 directamente","Siempre 255.0.0.0"],c:0,ok:"Wildcard = 255.255.255.255 - máscara de subred.",ko:"/24 → wildcard 0.0.0.255 para coincidir con la red."},
+{t:"acl1",q:"Palabra clave IOS host en ACL significa:",o:["Wildcard 255.255.255.255","Wildcard 0.0.0.0","Deny todo","Log únicamente"],c:1,ok:"host x.x.x.x = máscara 0.0.0.0 (un host).",ko:"any = 255.255.255.255; host = todos los bits fijos."},
+{t:"acl1",q:"Rango de números para ACL estándar IPv4:",o:["100-199","1-99 y 1300-1999","2000-2699","700-799"],c:1,ok:"Estándar: 1-99 y 1300-1999; extendida: 100-199 y 2000-2699.",ko:"100-199 es rango extendido numerado."},
+{t:"acl1",q:"¿Dónde colocar ACL estándar según buenas prácticas?",o:["Lo más cerca del origen","Lo más cerca del destino","Solo en servidor RADIUS","En consola vty siempre"],c:1,ok:"Estándar solo filtra por origen; cerca del destino evita bloquear tráfico legítimo intermedio.",ko:"Extendida suele ir cerca del origen; estándar cerca del destino."},
+{t:"acl1",q:"¿Dónde colocar ACL extendida?",o:["Siempre en destino lejano","Lo más cerca del origen del tráfico a filtrar","Solo en loopback","En NVRAM"],c:1,ok:"Extendida puede filtrar origen/destino/puertos; filtrar al origen ahorra ancho de banda.",ko:"Cerca del origen evita transportar tráfico que se descartará después."},
+{t:"acl1",q:"¿Cuántas ACL IPv4 pueden aplicarse por interfaz (dual-stack máx.)?",o:["Una sola","Hasta una entrada y una salida IPv4 (y análogo IPv6)","Ilimitadas","Ninguna"],c:1,ok:"Por protocolo: una ACL in y una out por interfaz.",ko:"No se apilan varias ACL del mismo tipo en la misma dirección."},
+
+/* ========== ACL 10.2 ========== */
+{t:"acl2",q:"Comando para aplicar ACL estándar a interfaz:",o:["access-class","ip access-group número in|out","ntp server","lldp run"],c:1,ok:"ip access-group enlaza ACL numerada o nombrada a la interfaz.",ko:"access-class es para líneas vty, no interfaces."},
+{t:"acl2",q:"Comando para crear ACL estándar nombrada:",o:["access-list 50","ip access-list standard NOMBRE","ip access-list extended NOMBRE","route-map"],c:1,ok:"ip access-list standard crea ACL con nombre en submodo.",ko:"access-list 50 es numerada; extended es para extendidas."},
+{t:"acl2",q:"¿Cómo proteger acceso Telnet/SSH con ACL estándar?",o:["ip access-group en interfaz WAN únicamente","access-class ACL en líneas vty","no cdp run","syslog on"],c:1,ok:"access-class aplica ACL al tráfico entrante en vty.",ko:"vty no usa ip access-group sino access-class."},
+{t:"acl2",q:"Para ver coincidencias de deny implícito debes:",o:["Es imposible","Configurar explícitamente deny any con log","Usar solo IPv6","Borrar la ACL"],c:1,ok:"La deny implícita no cuenta estadísticas; añade deny any explícita si necesitas verla.",ko:"Sin ACE explícita deny any, las denegaciones implícitas no aparecen en contadores."},
+{t:"acl2",q:"¿Cómo modificar una ACE sin reescribir toda la ACL numerada?",o:["Solo reiniciar router","Usar números de secuencia en ACL nombrada/estándar con ip access-list","edit access-list en ROMmon","copy run tftp"],c:1,ok:"no 10 y luego nueva línea 10 en modo ip access-list standard/extended.",ko:"ACL numeradas clásicas no tienen secuencia; nombres sí permiten inserción."},
+
+/* ========== ACL 10.3 ========== */
+{t:"acl3",q:"¿Qué puede filtrar una ACL extendida que la estándar no?",o:["Solo MAC","Destino, protocolo, puertos TCP/UDP","Solo hora NTP","SSID"],c:1,ok:"Extendida: origen, destino, protocolo, puertos, opciones L4.",ko:"Estándar solo por dirección de origen IPv4."},
+{t:"acl3",q:"Puerto HTTPS en ACL cuando no hay nombre eq:",o:["80","443","22","179"],c:1,ok:"HTTPS = TCP 443; HTTP = 80.",ko:"22 SSH; 179 BGP."},
+{t:"acl3",q:"¿Qué hace la palabra clave established en TCP?",o:["Permite cualquier TCP entrante","Permite respuestas con ACK/RST de conexión existente","Bloquea todo saliente","Solo UDP"],c:1,ok:"Filtra tráfico de retorno de sesiones iniciadas desde dentro (firewall básico con estado).",ko:"No abre todo TCP; solo paquetes que pertenecen a flujo establecido."},
+{t:"acl3",q:"ACL SURFING y BROWSING en el ejemplo: ¿cómo se aplican en R1 G0/0?",o:["Ambas entrantes","SURFING in, BROWSING out","Solo en vty","En serial 0/0/1"],c:1,ok:"SURFING filtra salida web hacia Internet (in en G0/0 hacia fuera); BROWSING retorno (out).",ko:"Patrón: permitir salida HTTP/HTTPS y controlar retorno con established."},
+{t:"acl3",q:"Para verificar ACL en interfaz y dirección:",o:["show cdp","show ip interface","show flash","show vlan"],c:1,ok:"show ip interface indica ACL aplicada in/out.",ko:"CDP es vecinos; no muestra ACL."},
+
+/* ========== PROTO 10.4 ========== */
+{t:"proto",q:"¿Qué capa usa CDP?",o:["Capa 3","Capa 2, protocolo propietario Cisco","Capa 7 solo","Capa 1 únicamente"],c:1,ok:"CDP es L2 entre dispositivos Cisco en el mismo enlace.",ko:"No es protocolo de routing ni aplicación."},
+{t:"proto",q:"¿CDP viene habilitado por defecto en Cisco?",o:["No, hay que activarlo siempre","Sí en dispositivos Cisco","Solo en routers ISP","Solo si hay LLDP"],c:1,ok:"CDP enabled por defecto; se desactiva con no cdp run o no cdp enable en interfaz.",ko:"Desactivar en interfaces no deseadas por seguridad."},
+{t:"proto",q:"Comando para ver vecinos CDP:",o:["show lldp","show cdp neighbors","show ip route","show arp"],c:1,ok:"show cdp neighbors [detail] lista dispositivos Cisco adyacentes.",ko:"LLDP tiene su propio show lldp neighbors."},
+{t:"proto",q:"¿LLDP respecto a CDP?",o:["Solo Cisco","Independiente del proveedor, estándar","Solo capa 3","Usa puerto 123"],c:1,ok:"LLDP es estándar multi-vendor; CDP es Cisco.",ko:"CDP no interoperará con fabricantes no Cisco."},
+{t:"proto",q:"Para habilitar LLDP en interfaz Cisco necesitas:",o:["Solo lldp run global","lldp transmit y lldp receive en la interfaz","ntp server","snmp-server"],c:1,ok:"Global lldp run más transmit/receive por interfaz.",ko:"Global solo no basta; interfaz debe enviar/recibir."},
+{t:"proto",q:"¿Por qué sincronizar hora con NTP?",o:["Para aumentar MTU","Ordenar eventos y correlacionar logs","Obligatorio para DHCP","Sustituir DNS"],c:1,ok:"Sin tiempo común no se puede correlacionar syslog, certificados, etc.",ko:"NTP no configura MTU ni reemplaza DNS."},
+{t:"proto",q:"¿Qué puerto y protocolo usa NTP?",o:["TCP 80","UDP 123","UDP 161","TCP 179"],c:1,ok:"NTP usa UDP 123 (RFC 1305 y posteriores).",ko:"161 SNMP; 179 BGP."},
+{t:"proto",q:"Stratum 16 en NTP indica:",o:["Mejor precisión posible","Dispositivo no sincronizado","Servidor GPS directo","Cliente stratum 0"],c:1,ok:"Stratum 16 = no synced; 0 es referencia; 1-15 saltos válidos (máx 15).",ko:"Cuanto menor stratum, más cerca de la fuente autoritativa."},
+{t:"proto",q:"Comando para configurar servidor NTP en router:",o:["clock set solo","ntp server ip-address","lldp run","cdp enable"],c:1,ok:"ntp server IP en global config; verificar con show clock detail.",ko:"clock set es manual; ntp server sincroniza automáticamente."},
+{t:"proto",q:"Si R1 es stratum 2 y S1 sincroniza con R1, S1 será aproximadamente:",o:["Stratum 0","Stratum 3","Stratum 16","Stratum 1 siempre"],c:1,ok:"Cada salto incrementa stratum: servidor 2 → cliente 3.",ko:"Stratum aumenta alejándose de la fuente."},
+
+/* ========== SNMP/SYSLOG 10.5 ========== */
+{t:"snmp",q:"¿Puertos SNMP get y trap?",o:["UDP 161 consultas, UDP 162 traps","TCP 80 y 443","UDP 5246","TCP 22"],c:0,ok:"Manager consulta agente en 161; traps van a manager en 162.",ko:"No confundir con CAPWAP ni HTTP."},
+{t:"snmp",q:"¿Qué versión SNMP NO debe usarse por seguridad?",o:["SNMPv3","SNMPv2c","SNMPv1","SNMPv3 con AES"],c:2,ok:"SNMPv1 es legado inseguro; preferir v3 o v2c solo lectura.",ko:"v3 aporta autenticación y cifrado; v1 obsoleto."},
+{t:"snmp",q:"Community string ro significa:",o:["Lectura y escritura","Solo lectura MIB","Cifrado AES","Trap únicamente"],c:1,ok:"ro = read-only; rw = read-write.",ko:"rw permite set; ro solo consulta."},
+{t:"snmp",q:"¿Qué es una MIB?",o:["Protocolo de routing","Base de datos de objetos gestionados (OID)","Tipo de cable","ACL estándar"],c:1,ok:"MIB organiza variables administrables identificadas por OID.",ko:"MIB no es medio ni lista de acceso."},
+{t:"snmp",q:"¿Qué son las traps SNMP?",o:["Consultas get periódicas","Alertas no solicitadas del agente al NMS","Solo ping","Copias TFTP"],c:1,ok:"Traps/notificaciones avisan eventos sin esperar polling.",ko:"Get es solicitado por manager; trap es push del agente."},
+{t:"snmp",q:"Syslog usa por defecto puerto:",o:["UDP 514","TCP 179","UDP 123","UDP 1812"],c:0,ok:"Syslog tradicional UDP 514.",ko:"123 NTP; 1812 RADIUS."},
+{t:"snmp",q:"Nivel syslog 0 (emergency) significa:",o:["Debug","Sistema inutilizable","Información normal","Advertencia leve"],c:1,ok:"0 emergencia es lo más grave; 7 es debugging.",ko:"Números menores = más crítico."},
+{t:"snmp",q:"Formato Cisco syslog típico:",o:["%facility-severity-MNEMONIC: descripción","JSON únicamente","Solo hora sin texto","OID SNMP"],c:0,ok:"Ejemplo: %LINK-3-UPDOWN: Interface..., facility LINK severidad 3.",ko:"Incluye facility, nivel y mnemónico."},
+{t:"snmp",q:"Comando para timestamp en logs:",o:["service timestamps log datetime","ntp trap","cdp timer","boot system"],c:0,ok:"Añade fecha/hora a mensajes syslog.",ko:"Útil cuando se envían a servidor externo."},
+{t:"snmp",q:"Copia de seguridad running-config por TFTP:",o:["copy tftp running-config primero","copy running-config tftp","delete flash","reload"],c:1,ok:"copy running-config tftp sube config al servidor.",ko:"copy tftp running-config restaura desde servidor."},
+{t:"snmp",q:"Recuperación contraseña: registro 0x2142 hace:",o:["Borrar flash","Ignorar startup-config al arrancar","Activar SNMP","Desactivar CDP"],c:1,ok:"0x2142 ignora NVRAM config al boot para copiar startup a running y cambiar passwords.",ko:"Luego volver a 0x2102 y guardar."},
+{t:"snmp",q:"PRECAUCIÓN al recuperar contraseña: NO ejecutar",o:["copy startup-config running-config","copy running-config startup-config antes de cambiar pass","config-register 0x2102 al final","enable secret nueva"],c:1,ok:"copy run start antes de terminar borraría startup con config sin passwords nuevas.",ko:"Primero startup→running, cambiar pass, luego 0x2102 y copy run start."},
+{t:"snmp",q:"Comando boot system sirve para:",o:["Activar CDP","Especificar imagen IOS a cargar al arranque","Configurar WPA3","Trap SNMP"],c:1,ok:"boot system flash:archivo.bin define imagen; guardar y reload.",ko:"Sin boot system carga primera imagen válida en flash."},
+
+/* ========== VPC AWS 10.6 ========== */
+{t:"vpc",q:"¿Qué es Amazon VPC?",o:["Solo un servidor EC2","Red virtual privada personalizable en AWS","Base de datos RDS","Servicio de correo"],c:1,ok:"VPC permite diseñar subredes, rutas, gateways y aislamiento en la nube.",ko:"No es una instancia ni BD; es la red lógica."},
+{t:"vpc",q:"En la práctica, CIDR de la VPC del wizard es:",o:["10.2.0.0/16","192.168.0.0/24","172.31.0.0/8 solo","10.0.0.0/8 obligatorio"],c:0,ok:"El enunciado usa 10.2.0.0/16 para la VPC.",ko:"Otras redes son ejemplos; la práctica fija 10.2.0.0/16."},
+{t:"vpc",q:"Subred pública us-east-1a en práctica custom:",o:["10.2.2.0/24","10.2.0.0/24","10.2.3.0/24","10.2.1.0/28 solo"],c:1,ok:"custom-subnet-public1-us-east-1a = 10.2.0.0/24.",ko:"10.2.2.0/24 es privada en 1a; 10.2.1.0/24 es pública en 1b."},
+{t:"vpc",q:"¿Para qué sirve Internet Gateway?",o:["Cifrado WPA enterprise","Conectividad Internet desde subredes públicas","Sustituir DHCP","SNMP traps"],c:1,ok:"IGW permite tráfico 0.0.0.0/0 hacia Internet en tablas de rutas públicas.",ko:"Sin IGW las subredes privadas no salen a Internet directamente."},
+{t:"vpc",q:"NAT Gateway en el wizard de práctica se eligió:",o:["En cada AZ","None por coste","Obligatorio dos","Solo IPv6"],c:1,ok:"Se omite NAT Gateway en sandbox por coste; privadas sin salida Internet directa.",ko:"NAT permitiría salida desde privadas; práctica lo evita."},
+{t:"vpc",q:"En /24, ¿cuántas IPs utilizables típicas muestra AWS (aprox.)?",o:["256","251","254","128"],c:1,ok:"256 menos 5 reservadas (red, router VPC, DNS, futuro, broadcast) ≈ 251.",ko:"AWS reserva 5 direcciones por subred."},
+{t:"vpc",q:"Ruta en tabla pública custom-rtb-public:",o:["10.2.0.0/16 → local only","0.0.0.0/0 → Internet Gateway","0.0.0.0/0 → NAT","Denegar todo"],c:1,ok:"Destino 0.0.0.0/0 target IGW para salida Internet.",ko:"Local ya existe; falta default route al IGW."},
+{t:"vpc",q:"Tablas de rutas privadas custom:",o:["0.0.0.0/0 al IGW","Sin ruta a Internet; solo local","Solo peering VPN obligatorio","BGP 179"],c:1,ok:"Privadas: solo tráfico local VPC, sin 0.0.0.0/0 a IGW.",ko:"Salida Internet desde privada requeriría NAT (no usado en práctica)."},
+{t:"vpc",q:"Auto-assign public IPv4 se activa en:",o:["Subredes privadas","Subredes públicas","Solo IGW","Route table main"],c:1,ok:"Edit subnet settings en subredes públicas para IP pública en instancias.",ko:"Privadas no deben exponer IP pública por defecto."},
+{t:"vpc",q:"Instancia pública usa grupos de seguridad:",o:["Solo default","ssh-sg y default","Solo ssh-sg","Ninguno"],c:1,ok:"ssh-sg permite SSH desde My IP; default permite tráfico entre instancias del grupo.",ko:"Privada solo default; pública necesita ssh-sg para SSH desde aula."},
+{t:"vpc",q:"Regla ssh-sg entrada típica:",o:["Todo el mundo 0.0.0.0/0 puerto 22","TCP 22 desde My IP","UDP 514","ICMP any"],c:1,ok:"Restringir SSH a IP del aula (My IP), no abierto global.",ko:"0.0.0.0/0 en 22 sería inseguro."},
+{t:"vpc",q:"Para SSH de instancia pública a privada basta:",o:["Abrir 22 a 0.0.0.0/0 en privada","Mismo security group default en ambas","Desactivar IGW","Borrar tabla de rutas"],c:1,ok:"default permite tráfico entre miembros del mismo SG; desde pública se alcanza IP privada.",ko:"No hace falta IP pública en instancia privada para SSH desde pública en misma VPC."},
+{t:"vpc",q:"DNS en VPC custom: debes habilitar",o:["Solo IPv6","DNS resolution y DNS hostnames","Solo en IGW","NTP"],c:1,ok:"Edit VPC settings: Enable DNS resolution y DNS hostnames.",ko:"Sin DNS hostnames las instancias no reciben nombre público resoluble."},
+{t:"vpc",q:"AMI usada en lanzamiento EC2 práctica:",o:["Windows Server obligatorio","Amazon Linux 2023","Solo Ubuntu 22","Cisco IOS"],c:1,ok:"Práctica indica Amazon Linux 2023 AMI.",ko:"Otras AMIs no son las del documento."},
+{t:"vpc",q:"Tipo instancia indicado en práctica:",o:["t2.nano solo","t4g.micro ARM","m5.24xlarge","No importa"],c:1,ok:"t4g.micro 64-bit ARM según guía.",ko:"Sandbox Academy suele limitar tipos; documento fija t4g.micro."},
+
+{t:"wan",q:"¿Qué es el CPE?",o:["Centro de datos ISP","Equipo en perímetro del cliente (DTE+DCE)","Protocolo de cifrado","Canal Wi-Fi 6"],c:1,ok:"Customer Premises Equipment incluye dispositivos del abonado en su sede.",ko:"CPE no es backbone ni protocolo wireless."},
+{t:"wan",q:"Topología malla completa WAN:",o:["Un solo hub","Múltiples circuitos virtuales entre todos los sitios; muy tolerante a fallos","Solo para LAN","Sin circuitos"],c:1,ok:"Malla completa interconecta todos los nodos; es costosa pero resiliente.",ko:"Hub-and-spoke no conecta todos directamente."},
+{t:"wan",q:"¿Qué es Metro Ethernet?",o:["Ethernet solo en hogar","Servicio WAN Ethernet del proveedor, sustituto de Frame/ATM","Protocolo BGP obligatorio","Wi-Fi municipal"],c:1,ok:"Metro Ethernet lleva Ethernet sobre fibra del ISP como WAN.",ko:"No es LAN doméstica; es servicio operador capa 2/3."},
+{t:"wan",q:"ADSL frente a SDSL:",o:["SDSL tiene más bajada que subida","ADSL tiene más ancho de banda de bajada que de subida","Son idénticos","Solo usan fibra"],c:1,ok:"ADSL asimétrico favorece descarga; SDSL simétrico.",ko:"SDSL equilibra ambas direcciones."},
+{t:"wan",q:"¿Qué hace el CMTS en acceso por cable?",o:["Módem del usuario","Comunica con módems por cable en la cabecera del operador","Servidor RADIUS","Switch WLC"],c:1,ok:"Cable Modem Termination System en headend gestiona módems cable.",ko:"El módem está en casa; CMTS en proveedor."},
+{t:"wan",q:"DOCSIS se relaciona con:",o:["DSL","Telefonía ISDN","Televisión por cable y datos de banda ancha","Solo satélite"],c:2,ok:"DOCSIS estandariza datos de alta velocidad sobre coaxial.",ko:"No es estándar DSL ni ISDN."},
+{t:"wan",q:"Conexión multihomed a ISP:",o:["Un enlace, un ISP","Dos ISP diferentes; mayor redundancia","Sin SLA","Solo IPv6 link-local"],c:1,ok:"Multihomed = dos proveedores distintos.",ko:"Dual-homed es mismo ISP con dos enlaces."},
+{t:"wan",q:"¿Qué organización define estándares WAN citadas junto a IEEE?",o:["Solo Wi-Fi Alliance","TIA/EIA e ISO","Amazon AWS","W3C"],c:1,ok:"TIA/EIA, ISO e IEEE influyen en estándares de acceso WAN.",ko:"Wi-Fi Alliance es marketing 802.11; no define WAN físicas."},
+
+{t:"wifi1",q:"WiMAX (802.16) alcance aproximado:",o:["6 metros","Hasta ~50 km","Solo dentro de habitación","Global satélite únicamente"],c:1,ok:"802.16/WiMAX busca cobertura amplia tipo celular.",ko:"WPAN es metros; WLAN ~100m."},
+{t:"wifi1",q:"Modo ad hoc 802.11:",o:["Requiere WLC","Clientes peer-to-peer sin AP","Solo en datacenter","Igual que ESS"],c:1,ok:"Ad hoc conecta STAs directamente; infraestructura usa AP.",ko:"ESS necesita varios BSS con distribución cableada."},
+{t:"wifi1",q:"Tethering en móvil es variante de:",o:["ESS","Topología ad hoc / AP personal","CAPWAP","BGP"],c:1,ok:"El teléfono crea AP personal compartiendo datos móviles.",ko:"No es ESS empresarial ni protocolo de controlador."},
+{t:"wifi1",q:"Antena Yagi es tipo:",o:["Omnidireccional","Direccional","MIMO obligatoria","Solo Bluetooth"],c:1,ok:"Yagi y plato concentran señal en una dirección.",ko:"Omnidireccional cubre 360°."},
+{t:"wifi1",q:"OFDMA en 802.11ax sirve para:",o:["Solo cable Ethernet","MU-MIMO / acceso multiusuario en Wi-Fi 6","Desactivar CSMA/CA","Reemplazar RADIUS"],c:1,ok:"OFDMA (variante OFDM) mejora eficiencia multiusuario en ax.",ko:"No sustituye autenticación enterprise."},
+{t:"wifi1",q:"Autenticación abierta 802.11:",o:["Usa WPA3 obligatorio","Sin contraseña; usuario puede usar VPN para seguridad","Igual que WPA2 Enterprise","Desactiva SSID"],c:1,ok:"Open es sin clave; seguridad end-user (ej. VPN) es responsabilidad del cliente.",ko:"Enterprise exige 802.1X/RADIUS."},
+{t:"wifi1",q:"TKIP se asocia principalmente con:",o:["WPA2 AES","WPA (mejora WEP)","WEP original","SNMPv3"],c:1,ok:"WPA introdujo TKIP; hoy se considera débil.",ko:"WPA2 usa AES/CCMP, no TKIP."},
+{t:"wifi1",q:"OWE en WPA3 sirve para:",o:["Redes abiertas con cifrado del tráfico","Desactivar PMF","Sustituir RADIUS en empresa","Filtrar MAC solo"],c:0,ok:"Opportunistic Wireless Encryption cifra tráfico sin autenticación usuario.",ko:"OWE no es filtro MAC ni sustituto de 802.1X corporativo."},
+
+{t:"wifi2",q:"Paso tras cambiar IP del router SOHO:",o:["Borrar flash","Renovar IP del PC y volver a entrar con nueva dirección","Desactivar CAPWAP","reload del ISP"],c:1,ok:"Tras cambiar LAN del router, el cliente debe obtener IP nueva.",ko:"Sin renovar DHCP/IP estática, no alcanzarás la nueva gateway."},
+{t:"wifi2",q:"RADIUS en WLC: pestaña para servidor autenticación:",o:["WLAN > General","SECURITY > RADIUS > Authentication","AP > Global","SNMP > Community"],c:1,ok:"SECURITY → RADIUS → Authentication → New.",ko:"No se configura en pestaña General de WLAN."},
+{t:"wifi2",q:"WLC DHCP Scope Wireless_Management ejemplo usa rango:",o:["10.2.0.0/16","192.168.200.240 - .249","Solo IPv6","Puerto 22"],c:1,ok:"Scope interno WLC para gestión en 192.168.200.0/24.",ko:"Es pool del controlador, no CIDR de VPC AWS."},
+{t:"wifi2",q:"802.1X en WPA2 Enterprise es:",o:["Protocolo de cifrado AES","Protocolo de control de acceso a red para autenticación","Sustituto de DHCP","Tipo de antena"],c:1,ok:"802.1X encadena EAP con RADIUS para usuarios.",ko:"AES cifra; 802.1X autentica."},
+
+{t:"acl1",q:"ACL extendida numerada rango:",o:["1-99","100-199 y 2000-2699","1300-1999","700-799"],c:1,ok:"100-199 clásico; 2000-2699 rango ampliado extendido.",ko:"1-99 y 1300-1999 son estándar."},
+{t:"acl1",q:"Comando remark en ACL sirve para:",o:["Aplicar ACL a interfaz","Documentar propósito de la ACL","Borrar estadísticas","Activar NTP"],c:1,ok:"remark añade comentarios legibles en la configuración.",ko:"remark no aplica ni filtra paquetes."},
+{t:"acl2",q:"Eliminar ACL numerada global:",o:["no ip access-list standard","no access-list número","delete acl","clear acl all"],c:1,ok:"no access-list 10 quita ACL estándar numerada.",ko:"no ip access-list es para nombradas."},
+{t:"acl2",q:"show access-lists muestra:",o:["Solo rutas OSPF","Contadores de coincidencias por ACE","Tabla ARP","Vecinos CDP"],c:1,ok:"Contadores incrementan al hacer match con cada ACE.",ko:"Para rutas: show ip route; vecinos: show cdp."},
+{t:"acl3",q:"Crear ACL extendida nombrada:",o:["access-list 100","ip access-list extended NOMBRE","ip access-list standard NOMBRE","snmp-server community"],c:1,ok:"extended para filtros L3/L4; standard solo origen.",ko:"standard no filtra puertos destino."},
+{t:"acl3",q:"eq www en ACL equivale a puerto:",o:["443","80","22","53"],c:1,ok:"www = HTTP puerto 80.",ko:"443 es https."},
+
+{t:"proto",q:"Desactivar CDP en todo el router:",o:["no cdp enable","no cdp run","no lldp run","no snmp-server"],c:1,ok:"no cdp run en global desactiva CDP en todas las interfaces.",ko:"no cdp enable es por interfaz."},
+{t:"proto",q:"LLDP hold time anunciado en ejemplo show lldp:",o:["30 segundos","120 segundos","2 segundos","3600 segundos"],c:1,ok:"Salida típica: advertisements cada 30s, hold 120s.",ko:"2s es reinit delay, no hold time."},
+{t:"proto",q:"Stratum 0 en NTP es:",o:["Cliente final","Referencia autorizada (reloj GPS, etc.)","Error de sincronización","Hop 15"],c:1,ok:"Stratum 0 es fuente; no se asigna a dispositivos en red.",ko:"Stratum 16 = no sync; 1+ son dispositivos en red."},
+
+{t:"snmp",q:"SNMPv3 ofrece:",o:["Solo community plain","Autenticación y cifrado (HMAC, AES/DES)","Solo traps sin get","Reemplazo de syslog"],c:1,ok:"v3 añade seguridad fuerte vs community strings.",ko:"Community es v1/v2c."},
+{t:"snmp",q:"OID base Cisco enterprises número:",o:["1.3.6.1.4.1.9","1.3.6.1.2.1","255.255.255.0","0.0.0.0"],c:0,ok:"private enterprises cisco = ...4.1.9.",ko:"1.3.6.1.2.1 es MIB-2 estándar."},
+{t:"snmp",q:"Destinos syslog populares en IOS:",o:["Solo Internet","Buffer, consola, terminal, servidor syslog","Solo NVRAM","CDP neighbors"],c:1,ok:"Múltiples destinos configurables por severidad.",ko:"CDP no almacena syslog."},
+{t:"snmp",q:"Copiar imagen IOS a TFTP desde router:",o:["copy flash tftp","copy flash: tftp: (origen flash destino tftp)","copy run start","delete nvram"],c:1,ok:"Backup imagen: copy flash tftp con URLs adecuadas.",ko:"copy run start guarda config, no imagen."},
+{t:"snmp",q:"show file systems asterisco (*) indica:",o:["Sistema de archivos dañado","Sistema de archivos predeterminado actual","Solo USB","ROMMON"],c:1,ok:"* marca FS por defecto (flash habitualmente).",ko:"# es disco de arranque en algunos modelos."},
+
+{t:"vpc",q:"Subred privada us-east-1b en práctica:",o:["10.2.0.0/24","10.2.3.0/24","10.2.1.0/24","10.2.2.0/28"],c:1,ok:"custom-subnet-private2-us-east-1b = 10.2.3.0/24.",ko:"10.2.2.0/24 es privada en 1a."},
+{t:"vpc",q:"Nombre tag VPC personalizada:",o:["wizard-vpc","custom-vpc","ssh-sg","default"],c:1,ok:"VPC manual lleva name tag custom-vpc.",ko:"wizard es la creada por asistente."},
+{t:"vpc",q:"Par de claves EC2 en práctica:",o:["vockey","admin","ec2-default","ninguno"],c:0,ok:"Documento indica par de claves vockey.",ko:"Necesario para SSH a instancias Linux."},
+{t:"vpc",q:"Regla default SG para tráfico entre instancias del grupo:",o:["Deniega todo siempre","Permite tráfico entrante de miembros del mismo SG","Abre 22 a Internet","Solo salida"],c:1,ok:"default permite flujo entre instancias que comparten el SG.",ko:"Por eso SSH privada desde pública funciona con default."}
+];
+
+const state = {
+  pantalla: "inicio",
+  preguntas: [],
+  indice: 0,
+  aciertos: 0,
+  fallos: [],
+  respondida: false,
+  seleccion: null,
+  modoRepaso: false
+};
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function initTemas() {
+  const cont = document.getElementById("temas-container");
+  cont.innerHTML = "";
+  Object.entries(TEMAS).forEach(([id, nombre]) => {
+    const n = PREGUNTAS.filter(p => p.t === id).length;
+    const div = document.createElement("div");
+    div.className = "tema-chip";
+    div.innerHTML = `<input type="checkbox" id="tema-${id}" value="${id}" checked>
+      <label for="tema-${id}">${nombre} (${n})</label>`;
+    cont.appendChild(div);
+  });
+  actualizarContador();
+}
+
+function getTemasSeleccionados() {
+  return [...document.querySelectorAll("#temas-container input:checked")].map(el => el.value);
+}
+
+function actualizarContador() {
+  const sel = getTemasSeleccionados();
+  const n = PREGUNTAS.filter(p => sel.includes(p.t)).length;
+  document.getElementById("contador-preguntas").textContent =
+    n ? `${n} preguntas disponibles con la selección actual.` : "Selecciona al menos un tema.";
+}
+
+function prepararPreguntas(soloFallos = false) {
+  let lista;
+  if (soloFallos && state.fallos.length) {
+    lista = state.fallos.map(f => ({ ...f.pregunta, _ordenOpciones: f.ordenOpciones }));
+  } else {
+    const temas = getTemasSeleccionados();
+    lista = PREGUNTAS.filter(p => temas.includes(p.t)).map(p => ({ ...p }));
+    if (document.getElementById("mezclar-preguntas").checked) lista = shuffle(lista);
+  }
+  if (!lista.length) return false;
+  state.preguntas = lista.map(p => {
+    const item = { ...p };
+    if (p._ordenOpciones) {
+      item.opcionesMezcladas = p._ordenOpciones.map(i => p.o[i]);
+      item.indiceCorrecto = p._ordenOpciones.indexOf(p.c);
+    } else if (document.getElementById("mezclar-opciones").checked) {
+      const indices = p.o.map((_, i) => i);
+      const ord = shuffle(indices);
+      item.opcionesMezcladas = ord.map(i => p.o[i]);
+      item.indiceCorrecto = ord.indexOf(p.c);
+      item._ordenOpciones = ord;
+    } else {
+      item.opcionesMezcladas = [...p.o];
+      item.indiceCorrecto = p.c;
+      item._ordenOpciones = p.o.map((_, i) => i);
+    }
+    return item;
+  });
+  state.indice = 0;
+  state.aciertos = 0;
+  state.respondida = false;
+  state.seleccion = null;
+  return true;
+}
+
+function mostrarPantalla(id) {
+  ["pantalla-inicio", "pantalla-quiz", "pantalla-resultados"].forEach(pid => {
+    document.getElementById(pid).classList.toggle("hidden", pid !== id);
+  });
+  state.pantalla = id;
+}
+
+function renderPregunta() {
+  const p = state.preguntas[state.indice];
+  const total = state.preguntas.length;
+  document.getElementById("progress-fill").style.width = ((state.indice) / total * 100) + "%";
+  document.getElementById("quiz-contador").textContent = `Pregunta ${state.indice + 1} de ${total}`;
+  document.getElementById("quiz-puntuacion").textContent = `Aciertos: ${state.aciertos}`;
+  document.getElementById("q-tema-label").textContent = TEMAS[p.t] || p.t;
+  document.getElementById("q-text").textContent = p.q;
+  const opts = document.getElementById("q-options");
+  opts.innerHTML = "";
+  p.opcionesMezcladas.forEach((texto, i) => {
+    const div = document.createElement("div");
+    div.className = "option";
+    div.textContent = texto;
+    div.dataset.idx = i;
+    div.addEventListener("click", () => seleccionarOpcion(i));
+    opts.appendChild(div);
+  });
+  const fb = document.getElementById("q-feedback");
+  fb.className = "feedback hidden";
+  fb.innerHTML = "";
+  document.getElementById("btn-siguiente").classList.add("hidden");
+  state.respondida = false;
+  state.seleccion = null;
+}
+
+function seleccionarOpcion(idx) {
+  if (state.respondida) return;
+  state.seleccion = idx;
+  document.querySelectorAll(".option").forEach(el => {
+    el.classList.toggle("selected", +el.dataset.idx === idx);
+  });
+  confirmarRespuesta();
+}
+
+function confirmarRespuesta() {
+  const p = state.preguntas[state.indice];
+  state.respondida = true;
+  const correcto = state.seleccion === p.indiceCorrecto;
+  const opts = document.querySelectorAll(".option");
+  opts.forEach(el => {
+    el.classList.add("locked");
+    const i = +el.dataset.idx;
+    if (i === p.indiceCorrecto) el.classList.add("correct");
+    else if (i === state.seleccion && !correcto) el.classList.add("incorrect");
+  });
+  const fb = document.getElementById("q-feedback");
+  fb.classList.remove("hidden");
+  if (correcto) {
+    state.aciertos++;
+    fb.className = "feedback ok";
+    fb.innerHTML = `<strong>Correcto</strong>${p.ok}`;
+  } else {
+    const letra = String.fromCharCode(65 + p.indiceCorrecto);
+    const textoCorrecta = p.opcionesMezcladas[p.indiceCorrecto];
+    fb.className = "feedback bad";
+    fb.innerHTML = `<strong>Incorrecto</strong>${p.ko}<br><br><strong>La respuesta correcta es:</strong> ${textoCorrecta}<br><br>${p.ok}`;
+    if (!state.modoRepaso) {
+      state.fallos.push({
+        pregunta: {
+          t: p.t, q: p.q, o: [...p.o], c: p.c, ok: p.ok, ko: p.ko
+        },
+        ordenOpciones: p._ordenOpciones
+      });
+    }
+  }
+  document.getElementById("quiz-puntuacion").textContent = `Aciertos: ${state.aciertos}`;
+  document.getElementById("btn-siguiente").classList.remove("hidden");
+  document.getElementById("btn-siguiente").textContent =
+    state.indice < state.preguntas.length - 1 ? "Siguiente" : "Ver resultados";
+}
+
+function siguiente() {
+  if (state.indice < state.preguntas.length - 1) {
+    state.indice++;
+    renderPregunta();
+  } else {
+    mostrarResultados();
+  }
+}
+
+function mostrarResultados() {
+  mostrarPantalla("pantalla-resultados");
+  const total = state.preguntas.length;
+  const fallidas = total - state.aciertos;
+  const pct = total ? Math.round(state.aciertos / total * 100) : 0;
+  document.getElementById("results-stats").innerHTML = `
+    <div class="stat-card"><div class="num">${state.aciertos}</div><div class="lbl">Aciertos</div></div>
+    <div class="stat-card"><div class="num">${fallidas}</div><div class="lbl">Fallos</div></div>
+    <div class="stat-card"><div class="num">${total}</div><div class="lbl">Total</div></div>
+    <div class="stat-card"><div class="num">${pct}%</div><div class="lbl">Porcentaje</div></div>`;
+  const failDiv = document.getElementById("fail-summary");
+  const btnRep = document.getElementById("btn-repetir-fallos");
+  if (!state.modoRepaso && state.fallos.length) {
+    failDiv.classList.remove("hidden");
+    failDiv.innerHTML = "<h3 style='margin-bottom:0.5rem;font-size:0.95rem'>Preguntas falladas</h3>" +
+      state.fallos.map((f, i) =>
+        `<div class="fail-item"><strong>${i + 1}.</strong> [${TEMAS[f.pregunta.t]}] ${f.pregunta.q}</div>`
+      ).join("");
+    btnRep.classList.remove("hidden");
+  } else {
+    failDiv.classList.add("hidden");
+    btnRep.classList.add("hidden");
+  }
+}
+
+function empezarTest(repaso = false) {
+  state.modoRepaso = repaso;
+  if (!repaso) state.fallos = [];
+  if (!prepararPreguntas(repaso)) {
+    alert(repaso ? "No hay preguntas falladas para repetir." : "Selecciona al menos un tema con preguntas.");
+    return;
+  }
+  mostrarPantalla("pantalla-quiz");
+  renderPregunta();
+}
+
+document.getElementById("temas-container").addEventListener("change", actualizarContador);
+document.getElementById("btn-todos").onclick = () => {
+  document.querySelectorAll("#temas-container input").forEach(i => { i.checked = true; });
+  actualizarContador();
+};
+document.getElementById("btn-ninguno").onclick = () => {
+  document.querySelectorAll("#temas-container input").forEach(i => { i.checked = false; });
+  actualizarContador();
+};
+document.getElementById("btn-empezar").onclick = () => empezarTest(false);
+document.getElementById("btn-siguiente").onclick = siguiente;
+document.getElementById("btn-abandonar").onclick = () => { mostrarPantalla("pantalla-inicio"); };
+document.getElementById("btn-repetir-fallos").onclick = () => empezarTest(true);
+document.getElementById("btn-nuevo-test").onclick = () => { state.fallos = []; empezarTest(false); };
+document.getElementById("btn-inicio-res").onclick = () => mostrarPantalla("pantalla-inicio");
+
+initTemas();
+</script>
+</body>
+</html>
