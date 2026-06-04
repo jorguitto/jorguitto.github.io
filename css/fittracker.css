@@ -1,0 +1,199 @@
+/** FitTracker CSS TFG */
+.ft-main-shell {
+            width: 100%;
+            max-width: min(1480px, calc(100vw - 1.5rem));
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        @media (min-width: 1536px) {
+            .ft-main-shell { max-width: min(1600px, calc(100vw - 3rem)); }
+        }
+        .strava-zone-lane-only { display: none; }
+        #strava:not([data-strava-lane="overview"]) .strava-zone-lane-only { display: block; }
+        #strava:not([data-strava-lane="overview"]) .strava-zone-overview-only { display: none !important; }
+
+        #strava:not([data-strava-lane="overview"]) .strava-session-charts-when-not-run { display: none !important; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f1f5f9; 
+            -webkit-tap-highlight-color: transparent; 
+            padding-bottom: 140px;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9; }
+        
+        .card { background: white; border-radius: 24px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.08); transition: transform 0.2s; border: 1px solid #f1f5f9; }
+        .card-clickable:active { transform: scale(0.98); background-color: #f8fafc; }
+        
+        .modal-overlay { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .modal-overlay.open { display: flex; opacity: 1; }
+        .modal-content { transform: scale(0.9); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .modal-overlay.open .modal-content { transform: scale(1); opacity: 1; }
+
+        /* Vista previa PDF: móvil sin sensación de zoom excesivo */
+        #pdf-preview-modal .modal-content { max-height: 100dvh; }
+        #pdf-preview-modal #pdf-preview-iframe { min-height: 0; flex: 1 1 auto; width: 100%; -webkit-overflow-scrolling: touch; }
+        @media (max-width: 640px) {
+            #pdf-preview-modal { padding: 0 !important; align-items: stretch !important; }
+            #pdf-preview-modal .modal-content {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+                border-radius: 0 !important;
+                transform: none !important;
+            }
+            #pdf-preview-modal.modal-overlay.open .modal-content { transform: none !important; }
+        }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 28px; width: 28px; border-radius: 50%;
+            background: white; border: 2px solid #3b82f6; cursor: pointer; margin-top: -12px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; cursor: pointer; background: #e2e8f0; border-radius: 99px;
+        }
+
+        input[type="time"] { -webkit-appearance: none; appearance: none; background-color: #f9fafb; min-width: 95px; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .nav-item.active { color: #3b82f6; transform: translateY(-2px); }
+        .nav-item.active i { transform: scale(1.1); }
+        .nav-item { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); color: #94a3b8; }
+        
+        .page-section { display: none; opacity: 0; animation: fadeIn 0.4s ease-out forwards; }
+        .page-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .meal-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; }
+        .meal-content.open { max-height: 4000px; }
+
+        .group-header { cursor: pointer; transition: background 0.2s; }
+        .group-header:active { background-color: #f1f5f9; }
+        .group-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
+        .group-content.open { max-height: 5000px; }
+
+        .quiz-step { display:none; }
+        .quiz-step.active { display:block; }
+        .quiz-option { cursor:pointer; transition: transform 0.18s ease, background-color 0.18s ease; }
+        .quiz-option:hover { transform: translateY(-1px); }
+        .quiz-stage { position: relative; overflow: hidden; }
+        .quiz-progress { height: 6px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+        .quiz-progress-fill { height: 100%; width: 0; background: #2563eb; transition: width 0.3s ease; }
+
+        .group-header { cursor: pointer; transition: background 0.2s; }
+        .group-header:active { background-color: #f1f5f9; }
+        .group-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
+
+        .pb-safe-area { padding-bottom: env(safe-area-inset-bottom); }
+
+        .alert-card { transition: all 0.3s ease; }
+        .alert-water-low { background-color: #fee2e2; border-color: #ef4444; animation: pulse 2s infinite; }
+        .alert-water-high { background-color: #fef3c7; border-color: #f59e0b; }
+        .alert-food-low { background-color: #fee2e2; border-color: #ef4444; animation: pulse 2s infinite; }
+        .alert-nutrition { background-color: #fef3c7; border-color: #f59e0b; animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* Estilos para el selector de músculos y SVG */
+        .muscle-btn { border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; transition: all 0.2s; }
+        .muscle-btn.selected { background-color: #3b82f6; color: white; border-color: #3b82f6; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); transform: translateY(-1px); }
+        .body-part { transition: fill 0.5s ease; }
+        .body-green { fill: #10b981; }
+        .body-orange { fill: #f59e0b; }
+        .body-red { fill: #ef4444; }
+        
+        /* Mapa muscular sobre fondo claro (tarjeta inicio) */
+        .muscle-base {
+            fill: #e2e8f0;
+            stroke: #ffffff;
+            stroke-width: 1.1;
+            stroke-linejoin: round;
+            transition: fill 0.45s ease, stroke 0.45s ease, filter 0.45s ease;
+        }
+        .muscle-active-low {
+            fill: #22c55e;
+            stroke: #bbf7d0;
+            stroke-width: 1.1;
+        }
+        .muscle-active-mid {
+            fill: #3b82f6;
+            stroke: #bfdbfe;
+            stroke-width: 1.1;
+        }
+        .muscle-active-max {
+            fill: #ef4444;
+            stroke: #fecaca;
+            stroke-width: 1.12;
+            filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.55));
+        }
+        .label-text {
+            font-size: 7px;
+            fill: #64748b;
+            font-weight: 900;
+            text-anchor: middle;
+            letter-spacing: 0.12em;
+        }
+
+        /* --- NUEVO ESTILO ANATOMÍA PRO --- */
+        .human-body-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding-top: 20px;
+        }
+
+        .anatomy-svg {
+            height: 300px;
+            width: auto;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));
+        }
+
+        /* human-anatomy-main — solo frente (Estado fisiológico) */
+        .anatomy-front-fittracker-wrap {
+            width: 100%;
+            height: 260px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow: hidden;
+        }
+        .anatomy-front-fittracker-scale {
+            position: relative;
+            width: 360px;
+            height: 830px;
+            transform: scale(0.32);
+            transform-origin: top center;
+            flex-shrink: 0;
+        }
+        .anatomy-front-fittracker-scale svg {
+            position: absolute;
+            left: 50%;
+        }
+        .anatomy-front-fittracker-scale svg#head { margin-left: -27px; top: -6px; }
+        .anatomy-front-fittracker-scale svg#orbit { margin-left: -6px; top: 27px; }
+        .anatomy-front-fittracker-scale svg#neck { margin-left: -21px; top: 70px; }
+        .anatomy-front-fittracker-scale svg#chest { margin-left: -57px; top: 140px; }
+        .anatomy-front-fittracker-scale svg#right-shoulder { margin-left: -90px; top: 100px; }
+        .anatomy-front-fittracker-scale svg#right-arm { margin-left: -162px; top: 210px; }
+        .anatomy-front-fittracker-scale svg#right-hand { margin-left: -197px; top: 387px; }
+        .anatomy-front-fittracker-scale svg#left-shoulder { margin-left: 48px; top: 95px; }
+        .anatomy-front-fittracker-scale svg#left-arm { margin-left: 100px; top: 202px; }
+        .anatomy-front-fittracker-scale svg#left-hand { margin-left: 172px; top: 336px; }
+        .anatomy-front-fittracker-scale svg#abdomen { margin-left: -70px; top: 210px; }
+        .anatomy-front-fittracker-scale svg#right-leg { margin-left: -110px; top: 420px; z-index: 3; }
+        .anatomy-front-fittracker-scale svg#right-foot { margin-left: -70px; top: 773px; }
+        .anatomy-front-fittracker-scale svg#left-leg { margin-left: -10px; top: 415px; z-index: 3; }
+        .anatomy-front-fittracker-scale svg#left-foot { margin-left: 40px; top: 771px; }
+
+        .splash-rotate { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
